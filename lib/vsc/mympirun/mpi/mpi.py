@@ -730,8 +730,8 @@ class MPI(object):
         Get the localhost mpdboot interface
         -- if hostname is different from the name in the nodelist
         """
-        iface_prefix = ['eth', 'em', 'ib', 'wlan', 'lo']
-        reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?)' % '|'.join(iface_prefix))
+        iface_prefix = ['eth', 'em', 'ib', 'wlan']
+        reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
 
         for hn in self.uniquenodes:
             ip = socket.gethostbyname(hn)
@@ -788,13 +788,19 @@ class MPI(object):
         ## default launcher seems ssh
         if getattr(self, 'HYDRA_RMK', None) is not None:
             rmk = [x for x in self.HYDRA_RMK if x in self.hydra_info.get('rmk', [])]
-            self.log.debug("make_mpiexe_hydrac_options: HYDRA: rmk %s, using first" % rmk)
-            self.mpiexec_options.append("-rmk %s" % rmk[0])
+            if len(rmk) > 0:
+                self.log.debug("make_mpiexe_hydra_options: HYDRA: rmk %s, using first" % rmk)
+                self.mpiexec_options.append("-rmk %s" % rmk[0])
+            else:
+                self.log.debug("make_mpiexe_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s" % (self.HYDRA_RMK, self.hydra_info))
         else:
             launcher = None
             if getattr(self, 'HYDRA_LAUNCHER', None) is not None:
                 launcher = [x for x in self.HYDRA_LAUNCHER if x in self.hydra_info.get('launcher', [])]
-                self.log.debug("make_mpiexec_hydra_options: HYDRA: launcher %s, using first one" % launcher)
+                if len(launcher) > 0:
+                    self.log.debug("make_mpiexec_hydra_options: HYDRA: launcher %s, using first one" % launcher)
+                else:
+                    self.log.debug("make_mpiexe_hydra_options: no launcher from HYDRA_LAUNCHER %s and hydra_info %s" % (self.HYDRA_LAUNCHER, self.hydra_info))
 
             launcher_exec = self.HYDRA_LAUNCHER_EXEC
             if launcher is None or len(launcher) == 0:
@@ -808,7 +814,7 @@ class MPI(object):
 
     def get_hydra_info(self):
         """Get a dict with hydra info"""
-        reg_hydra_info = re.compile(r"^\s+(?P<key>\S[^:\n]*)\s*:\s*(?P<value>.*)\s*$", re.M)
+        reg_hydra_info = re.compile(r"^\s+(?P<key>\S[^:\n]*)\s*:(?P<value>.*?)\s*$", re.M)
 
         cmd = "mpirun -info"
         ec, out = run_simple(cmd)
