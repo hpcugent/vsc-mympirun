@@ -88,7 +88,9 @@ def stripfake(path=None):
 
     if path is None:
         path = []
-    path = os.environ.get('PATH', '').split(os.pathsep) + path
+    envpath = os.environ.get('PATH', '').split(os.pathsep)
+    ## do not append doubles (respect search order)
+    path = envpath + [x for x in path if not x in envpath]
 
     newpath = [x for x in path if not reg_fakepath.match(x)]
 
