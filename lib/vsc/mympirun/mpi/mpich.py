@@ -1,0 +1,119 @@
+##
+# Copyright 2009-2012 Stijn De Weirdt
+#
+# This file is part of VSC-tools,
+# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
+#
+#
+# http://github.com/hpcugent/VSC-tools
+#
+# VSC-tools is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
+#
+# EasyBuild is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
+##
+
+"""
+MPICH specific classes
+"""
+
+from vsc.mympirun.mpi.mpi import MPI, _versioncheck
+from vsc.utils.run import run_simple
+
+
+class MVAPICH2Hydra(MPI):
+    _mpiscriptname_for = ['mhmpirun']
+    _mpirun_for = ['MVAPICH2']
+    _mpirun_version = lambda x, y: _versioncheck(x, 1, y, 6)
+    _mpirun_version = staticmethod(_mpirun_version)
+
+    HYDRA = True
+
+    PASS_VARIABLES_CLASS_PREFIX = ['MV2', 'HYDRA']
+
+    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-envlist %(commaseparated)s"
+
+    def prepare(self):
+        super(MVAPICH2Hydra, self).prepare()
+
+        if self.options.pinmpi:
+            self._setenv('MV2_ENABLE_AFFINITY', 1)
+            self._setenv('MV2_CPU_BINDING_POLICY', 'bunch')
+        else:
+            self._setenv('MV2_ENABLE_AFFINITY', 0)
+
+    def mpiexec_set_global_options(self):
+        """Set mpiexec global options"""
+        if self.options.debuglvl > 0 and self.options.qlogic_ipath:
+            self.mpiexec_global_options['MV2_PSM_DEBUG'] = 1
+
+        super(MVAPICH2Hydra, self).mpiexec_set_global_options()
+
+    def _make_final_mpirun_cmd(self):
+        """Create the acual mpirun command
+            add it to self.mpirun_cmd
+            No mpdboot for openmpi
+        """
+        self.mpirun_cmd += self.mpiexec_options
+
+
+class MVAPICH2(MVAPICH2Hydra):
+    """
+    MVAPICH2 from 1.6 has new style of starting (wrt 1.4)
+    - it uses the hydra interface and sligthly other mpdboot
+    """
+    _mpiscriptname_for = ['mmpirun']
+    _mpirun_for = ['MVAPICH2']
+    _mpirun_version = lambda x, y: not _versioncheck(x, 1, y, 6)
+    _mpirun_version = staticmethod(_mpirun_version)
+
+    HYDRA = False
+
+    PASS_VARIABLES_CLASS_PREFIX = ['MV2']
+
+
+    def make_mpdboot_options(self):
+        """Small fix"""
+        self.mpdboot_totalnum = self.nruniquenodes
+
+        super(MVAPICH2, self).make_mpdboot_options()
+
+    def mpirun_prepare_execution(self):
+        """Manual start/stop of mpdboot"""
+
+        res = []
+
+        cmd = "%s %s" % ('mpdboot', ' '.join(self.mpdboot_options))
+        res.append((run_simple, cmd))
+
+        if self.options.debug:
+            res.append((run_simple, 'mpdtrace -l'))
+
+        res += super(MVAPICH2, self).mpirun_prepare_execution
+
+        res.append((run_simple, 'mpdallexit'))
+
+
+class MPICH2Hydra(MVAPICH2Hydra):
+    _mpiscriptname_for = ['m2hmpirun']
+    _mpirun_for = ['MPICH2', 'mpich2']
+    _mpirun_version = lambda  x, y: _versioncheck(x, 1, y, 4)
+    _mpirun_version = staticmethod(_mpirun_version)
+
+    PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
+
+class MPICH2(MVAPICH2):
+    _mpiscriptname_for = ['m2mpirun']
+    _mpirun_for = ['MPICH2', 'mpich2']
+    _mpirun_version = lambda  x, y: not _versioncheck(x, 1, y, 4)
+    _mpirun_version = staticmethod(_mpirun_version)
+
+    PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
+
