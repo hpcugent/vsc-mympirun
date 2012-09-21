@@ -24,14 +24,16 @@
 MPICH specific classes
 """
 
-from vsc.mympirun.mpi.mpi import MPI, _versioncheck
+from distutils.version import LooseVersion
+
+from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.run import run_simple
 
 
 class MVAPICH2Hydra(MPI):
     _mpiscriptname_for = ['mhmpirun']
     _mpirun_for = ['MVAPICH2']
-    _mpirun_version = lambda x, y: _versioncheck(x, 1, y, 6)
+    _mpirun_version = lambda x: LooseVersion(x) >= LooseVersion("1.6.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
     HYDRA = True
@@ -71,7 +73,7 @@ class MVAPICH2(MVAPICH2Hydra):
     """
     _mpiscriptname_for = ['mmpirun']
     _mpirun_for = ['MVAPICH2']
-    _mpirun_version = lambda x, y: not _versioncheck(x, 1, y, 6)
+    _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("1.6.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
     HYDRA = False
@@ -104,7 +106,7 @@ class MVAPICH2(MVAPICH2Hydra):
 class MPICH2Hydra(MVAPICH2Hydra):
     _mpiscriptname_for = ['m2hmpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
-    _mpirun_version = lambda  x, y: _versioncheck(x, 1, y, 4)
+    _mpirun_version = lambda x: LooseVersion(x) >= LooseVersion("1.4.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
     PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
@@ -112,7 +114,7 @@ class MPICH2Hydra(MVAPICH2Hydra):
 class MPICH2(MVAPICH2):
     _mpiscriptname_for = ['m2mpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
-    _mpirun_version = lambda  x, y: not _versioncheck(x, 1, y, 4)
+    _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("1.4.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
     PASS_VARIABLES_CLASS_PREFIX = ['MPICH']

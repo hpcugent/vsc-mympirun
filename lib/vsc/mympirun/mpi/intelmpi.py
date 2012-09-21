@@ -24,7 +24,8 @@
 Intel MPI specific class
 """
 
-from vsc.mympirun.mpi.mpi import MPI, _versioncheck
+from distutils.version import LooseVersion
+from vsc.mympirun.mpi.mpi import MPI
 import os, re
 import socket
 
@@ -36,7 +37,7 @@ class IntelMPI(MPI):
 
     _mpiscriptname_for = ['impirun']
     _mpirun_for = ['impi']
-    _mpirun_version = lambda x, y: not _versioncheck(x, 4, y, 1)
+    _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("4.1.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
     RUNTIMEOPTION = {'options':{'mpdbulletproof':("Start MPD in bulletproof", None, "store_true", False),
@@ -165,14 +166,14 @@ class IntelMPI(MPI):
 class IntelHydraMPI(IntelMPI):
     _mpiscriptname_for = ['ihmpirun']
 
-    _mpirun_version = lambda x, y: _versioncheck(x, 4, y, 1)
+    _mpirun_version = lambda x: LooseVersion(x) >= LooseVersion("4.1.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
 
 class IntelLegacy(IntelMPI):
-    _mpirun_version = lambda x, y: not _versioncheck(x, 3, y, 0)
+    _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("3.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
     def maketunecmds(self):

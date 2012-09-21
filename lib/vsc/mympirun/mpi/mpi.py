@@ -113,9 +113,6 @@ def which(names):
                 return name
     return None
 
-## simple versioncheck lambda
-_versioncheck = lambda x, xmin, y, ymin: (x > xmin) or (x == xmin  and y >= ymin)
-
 
 ## very basic class. has all the class method magic
 class MPI(object):
@@ -123,6 +120,7 @@ class MPI(object):
     Base MPI class to generate the mpirun command line
     """
     RUNTIMEOPTION = None
+
     _mpirun_for = []
     _mpiscriptname_for = []
     _mpirun_version = None
@@ -205,14 +203,14 @@ class MPI(object):
     #classmethod
     def _is_mpirun_for(cls, name):
         """see if this class can provide support for found mpirun"""
-        reg = re.compile(r"(?:%s)%s(\d+)(?:\.(\d+))?" % ("|".join(cls._mpirun_for), os.sep))
+        reg = re.compile(r"(?:%s)%s(\d+(?:\.\d+(?:\.\d+\S+)?)?)" % ("|".join(cls._mpirun_for), os.sep))
         r = reg.search(name)
         if r:
             if cls._mpirun_version is None:
                 return True
             else:
                 ## do major,minor version check
-                return cls._mpirun_version(int(r.group(1)), int(r.group(2)))
+                return cls._mpirun_version(r.group(1))
         else:
             return False
 
