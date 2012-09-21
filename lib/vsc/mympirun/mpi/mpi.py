@@ -38,10 +38,10 @@ import stat
 ## Going to guess myself
 
 ## part of the directory that contains the installed fakes
-installsubpath = 'mympirun'
+INSTALLATION_SUBDIRECTORY_NAME = 'mympirun'
 ## the fake subdir to contain the fake mpirun symlink
 ## also hardcoded in setup.py !
-fake_path_name = 'fake'
+FAKE_SUBDIRECTORY_NAME = 'fake'
 
 def whatMPI(name):
     """
@@ -84,7 +84,7 @@ def stripfake(path=None):
     """Remove the fake wrapper path:
         assumes mympirun/1.0.0/bin/fake
     """
-    reg_fakepath = re.compile(r"" + os.sep.join(['.*?', installsubpath + '.*?', 'bin', fake_path_name, '[^%s].*$' % os.sep]))
+    reg_fakepath = re.compile(r"" + os.sep.join(['.*?', INSTALLATION_SUBDIRECTORY_NAME + '.*?', 'bin', FAKE_SUBDIRECTORY_NAME, '[^%s].*$' % os.sep]))
 
     if path is None:
         path = []
