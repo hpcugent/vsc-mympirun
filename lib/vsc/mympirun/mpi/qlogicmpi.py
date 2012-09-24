@@ -33,7 +33,8 @@ class QLogicMPI(MPI):
     _mpiscriptname_for = ['qmpirun']
     _mpirun_for = ['QLogicMPI']
 
-    RUNTIMEOPTION = {'options':{'quiescencecheck':("Set level of quiescence checking (default 1) [0=No ; 1=Some checking; 2: All supported checking]", "int", "store", 1)
+    RUNTIMEOPTION = {'options':{'quiescencecheck':(("Set level of quiescence checking (default 1) [0=No ; "
+                                                    "1=Some checking; 2: All supported checking]"), "int", "store", 1)
                                 },
                      'prefix':'qlogicmpi',
                      'description': ('QLogicMPI options', 'Advanced options specific for QLogicMPI'),
@@ -51,7 +52,8 @@ class QLogicMPI(MPI):
         if self.options.hybrid is not None and self.options.hybrid > 0:
             if self.pinning_override_type is not None:
                 self.pinning_override_type = 'spread'
-                self.log.debug("pin_flavour: hybrid mode: overwritepin not set, setting to default %s" % self.pinning_override_type)
+                self.log.debug("pin_flavour: hybrid mode: overwritepin not set, setting to default %s" %
+                               self.pinning_override_type)
         return mp
 
     def get_pinning_override_variable(self):

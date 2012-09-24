@@ -56,26 +56,36 @@ class MympirunOption(GeneralOption):
                 "stats":("Set MPI statistics level", "int", "store", 0),
 
                 "hybrid":("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
-                "double":("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)", None, "store_true", False),
+                "double":("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
+                          None, "store_true", False),
 
-                "schedtype":("Specify scheduler (eg local, pbs...; will try to guess by default).", "str", "store", None, "S"), ## TODO: generate list
+                "schedtype":("Specify scheduler (eg local, pbs...; will try to guess by default).",
+                             "str", "store", None, "S"), ## TODO: generate list
 
                 "output":("filename to write stdout/stderr directly to (instead of stdout)", "str", "store", None),
 
-                "ssh":("Force ssh for mpd startup (will try to use optimised method by default)", None, "store_false", True),
-                "order":("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])", "str", "store", None),
-                "basepath":("Directory (preferably shared) to use for temporary mympirun files (default: HOME).", "str", "store", None),
-                "pinmpi":("Enable MPI pinning", None, "store_false", None), ## don't set it by default. It will be set if needed
+                "ssh":("Force ssh for mpd startup (will try to use optimised method by default)",
+                       None, "store_false", True),
+                "order":("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])",
+                         "str", "store", None),
+                "basepath":("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
+                            "str", "store", None),
+                "pinmpi":("Enable MPI pinning", None, "store_false", None), # don't set it by default. It will be set if needed
 
                 "rdma":("Force rdma device", None, "store_true", None),
                 "socket":("Force socket device", None, "store_true", None),
 
-                "universe":("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the universe is all requested processes.)", "int", "store", None),
-                "overridepin":("Let mympriun set the affinity (default: disabled, left over to MPI implementation). Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, e.g. 'cyclepin').", "str", "store", None),
+                "universe":(("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
+                             "universe is all requested processes.)"), "int", "store", None),
+                "overridepin":(("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
+                                "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
+                                "e.g. 'cyclepin')."), "str", "store", None),
 
-                "variablesprefix":("Comma-separated list of exact names or prefixes to match environment variables (<prefix>_ should match) to pass through.", "string", "extend", []),
+                "variablesprefix":(("Comma-separated list of exact names or prefixes to match environment variables "
+                                    "(<prefix>_ should match) to pass through."), "string", "extend", []),
                 "noenvmodules":("Don't pass the environment modules variables", None, "store_true", False),
-                "mpirunoptions":("String with options to pass to mpirun (will be appended to generate comamnd)", "str", "store", None),
+                "mpirunoptions":("String with options to pass to mpirun (will be appended to generate comamnd)",
+                                 "str", "store", None),
                 }
 
         descr = ["mympirun options", "General advanced mympirun options"]
@@ -90,7 +100,8 @@ class MympirunOption(GeneralOption):
                 opts = mpi.RUNTIMEOPTION['options']
                 descr = mpi.RUNTIMEOPTION['description']
                 prefix = mpi.RUNTIMEOPTION['prefix']
-                self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s" % (mpi.__name__, prefix, descr, opts))
+                self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s" %
+                               (mpi.__name__, prefix, descr, opts))
                 self.add_group_parser(opts, descr, prefix=prefix)
 
     def parseoptions(self, optionsstring=sys.argv[1:]):

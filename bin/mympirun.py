@@ -56,7 +56,9 @@ def getInstance():
 
     if mpi is None:
         mo.parser.print_shorthelp()
-        mo.log.raiseException("No MPI class found (scriptname %s; ismpirun %s). Please use mympirun through one of the direct calls or make sure the mpirun command can be found." % (scriptname, ismpirun))
+        mo.log.raiseException(("No MPI class found (scriptname %s; ismpirun %s). Please use mympirun through one "
+                               "of the direct calls or make sure the mpirun command can be found.") %
+                              (scriptname, ismpirun))
     else:
         mo.log.debug("Found MPI class %s (scriptname %s; ismpirun %s)" % (mpi.__name__, scriptname, ismpirun))
 

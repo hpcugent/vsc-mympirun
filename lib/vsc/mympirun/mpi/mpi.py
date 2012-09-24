@@ -84,7 +84,8 @@ def stripfake(path=None):
     """Remove the fake wrapper path:
         assumes mympirun/1.0.0/bin/fake
     """
-    reg_fakepath = re.compile(r"" + os.sep.join(['.*?', INSTALLATION_SUBDIRECTORY_NAME + '.*?', 'bin', FAKE_SUBDIRECTORY_NAME, '[^%s].*$' % os.sep]))
+    reg_fakepath = re.compile(r"" + os.sep.join(['.*?', INSTALLATION_SUBDIRECTORY_NAME + '.*?', 'bin',
+                                                 FAKE_SUBDIRECTORY_NAME, '[^%s].*$' % os.sep]))
 
     if path is None:
         path = []
@@ -286,7 +287,8 @@ class MPI(object):
         - default: do nothing more then log
         """
         if not self.foundppn == len(self.cpus):
-            self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s" % (self.ppn, self.foundppn, len(self.cpus)))
+            self.log.info(("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, "
+                           "usable cpus %s") % (self.ppn, self.foundppn, len(self.cpus)))
 
     def check_limit(self):
         soft, hard = resource.getrlimit(resource.RLIMIT_STACK)
@@ -356,7 +358,8 @@ class MPI(object):
             if not 'VSMP_PLACEMENT' in os.environ:
                 ## option: non, spread, nodes^x^y, packed
                 if not self.foundppn == len(self.cpus):
-                    self.log.debug("scalemp_vsmp: non-standard cpus found: requested ppn %s, found ppn %s, usable cpus %s" % (self.ppn, self.foundppn, len(self.cpus)))
+                    self.log.debug(("scalemp_vsmp: non-standard cpus found: requested ppn %s, found ppn %s, "
+                                    "usable cpus %s") % (self.ppn, self.foundppn, len(self.cpus)))
                     placement = []
                     for x in self.cpus:
                         ind = len(placement)
@@ -393,13 +396,15 @@ class MPI(object):
             self.device = 'rdma' ## force it
             path = self.DEVICE_LOCATION_MAP[founddev]
             if path is None or os.path.exists(path):
-                self.log.warning("Forcing device %s (founddevice %s), but path %s not found." % (self.device, founddev, path))
+                self.log.warning("Forcing device %s (founddevice %s), but path %s not found." %
+                                 (self.device, founddev, path))
         elif getattr(self.options, 'socket', None):
             founddev = 'socket'
             self.device = self.DEVICE_MPIDEVICE_MAP[founddev]
             path = self.DEVICE_LOCATION_MAP[founddev]
             if path is None or os.path.exists(path):
-                self.log.warning("Forcing device %s (founddevice %s), but path %s not found." % (self.device, founddev, path))
+                self.log.warning("Forcing device %s (founddevice %s), but path %s not found." %
+                                 (self.device, founddev, path))
         else:
             for dev in self.DEVICE_ORDER:
                 if dev in ('shm',):
@@ -418,7 +423,8 @@ class MPI(object):
             self.log.raiseException("set_device: failed to set device.")
 
         self.netmasktype = self.NETMASK_TYPE_MAP[founddev]
-        self.log.debug("set_device: set netmasktype %s for device %s (founddev %s)" % (self.netmasktype, self.device, founddev))
+        self.log.debug("set_device: set netmasktype %s for device %s (founddev %s)" %
+                       (self.netmasktype, self.device, founddev))
 
 
     def set_netmask(self):
@@ -429,7 +435,8 @@ class MPI(object):
                              'ib':"infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
                              }
         if not self.netmasktype in device_ip_reg_map:
-            self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" % (self.netmasktype, device_ip_reg_map))
+            self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" %
+                                    (self.netmasktype, device_ip_reg_map))
 
         cmd = "/sbin/ip addr show"
         ec, out = run_simple(cmd)
@@ -438,14 +445,16 @@ class MPI(object):
 
         reg = re.compile(r"" + device_ip_reg_map[self.netmasktype])
         if not reg.search(out):
-            self.log.raiseException("set_netmask: can't get netmask for %s: no matches found (reg %s out %s)" % (self.netmasktype, device_ip_reg_map[self.netmasktype], out))
+            self.log.raiseException("set_netmask: can't get netmask for %s: no matches found (reg %s out %s)" %
+                                    (self.netmasktype, device_ip_reg_map[self.netmasktype], out))
 
         res = []
         for ipaddr_mask in reg.finditer(out):
             ip = IP(ipaddr_mask.group(1), make_net=True)
             network_netmask = "%s/%s" % (ip.net(), ip.netmask())
             res.append(network_netmask)
-            self.log.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s" % (ipaddr_mask.group(1), network_netmask))
+            self.log.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s" %
+                           (ipaddr_mask.group(1), network_netmask))
 
 
         self.log.debug("set_netmask: return complete netmask %s" % res)
@@ -504,7 +513,8 @@ class MPI(object):
             self.mpdboot_node_filename = mpdfn
             self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s" % (mpdfn, mpdboottxt))
         except Exception:
-            self.log.raiseException('make_node_file: failed to write nodefile %s mpbboot nodefile %s' % (nodefn, mpdfn))
+            self.log.raiseException('make_node_file: failed to write nodefile %s mpbboot nodefile %s' %
+                                    (nodefn, mpdfn))
 
     ### BEGIN pinning ###
     def _pin_flavour(self, mp=None):
@@ -529,7 +539,8 @@ class MPI(object):
                 self.options.pinmpi = True
 
         if self.pinning_override_type is not None:
-            self.log.debug("set_pinning: previous pinning %s;  will be overwritten, pinning_override_type set to %s" % (self.options.pinmpi, self.pinning_override_type))
+            self.log.debug("set_pinning: previous pinning %s;  will be overwritten, pinning_override_type set to %s" %
+                           (self.options.pinmpi, self.pinning_override_type))
             self.options.pinmpi = False
         else:
             self.log.debug("set_pinning: pinmpi %s" % self.options.pinmpi)
@@ -601,7 +612,8 @@ class MPI(object):
         ## number of local processors
         ## - eg nuamctl -s grep physcpubind
         if not self.ppn == self.foundppn:
-            self.log.raiseException("pinning_override: number of found procs %s is different from requested ppn %s. Not yet supported." % (self.foundppn, self.ppn))
+            self.log.raiseException(("pinning_override: number of found procs %s is different from "
+                                     "requested ppn %s. Not yet supported.") % (self.foundppn, self.ppn))
 
         override_type = self.pinning_override_type
         multithread = True
@@ -623,9 +635,11 @@ class MPI(object):
         corespp_rest = self.foundppn % self.mpitotalppn
         if (corespp < 1) or (self.mpitotalppn == self.foundppn):
             multi = False
-            self.log.debug("pinning_override: exactly one or more processes %s then cores %s. No multithreading." % (self.mpitotalppn, self.foundppn))
+            self.log.debug(("pinning_override: exactly one or more processes %s then cores %s. "
+                            "No multithreading.") % (self.mpitotalppn, self.foundppn))
         if corespp_rest > 0:
-            self.log.debug("pinning_override: total number of mpiprocesses %s no exact multiple of number of procs %s. Ignoring rest." % (self.mpitotalppn, self.foundppn))
+            self.log.debug(("pinning_override: total number of mpiprocesses %s no exact multiple of "
+                            "number of procs %s. Ignoring rest.") % (self.mpitotalppn, self.foundppn))
 
 
         map_func = None
@@ -652,7 +666,8 @@ class MPI(object):
                 map_func = lambda x: "%s" % (x * corespp)
 
         else:
-            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" % self.pinning_override_type)
+            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
+                                    self.pinning_override_type)
 
         rankmap = [ map_func(x) for x in range(self.mpitotalppn)]
 
@@ -686,7 +701,8 @@ class MPI(object):
         # check .mpd.conf existence
         mpdconffn = os.path.join(os.environ['HOME'], '.mpd.conf')
         if not os.path.exists(mpdconffn):
-            self.log.raiseException("make_mpdboot: mpd.conf file not found at %s. Create this file (text file with minimal entry 'password=<somesecretpassword>')" % mpdconffn)
+            self.log.raiseException(("make_mpdboot: mpd.conf file not found at %s. Create this file "
+                                     "(text file with minimal entry 'password=<somesecretpassword>')") % mpdconffn)
 
         self.mpdboot_set_localhost_interface()
 
@@ -740,12 +756,15 @@ class MPI(object):
             if ec == 0:
                 r = reg_iface.search(out)
                 if not r:
-                    self.log.raiseException("mpdboot_set_localhost_interface: no interface match for prefixes %s out %s" % (iface_prefix, out))
+                    self.log.raiseException(("mpdboot_set_localhost_interface: no interface match for "
+                                             "prefixes %s out %s") % (iface_prefix, out))
                 iface = r.group(1)
-                self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s (ip: %s)" % (iface, hn, ip))
+                self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s (ip: %s)" %
+                               (iface, hn, ip))
                 self.mpdboot_localhost_interface = (hn, iface)
                 return
-        self.log.raiseException("set_mpd_localhost_interface: can't find mpd localhost from uniq nodes %s" % (self.uniquenodes))
+        self.log.raiseException("set_mpd_localhost_interface: can't find mpd localhost from uniq nodes %s" %
+                                (self.uniquenodes))
 
     ### BEGIN mpiexec ###
     def make_mpiexec(self):
@@ -792,7 +811,8 @@ class MPI(object):
                 self.log.debug("make_mpiexe_hydra_options: HYDRA: rmk %s, using first" % rmk)
                 self.mpiexec_options.append("-rmk %s" % rmk[0])
             else:
-                self.log.debug("make_mpiexe_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s" % (self.HYDRA_RMK, self.hydra_info))
+                self.log.debug("make_mpiexe_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s" %
+                               (self.HYDRA_RMK, self.hydra_info))
         else:
             launcher = None
             if getattr(self, 'HYDRA_LAUNCHER', None) is not None:
@@ -800,7 +820,8 @@ class MPI(object):
                 if len(launcher) > 0:
                     self.log.debug("make_mpiexec_hydra_options: HYDRA: launcher %s, using first one" % launcher)
                 else:
-                    self.log.debug("make_mpiexe_hydra_options: no launcher from HYDRA_LAUNCHER %s and hydra_info %s" % (self.HYDRA_LAUNCHER, self.hydra_info))
+                    self.log.debug("make_mpiexe_hydra_options: no launcher from HYDRA_LAUNCHER %s and hydra_info %s" %
+                                   (self.HYDRA_LAUNCHER, self.hydra_info))
 
             launcher_exec = self.HYDRA_LAUNCHER_EXEC
             if launcher is None or len(launcher) == 0:
@@ -825,11 +846,13 @@ class MPI(object):
         for r in reg_hydra_info.finditer(out):
             key = r.groupdict()['key']
             if key is None:
-                self.log.raiseException("get_hydra_info: failed to get hydra info: missing key in %s (out: %s)" % (r.groupdict(), out))
+                self.log.raiseException("get_hydra_info: failed to get hydra info: missing key in %s (out: %s)" %
+                                        (r.groupdict(), out))
             key = key.strip().lower()
             value = r.groupdict()['value']
             if value is None:
-                self.log.debug("get_hydra_info: failed to get hydra info: missing value in %s (out: %s)" % (r.groupdict(), out))
+                self.log.debug("get_hydra_info: failed to get hydra info: missing value in %s (out: %s)" %
+                               (r.groupdict(), out))
                 value = ''
             values = [x.strip().strip('"').strip("'") for x in value.split() if len(x.strip()) > 0]
             hydra_info[key] = values
@@ -847,7 +870,8 @@ class MPI(object):
                 continue
             else:
                 if len(matches) > 1:
-                    self.log.warning("get_hydra_info: more then one match %s found for newkey %s regtxt %s hydrainfo %s" % (matches, newkey, regtxt, hydra_info))
+                    self.log.warning(("get_hydra_info: more then one match %s found for newkey %s "
+                                      "regtxt %s hydrainfo %s") % (matches, newkey, regtxt, hydra_info))
                 self.hydra_info[newkey] = matches[0]
 
         self.log.debug("get_hydra_info: filtered info %s" % self.hydra_info)
@@ -891,7 +915,8 @@ class MPI(object):
             else:
                 global_options.append(self.MPIEXEC_TEMPLATE_GOBAL_OPTION % {'name':k, "value":v})
 
-        self.log.debug("mpiexec_get_global_options: template %s return options %s" % (self.MPIEXEC_TEMPLATE_GOBAL_OPTION, global_options))
+        self.log.debug("mpiexec_get_global_options: template %s return options %s" %
+                       (self.MPIEXEC_TEMPLATE_GOBAL_OPTION, global_options))
         return global_options
 
     def mpiexec_get_local_options(self):
@@ -905,21 +930,26 @@ class MPI(object):
             else:
                 local_options.append(self.MPIEXEC_TEMPLATE_LOCAL_OPTION % {'name':k, "value":v})
 
-        self.log.debug("mpiexec_get_local_options: templates %s return options %s" % (self.MPIEXEC_TEMPLATE_LOCAL_OPTION, local_options))
+        self.log.debug("mpiexec_get_local_options: templates %s return options %s" %
+                       (self.MPIEXEC_TEMPLATE_LOCAL_OPTION, local_options))
         return local_options
 
     def mpiexec_get_local_pass_variable_options(self):
         """Create the local options to pass environment vaiables through mpiexec
         """
-        self.log.debug("mpiexec_get_local_pass_variable_options: variables (and current value) to pass: %s" % ([ [x, os.environ[x]] for x in self.mpiexec_pass_environment]))
+        self.log.debug("mpiexec_get_local_pass_variable_options: variables (and current value) to pass: %s" %
+                       ([ [x, os.environ[x]] for x in self.mpiexec_pass_environment]))
 
         if '%(commaseparated)s' in self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION:
             self.log.debug("mpiexec_get_local_pass_variable_options: found commaseparated in template.")
-            local_pass_options = [self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION % {'commaseparated': ','.join(self.mpiexec_pass_environment)}]
+            local_pass_options = [self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION %
+                                  {'commaseparated': ','.join(self.mpiexec_pass_environment)}]
         else:
-            local_pass_options = [self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION % {'name':x, 'value':os.environ[x]} for x in self.mpiexec_pass_environment]
+            local_pass_options = [self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION %
+                                  {'name':x, 'value':os.environ[x]} for x in self.mpiexec_pass_environment]
 
-        self.log.debug("mpiexec_get_local_pass_variable_options: template %s return options %s" % (self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION, local_pass_options))
+        self.log.debug("mpiexec_get_local_pass_variable_options: template %s return options %s" %
+                       (self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION, local_pass_options))
         return local_pass_options
 
 
