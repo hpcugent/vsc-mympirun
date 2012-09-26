@@ -20,9 +20,10 @@
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
 ##
 
-from vsc.mympirun.exceptions import WrongPythonVersionExcpetion, InitImportException
-import intelmpi, mpich, openmpi, qlogicmpi
-try:
-    import myscoop
-except (WrongPythonVersionExcpetion, InitImportException):
-    pass  # Semi harmless
+class WrongPythonVersionExcpetion(Exception):
+    """Raise an exception related to wrong python version"""
+    pass
+
+class InitImportException(Exception):
+    """Raise an import exception to be captured in __init__ phase"""
+    pass

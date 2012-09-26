@@ -31,30 +31,29 @@ Code is very lightweight.
 """
 import sys
 import os
-from scoop.broker import Broker
+import subprocess  # TODO replace with run module
 from threading import Thread
-from vsc.mympirun.mpi.mpi import MPI, _versioncheck
-from vsc.utils.run import run_simple
-
-
+from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.exceptions import WrongPythonVersionExcpetion, InitImportException
 
 from vsc.fancylogger import getLogger
-_logger = getLogger("SCOOP")
+_logger = getLogger("MYSCOOP")
 
 try:
     import scoop
+    from scoop.broker import Broker
 except:
-    _logger.raiseException("SCOOP requires the scoop module and scoop requires (amongst others) pyzmq")
+    _logger.raiseException("MYSCOOP requires the scoop module and scoop requires (amongst others) pyzmq", InitImportException)
 
 ## requires Python 2.6 at least (str.format)
 if sys.version_info[0] == 2 and sys.version_info[1] < 6:
-    _logger.raiseException("SCOOP requires python 2.6 or later")
+    _logger.raiseException("MYSCOOP / scoop requires python 2.6 or later", WrongPythonVersionExcpetion)
 
-class SCOOP(MPI, MyLaunchScoop):
+class MYSCOOP(MPI):
     """Re-implement the launchScoop class from scoop.__main__"""
     SCOOP_WORKER_DIGITS = 5 ## 100k workers
-    SCOOP_DEFAULT_EXECUTABLE =
-    SCOOP_BOOTSTRAP_MODULE = 'vsc.mympirun.mpi.scoop'  ## this module # used to be "scoop.bootstrap.__main__"
+    SCOOP_DEFAULT_EXECUTABLE = None
+    SCOOP_BOOTSTRAP_MODULE = 'vsc.mympirun.mpi.myscoop'  ## this module # used to be "scoop.bootstrap.__main__"
 
     _mpiscriptname_for = ['myscoop']
 
@@ -69,31 +68,31 @@ class SCOOP(MPI, MyLaunchScoop):
                      'description': ('SCOOP options', 'Advanced options specific for SCOOP'),
                      }
     def __init__(self, options, cmdargs, **kwargs):
-        super(SCOOP, self).__init__()
+        super(MYSCOOP, self).__init__(options, cmdargs, **kwargs)
 
         ## all SCOOP options are ready can be added on command line ? (add them to RUNTIMEOPTION)
-        self.scoop_size = self.options.getattr('scoop_size', self.mpitotalppn * self.nr_uniquenodes)
-        self.scoop_hosts = self.options.getattr('scoop_hosts', self.mpinodes)
-        self.scoop_python = self.options.getattr('scoop_python', sys.executable)
+        self.scoop_size = getattr(self.options, 'scoop_size', None)
+        self.scoop_hosts = getattr(self.options, 'scoop_hosts', None)
+        self.scoop_python = getattr(self.options, 'scoop_python', sys.executable)
 
-        self.scoop_executable = self.options.getattr('scoop_executable', self.SCOOP_DEFAULT_EXECUTABLE)
-        self.scoop_args = self.options.getattr('scoop_args', [])
+        self.scoop_executable = getattr(self.options, 'scoop_executable', self.SCOOP_DEFAULT_EXECUTABLE)
+        self.scoop_args = getattr(self.options, 'scoop_args', [])
 
-        self.scoop_nice = self.options.getattr('scoop_nice', 0)
-        self.scoop_affinity = self.options.getattr('scoop_affinity', None)
-        self.scoop_affinity = self.options.getattr('scoop_path', os.getcwd())
+        self.scoop_nice = getattr(self.options, 'scoop_nice', 0)
+        self.scoop_affinity = getattr(self.options, 'scoop_affinity', None)
+        self.scoop_path = getattr(self.options, 'scoop_path', os.getcwd())
 
         ## default broker is first of unique nodes ?
-        self.scoop_broker = self.options.getattr('scoop_broker', self.uniquenodes[0])
-        self.scoop_brokerport = self.options.getattr('scoop_brokerport', None)
+        self.scoop_broker = getattr(self.options, 'scoop_broker', None)
+        self.scoop_brokerport = getattr(self.options, 'scoop_brokerport', None)
 
-        self.scoop_infobroker = self.options.getattr('scoop_infobroker', self.scoop_broker)
-        self.scoop_infoport = self.options.getattr('scoop_brokerport', None)
+        self.scoop_infobroker = getattr(self.options, 'scoop_infobroker', self.scoop_broker)
+        self.scoop_infoport = getattr(self.options, 'scoop_brokerport', None)
 
-        self.scoop_origin = self.options.getattr('scoop_origin', False)
-        self.scoop_debug = self.options.getattr('scoop_debug', self.options.debug)
+        self.scoop_origin = getattr(self.options, 'scoop_origin', False)
+        self.scoop_debug = getattr(self.options, 'scoop_debug', self.options.debug)
 
-        self.scoop_tunnel = self.options.getattr('scoop_tunnel', False)
+        self.scoop_tunnel = getattr(self.options, 'scoop_tunnel', False)
 
         self.scoop_remote = {}
         self.scoop_workers_free = None
@@ -111,13 +110,13 @@ class SCOOP(MPI, MyLaunchScoop):
     def scoop_prepare(self):
         """Prepare the scoop parameters and commands"""
         ## self.mpinodes is the node list to use
-        if self.options.broker is None:
+        if self.scoop_broker is None:
             if self.mpdboot_localhost_interface is None:
                 self.mpdboot_set_localhost_interface()
-            self.options.broker = self.mpdboot_localhost_interface[0]
+            self.scoop_broker = self.mpdboot_localhost_interface[0]
 
         if self.scoop_size is None:
-            self.scoop_size = self.mpitotalppn * self.nr_uniquenodes
+            self.scoop_size = self.mpitotalppn * self.nruniquenodes
         if self.scoop_hosts is None:
             self.scoop_hosts = self.mpinodes
 
@@ -140,7 +139,7 @@ class SCOOP(MPI, MyLaunchScoop):
             self.log.debug('scoop_get_debug: set debug on')
             return "--debug"
 
-    def scoop_launch_foreign(self, w_id, affintiy=None):
+    def scoop_launch_foreign(self, w_id, affinity=None):
         """Create the foreign launch command
             similar to __main__.launchForeign
                 assumes nodes can ssh into themself
@@ -152,7 +151,7 @@ class SCOOP(MPI, MyLaunchScoop):
             cmd_affinity = ["--affinity", affinity]
         c = [self.scoop_python,
              "-m ", self.SCOOP_BOOTSTRAP_MODULE,
-             "--workerName", "worker{0:0{width}}".format(w_id, width=self.WORKER_DIGITS),
+             "--workerName", "worker{0:0{width}}".format(w_id, width=self.SCOOP_WORKER_DIGITS),
              "--brokerName", "broker",
              "--brokerAddress", "tcp://{brokerHostname}:{brokerPort}".format(
                                         brokerHostname=self.scoop_broker,
@@ -163,11 +162,11 @@ class SCOOP(MPI, MyLaunchScoop):
              "--size", str(self.scoop_size),
              "--startfrom", self.scoop_path,
              "--nice", self.scoop_nice,
-             self.get_origin(),
-             self.get_debug(),
+             self.scoop_get_origin(),
+             self.scoop_get_debug(),
              ] + cmd_affinity + [self.scoop_executable] + self.scoop_args
         self.log.debug("scoop_launch_foreign: command c %s" % c)
-        return c
+        return ["%s" % x for x in c]
 
 
     def scoop_start_broker(self):
@@ -184,26 +183,33 @@ class SCOOP(MPI, MyLaunchScoop):
             ## TODO: see if we can join an existing broker (better yet, lets assume it is running and try to guess the ports)
             self.log.raiseException("scoop_start_broker: remote code not implemented")
 
+    def scoop_get_affinity(self, w_id, u_id):
+        """Determine the affinity of the scoop wroker
+            w_id is the total workerid
+            u_id is the index in the uniquehosts list
+        """
+        return u_id  # TODO: assumes 1 core per proc. what with hybrid etc etc
 
     def scoop_launch(self):
         # Launching the local broker, repeat until it works
         self.log.debug("scoop_run: initialising local broker.")
-        self.start_broker()
-        self.log.debug("scoop_run: local broker launched on borkerport {0}, infoport {1}"
+        self.scoop_start_broker()
+        self.log.debug("scoop_run: local broker launched on brokerport {0}, infoport {1}"
                       ".".format(self.scoop_brokerport, self.scoop_infoport))
 
         # Launch the workers in mpitotalppn batches on each unique node
         if self.scoop_workers_free is None:
-            self.scoop_workers_free = len(mpinodes)
+            self.scoop_workers_free = len(self.mpinodes)
 
         shell = None
         w_id = -1
-        for host in self.uniquehosts:
+        for host in self.uniquenodes:
             command = []
             for n in range(min(self.scoop_workers_free, self.mpitotalppn)):
                 self.scoop_workers_free -= 1
                 w_id += 1
-                command.append(self.make_launch_foreign(w_id, affinity=affinity))
+                affinity = self.scoop_get_affinity(n, w_id)
+                command.append(self.scoop_launch_foreign(w_id, affinity=affinity))
             # Launch every remote hosts at the same time
             if len(command) != 0:
                 ssh_command = ['ssh', '-x', '-n', '-oStrictHostKeyChecking=no']
@@ -216,7 +222,7 @@ class SCOOP(MPI, MyLaunchScoop):
                 full_cmd = " ".join([" ".join(cmd + ['&']) for cmd in command]) ## join all commands as background process
                 bash_cmd = " ".join([print_bash_pgid, '&&', full_cmd])
 
-                shell = subprocess.Popen(sh_command + [host, "bash", "-c", "'%s'" % bash_cmd],
+                shell = subprocess.Popen(ssh_command + [host, "bash", "-c", "'%s'" % bash_cmd],
                                          stdin=subprocess.PIPE,
                                          stdout=subprocess.PIPE)
                 self.scoop_remote[shell] = [host]
@@ -228,7 +234,8 @@ class SCOOP(MPI, MyLaunchScoop):
         # Get group id from remote connections
         for remote in self.scoop_remote.keys():
             gid = remote.stdout.readline().strip()
-            self.scoop_remote[sub_process].append(gid)
+            self.scoop_remote[remote].append(gid)
+        self.log.debug("scoop_run: found remotes and pgid %s" % self.scoop_remote.values())
 
         # Wait for the root program
         # shell is last one, containing the origin
@@ -237,18 +244,18 @@ class SCOOP(MPI, MyLaunchScoop):
             sys.stdout.write(data)
             sys.stdout.flush()
             ## one byte at a time ? TODO: use async reader
-            data = rootProcess.stdout.read(1)
+            data = shell.stdout.read(1)
 
     def scoop_close(self):
         # Ensure everything is cleaned up on exit
-        logging.debug('scoop_close: destroying remote elements...')
+        self.log.debug('scoop_close: destroying remote elements...')
         self.local_broker_process
 
         for data in self.scoop_remote.values():
             if len(data) > 1:
                 host, pid = data
                 ssh_command = ['ssh', '-x', '-n', '-oStrictHostKeyChecking=no', host]
-                kill_cmd = "kill -9 -%s &>/dev/null"
+                kill_cmd = "kill -9 -%s &>/dev/null" % pid  # kill -<level> -n : all processes in process group n are signaled.
 
                 self.log.debug("scoop_close: host %s kill %s" % (host, kill_cmd))
                 subprocess.Popen(ssh_command + ["bash", "-c", "'%s'" % kill_cmd]).wait()
@@ -258,12 +265,14 @@ class SCOOP(MPI, MyLaunchScoop):
         self.log.info('scoop_close: finished destroying spawned subprocesses.')
 
 
-    def run(self):
+    def scoop_run(self):
         """Run the launcher"""
 
         ## previous scoop.__main__ main()
         try:
             self.scoop_launch()
+        except:
+            self.log.exception("scoop_run: failure in scoop_launch")
         finally:
             self.scoop_close()
 

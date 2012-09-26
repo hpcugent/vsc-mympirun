@@ -49,29 +49,35 @@ def whatMPI(name):
     """
     fullscriptname = os.path.abspath(name)
     scriptname = os.path.basename(fullscriptname)
-
+    found_mpi = []
     for mpi in MPI.__subclasses__():
+        ## check child classes first
+        for mpi_c in mpi.__subclasses__():
+            for mpi_c_c in mpi_c.__subclasses__():  # TODO: 3 levels should be enough for everyone (well, 640k should;)
+                found_mpi.append(mpi_c_c)
+            found_mpi.append(mpi_c)
+
+        ## main last!
+        found_mpi.append(mpi)
+
+    ## check on scriptname
+    for mpi in found_mpi:
         if mpi._is_mpiscriptname_for(scriptname):
             stripfake() ## mandatory before return at this point
-            return scriptname, mpi
+            return scriptname, mpi, found_mpi
 
     ## not called through alias
     ## stripfake is in which
     mpirunname = which(['mpirun'])
     if mpirunname is None:
-        return None, None
+        return None, None, found_mpi
 
-    for mpi in MPI.__subclasses__():
-        ## check child classes first
-        for mpi_c in mpi.__subclasses__():
-            if mpi_c._is_mpirun_for(mpirunname):
-                return scriptname, mpi_c
-
+    for mpi in found_mpi:
         if mpi._is_mpirun_for(mpirunname):
-            return scriptname, mpi
+            return scriptname, mpi, found_mpi
 
     ## return found mpirunname
-    return mpirunname, None
+    return mpirunname, None, found_mpi
 
 
 def _setenv(name, value):
