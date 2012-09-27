@@ -23,6 +23,6 @@
 from vsc.mympirun.exceptions import WrongPythonVersionExcpetion, InitImportException
 import intelmpi, mpich, openmpi, qlogicmpi
 try:
-    import myscoop
+    import vsc.mympirun.scoop.myscoop
 except (WrongPythonVersionExcpetion, InitImportException):
     pass  # Semi harmless
