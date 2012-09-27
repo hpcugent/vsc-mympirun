@@ -49,6 +49,7 @@ class MympirunOption(GeneralOption):
     def make_init(self):
         ## "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
+                "showmpi":("Print the known MPI and exit", None, "store_true", False, 's'),
 
                 "debugmpi":("Enable MPI level debugging", None, "store_true", False),
                 "debuglvl":("Specify debug level", "int", "store", 0),

@@ -40,25 +40,36 @@ TODO:
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.mpi.mpi import whatMPI
 from vsc.mympirun.rm.sched import whatSched
-from vsc.fancylogger import getLogger
+from vsc.fancylogger import getLogger, setLogLevelInfo
 
 import sys, os
 
-logger = getLogger()
+_logger = getLogger()
+
+class ExitException(Exception):
+    """Raise and main sees this as regular exit"""
+    pass
 
 def getInstance():
     """Make an instance of the relevant MPI class. Also set the RM instance"""
-    scriptname, mpi = whatMPI(sys.argv[0])
+    scriptname, mpi, found_mpi = whatMPI(sys.argv[0])
 
     ismpirun = scriptname == 'mpirun'
 
     mo = MympirunOption(ismpirun=ismpirun)
 
+    found_mpi_names = [x.__name__ for x in found_mpi]
+
+    if mo.options.showmpi:
+        setLogLevelInfo()
+        _logger.info("Found MPI classes %s" % (", ".join(found_mpi_names)))
+        raise ExitException("Exit from showmpi")
+
     if mpi is None:
         mo.parser.print_shorthelp()
         mo.log.raiseException(("No MPI class found (scriptname %s; ismpirun %s). Please use mympirun through one "
-                               "of the direct calls or make sure the mpirun command can be found.") %
-                              (scriptname, ismpirun))
+                               "of the direct calls or make sure the mpirun command can be found. "
+                               "Found MPI %s") % (scriptname, ismpirun, ", ".join(found_mpi_names)))
     else:
         mo.log.debug("Found MPI class %s (scriptname %s; ismpirun %s)" % (mpi.__name__, scriptname, ismpirun))
 
@@ -83,10 +94,12 @@ if __name__ == '__main__':
         m = getInstance()
         m.main()
         ec = 0
+    except ExitException:
+        ec = 0
     except:
         ## TODO: cleanup, only catch known exceptions
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
-            logger.exception("Main failed")
+            _logger.exception("Main failed")
         ec = 1
 
     sys.exit(ec)
