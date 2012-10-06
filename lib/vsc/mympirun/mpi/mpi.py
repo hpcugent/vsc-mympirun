@@ -213,7 +213,7 @@ class MPI(object):
     #classmethod
     def _is_mpirun_for(cls, name):
         """see if this class can provide support for found mpirun"""
-        ## TODO report later in the initliasation the found version
+        ## TODO report later in the initialization the found version
         reg = re.compile(r"(?:%s)%s(\d+(?:\.\d+(?:\.\d+\S+)?)?)" % ("|".join(cls._mpirun_for), os.sep))
         r = reg.search(name)
         if r:
