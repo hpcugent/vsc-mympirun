@@ -43,22 +43,25 @@ INSTALLATION_SUBDIRECTORY_NAME = 'mympirun'
 ## also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
+def get_subclasses(klass):
+    """
+    Get all subclasses recursively
+    """
+    res = []
+    for cl in klass.__subclasses__():
+        res.extend(get_subclasses(cl))
+        res.append(cl)
+    return res
+
 def whatMPI(name):
     """
     Return the scriptname and the MPI class
     """
     fullscriptname = os.path.abspath(name)
     scriptname = os.path.basename(fullscriptname)
-    found_mpi = []
-    for mpi in MPI.__subclasses__():
-        ## check child classes first
-        for mpi_c in mpi.__subclasses__():
-            for mpi_c_c in mpi_c.__subclasses__():  # TODO: 3 levels should be enough for everyone (well, 640k should;)
-                found_mpi.append(mpi_c_c)
-            found_mpi.append(mpi_c)
 
-        ## main last!
-        found_mpi.append(mpi)
+    found_mpi = get_subclasses(MPI)
+
 
     ## check on scriptname
     for mpi in found_mpi:

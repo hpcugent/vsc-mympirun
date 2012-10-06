@@ -58,12 +58,25 @@ def getInstance():
 
     mo = MympirunOption(ismpirun=ismpirun)
 
+    if mo.args is None or len(mo.args) == 0:
+        mo.parser.print_shorthelp()
+        raise ExitException("Exit no args provided")
+
+
+    sched, found_sched = whatSched(getattr(mo.options, 'schedtype', None))
+
     found_mpi_names = [x.__name__ for x in found_mpi]
+    found_sched_names = [x.__name__ for x in found_sched]
 
     if mo.options.showmpi:
         setLogLevelInfo()
         _logger.info("Found MPI classes %s" % (", ".join(found_mpi_names)))
         raise ExitException("Exit from showmpi")
+
+    if mo.options.showsched:
+        setLogLevelInfo()
+        _logger.info("Found Sched classes %s" % (", ".join(found_sched_names)))
+        raise ExitException("Exit from showsched")
 
     if mpi is None:
         mo.parser.print_shorthelp()
@@ -73,11 +86,12 @@ def getInstance():
     else:
         mo.log.debug("Found MPI class %s (scriptname %s; ismpirun %s)" % (mpi.__name__, scriptname, ismpirun))
 
-    sched = whatSched(getattr(mo.options, 'schedtype', None))
     if sched is None:
-        mo.log.raiseException("No sched class found (options.schedtype %s)" % mo.options.schedtype)
+        mo.log.raiseException("No sched class found (options.schedtype %s ; found Sched classes %s)" %
+                              (mo.options.schedtype, ", ".join(found_sched_names)))
     else:
-        mo.log.debug("Found sched class %s from options.schedtype %s)" % (sched.__name__, mo.options.schedtype))
+        mo.log.debug("Found sched class %s from options.schedtype %s (all Sched found %s)" %
+                     (sched.__name__, mo.options.schedtype, ", ".join(found_sched_names)))
 
     class M(mpi, sched):
         """Temporary class to couple MPI and local sched"""
