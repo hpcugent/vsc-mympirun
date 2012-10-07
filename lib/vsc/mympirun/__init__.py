@@ -19,3 +19,5 @@
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
 ##
+import pkg_resources
+pkg_resources.declare_namespace(__name__)

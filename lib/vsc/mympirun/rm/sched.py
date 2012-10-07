@@ -26,20 +26,23 @@ Main sched class
 
 
 from vsc.fancylogger import getLogger
+from vsc.mympirun.mpi.mpi import get_subclasses
 import os, re
 import random
 
 def whatSched(requested):
     """Return the scheduler class"""
-    for sched in Sched.__subclasses__():
+    found_sched = get_subclasses(Sched)
+    for sched in found_sched:
         #print sched.__name__, requested
         if sched._is_sched_for(requested):
-            return sched
+            return sched, found_sched
+    return None, found_sched
 
 
 class Sched(object):
     """General class for scheduler/resource manager related functions."""
-    _sched_for = []
+    _sched_for = []  # classname is default added
     _sched_environ_test = []
     _sched_environ_id = None
 
@@ -98,7 +101,7 @@ class Sched(object):
     def _is_sched_for(cls, name=None):
         """see if this class can provide support for sched class"""
         if name is not None:
-            return name in cls._sched_for
+            return name in cls._sched_for + [cls.__name__] ## add class name as default
 
         ## guess it from environment
         totest = cls._sched_environ_test

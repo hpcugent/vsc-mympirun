@@ -43,6 +43,16 @@ INSTALLATION_SUBDIRECTORY_NAME = 'mympirun'
 ## also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
+def get_subclasses(klass):
+    """
+    Get all subclasses recursively
+    """
+    res = []
+    for cl in klass.__subclasses__():
+        res.extend(get_subclasses(cl))
+        res.append(cl)
+    return res
+
 def whatMPI(name):
     """
     Return the scriptname and the MPI class
@@ -50,28 +60,27 @@ def whatMPI(name):
     fullscriptname = os.path.abspath(name)
     scriptname = os.path.basename(fullscriptname)
 
-    for mpi in MPI.__subclasses__():
+    found_mpi = get_subclasses(MPI)
+
+
+    ## check on scriptname
+    for mpi in found_mpi:
         if mpi._is_mpiscriptname_for(scriptname):
             stripfake() ## mandatory before return at this point
-            return scriptname, mpi
+            return scriptname, mpi, found_mpi
 
     ## not called through alias
     ## stripfake is in which
     mpirunname = which(['mpirun'])
     if mpirunname is None:
-        return None, None
+        return None, None, found_mpi
 
-    for mpi in MPI.__subclasses__():
-        ## check child classes first
-        for mpi_c in mpi.__subclasses__():
-            if mpi_c._is_mpirun_for(mpirunname):
-                return scriptname, mpi_c
-
+    for mpi in found_mpi:
         if mpi._is_mpirun_for(mpirunname):
-            return scriptname, mpi
+            return scriptname, mpi, found_mpi
 
     ## return found mpirunname
-    return mpirunname, None
+    return mpirunname, None, found_mpi
 
 
 def _setenv(name, value):
@@ -204,6 +213,7 @@ class MPI(object):
     #classmethod
     def _is_mpirun_for(cls, name):
         """see if this class can provide support for found mpirun"""
+        ## TODO report later in the initialization the found version
         reg = re.compile(r"(?:%s)%s(\d+(?:\.\d+(?:\.\d+\S+)?)?)" % ("|".join(cls._mpirun_for), os.sep))
         r = reg.search(name)
         if r:
