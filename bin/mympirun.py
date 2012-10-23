@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 ##
-# Copyright 2011-2012 Stijnd De Weirdt
+# Copyright 2009-2012 Stijn De Weirdt
 #
 # This file is part of VSC-tools,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
