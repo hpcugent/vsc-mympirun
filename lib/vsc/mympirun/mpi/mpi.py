@@ -159,10 +159,12 @@ class MPI(object):
     PINNING_OVERRIDE_TYPE_DEFAULT = None
 
     MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME = "--rsh=%(rsh)s"
+    MPDBOOT_OPTIONS = []
 
     MPIEXEC_TEMPLATE_GOBAL_OPTION = "-genv %(name)s %(value)s"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "-env %(name)s %(value)s"
     MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-x %(name)s"
+    MPIEXEC_OPTIONS = []
 
     GLOBAL_VARIABLES_ENVIRONMENT_MODULES = ['MODULEPATH', 'LOADEDMODULES', 'MODULESHOME']
 
@@ -727,7 +729,7 @@ class MPI(object):
     def make_mpdboot_options(self):
         """Make the mpdboot options. Customise this method."""
         ## the mpdboot options
-        self.mpdboot_options = []
+        self.mpdboot_options = self.MPDBOOT_OPTIONS[:]
 
         ## uniq hosts with ifhn for mpdboot start
         self.mpdboot_options.append("--file=%s" % self.mpdboot_node_filename)
@@ -786,11 +788,9 @@ class MPI(object):
 
         self.log.debug("make_mpiexec set options %s" % self.mpiexec_options)
 
-
-
     def make_mpiexec_options(self):
         """The mpiexec options"""
-        self.mpiexec_options = []
+        self.mpiexec_options = self.MPIEXEC_OPTIONS[:]
 
         if self.HYDRA:
             self.make_mpiexec_hydra_options()
@@ -967,7 +967,6 @@ class MPI(object):
 
 
     ### BEGIN mpirun ###
-
     def make_mpirun(self):
         """Make the mpirun command (or whatever). It typically consists of a mpdboot and a mpiexec part"""
 
@@ -975,8 +974,8 @@ class MPI(object):
 
         self._make_final_mpirun_cmd()
         if self.options.mpirunoptions is not None:
-            self.log.debug("make_mpirun: added user provided options %s" % self.options.mpirunopts)
-            self.mpirun_cmd.append(self.options.mpirunopts)
+            self.log.debug("make_mpirun: added user provided options %s" % self.options.mpirunoptions)
+            self.mpirun_cmd.append(self.options.mpirunoptions)
 
         if self.pinning_override_type is not None:
             p_o = self.pinning_override()
