@@ -1006,4 +1006,4 @@ class MPI(object):
             else:
                 return run_async_to_stdout(cmd)
 
-        return [(main_runfunc, " ".join(self.mpirun_cmd))]
+        return [(main_runfunc, self.mpirun_cmd)]
