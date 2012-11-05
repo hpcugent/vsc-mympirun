@@ -37,6 +37,7 @@ import shutil
 import time
 import resource
 import stat
+import subprocess
 
 ## Going to guess myself
 
@@ -985,7 +986,11 @@ class MPI(object):
                 self.mpirun_cmd += [p_o]
 
         ## the executable
-        self.mpirun_cmd += self.cmdargs
+        ## use undocumented subprocess API call to quote whitespace (executed with Popen(shell=True))
+        ## (see http://stackoverflow.com/questions/4748344/whats-the-reverse-of-shlex-split for alternatives if needed)
+        quoted_args_string = subprocess.list2cmdline(self.cmdargs)
+        self.log.debug("make_mpirun: adding cmdargs %s (quoted %s)" % (self.cmdargs, quoted_args_string))
+        self.mpirun_cmd.append(quoted_args_string)
 
     def _make_final_mpirun_cmd(self):
         """Create the acual mpirun command
