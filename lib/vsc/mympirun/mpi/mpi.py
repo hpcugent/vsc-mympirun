@@ -37,6 +37,7 @@ import shutil
 import time
 import resource
 import stat
+import subprocess
 
 ## Going to guess myself
 
@@ -159,10 +160,12 @@ class MPI(object):
     PINNING_OVERRIDE_TYPE_DEFAULT = None
 
     MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME = "--rsh=%(rsh)s"
+    MPDBOOT_OPTIONS = []
 
     MPIEXEC_TEMPLATE_GOBAL_OPTION = "-genv %(name)s %(value)s"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "-env %(name)s %(value)s"
     MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-x %(name)s"
+    MPIEXEC_OPTIONS = []
 
     GLOBAL_VARIABLES_ENVIRONMENT_MODULES = ['MODULEPATH', 'LOADEDMODULES', 'MODULESHOME']
 
@@ -727,7 +730,7 @@ class MPI(object):
     def make_mpdboot_options(self):
         """Make the mpdboot options. Customise this method."""
         ## the mpdboot options
-        self.mpdboot_options = []
+        self.mpdboot_options = self.MPDBOOT_OPTIONS[:]
 
         ## uniq hosts with ifhn for mpdboot start
         self.mpdboot_options.append("--file=%s" % self.mpdboot_node_filename)
@@ -786,11 +789,9 @@ class MPI(object):
 
         self.log.debug("make_mpiexec set options %s" % self.mpiexec_options)
 
-
-
     def make_mpiexec_options(self):
         """The mpiexec options"""
-        self.mpiexec_options = []
+        self.mpiexec_options = self.MPIEXEC_OPTIONS[:]
 
         if self.HYDRA:
             self.make_mpiexec_hydra_options()
@@ -967,7 +968,6 @@ class MPI(object):
 
 
     ### BEGIN mpirun ###
-
     def make_mpirun(self):
         """Make the mpirun command (or whatever). It typically consists of a mpdboot and a mpiexec part"""
 
@@ -975,8 +975,8 @@ class MPI(object):
 
         self._make_final_mpirun_cmd()
         if self.options.mpirunoptions is not None:
-            self.log.debug("make_mpirun: added user provided options %s" % self.options.mpirunopts)
-            self.mpirun_cmd.append(self.options.mpirunopts)
+            self.log.debug("make_mpirun: added user provided options %s" % self.options.mpirunoptions)
+            self.mpirun_cmd.append(self.options.mpirunoptions)
 
         if self.pinning_override_type is not None:
             p_o = self.pinning_override()
@@ -986,7 +986,11 @@ class MPI(object):
                 self.mpirun_cmd += [p_o]
 
         ## the executable
-        self.mpirun_cmd += self.cmdargs
+        ## use undocumented subprocess API call to quote whitespace (executed with Popen(shell=True))
+        ## (see http://stackoverflow.com/questions/4748344/whats-the-reverse-of-shlex-split for alternatives if needed)
+        quoted_args_string = subprocess.list2cmdline(self.cmdargs)
+        self.log.debug("make_mpirun: adding cmdargs %s (quoted %s)" % (self.cmdargs, quoted_args_string))
+        self.mpirun_cmd.append(quoted_args_string)
 
     def _make_final_mpirun_cmd(self):
         """Create the acual mpirun command
@@ -1007,4 +1011,4 @@ class MPI(object):
             else:
                 return run_async_to_stdout(cmd)
 
-        return [(main_runfunc, " ".join(self.mpirun_cmd))]
+        return [(main_runfunc, self.mpirun_cmd)]
