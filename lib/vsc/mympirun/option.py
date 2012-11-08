@@ -28,7 +28,7 @@
 Optionparser for mympirun
 """
 
-from vsc.generaloption import GeneralOption
+from vsc.utils.generaloption import GeneralOption
 from vsc.mympirun.mpi.mpi import MPI
 import sys
 
