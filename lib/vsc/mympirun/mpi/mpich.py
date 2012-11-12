@@ -1,9 +1,13 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2011-2012 Ghent University
+# Copyright 2011-2012 Stijn De Weirdt
 #
 # This file is part of VSC-tools,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
-#
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/VSC-tools
 #
@@ -11,7 +15,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation v2.
 #
-# EasyBuild is distributed in the hope that it will be useful,
+# VSC-tools is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
@@ -111,6 +115,13 @@ class MPICH2Hydra(MVAPICH2Hydra):
 
     PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
 
+    def mpiexec_get_global_options(self):
+        # add pinning
+        options = super(MPICH2Hydra, self).mpiexec_get_global_options()
+        if self.options.pinmpi:
+            options.extend(['-binding', 'rr' , '-topolib' , 'hwloc'])
+        return options
+
 class MPICH2(MVAPICH2):
     _mpiscriptname_for = ['m2mpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
@@ -119,3 +130,9 @@ class MPICH2(MVAPICH2):
 
     PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
 
+    def mpiexec_get_global_options(self):
+        # add pinning
+        options = super(MPICH2Hydra, self).mpiexec_get_global_options()
+        if self.options.pinmpi:
+            options.extend(['-binding', 'rr' , '-topolib' , 'hwloc'])
+        return options

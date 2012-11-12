@@ -1,9 +1,13 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 #
 # This file is part of VSC-tools,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
-#
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/VSC-tools
 #
@@ -11,7 +15,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation v2.
 #
-# EasyBuild is distributed in the hope that it will be useful,
+# VSC-tools is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
@@ -24,9 +28,9 @@
 Optionparser for mympirun
 """
 
-from vsc.generaloption import GeneralOption
-from vsc.mympirun.mpi.mpi import MPI
 import sys
+from vsc.mympirun.mpi.mpi import MPI
+from vsc.utils.generaloption import GeneralOption
 
 ## introduce usage / -u option. (original has -h for --hybrid)
 ## TODO: generate real message with possible alias + mention all supported versions
@@ -49,6 +53,8 @@ class MympirunOption(GeneralOption):
     def make_init(self):
         ## "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
+                "showmpi":("Print the known MPI classes and exit", None, "store_true", False, 'm'),
+                "showsched":("Print the known Sched classes and exit", None, "store_true", False, 's'),
 
                 "debugmpi":("Enable MPI level debugging", None, "store_true", False),
                 "debuglvl":("Specify debug level", "int", "store", 0),
@@ -70,7 +76,8 @@ class MympirunOption(GeneralOption):
                          "str", "store", None),
                 "basepath":("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
                             "str", "store", None),
-                "pinmpi":("Enable MPI pinning", None, "store_false", None), # don't set it by default. It will be set if needed
+                ## legacy naming
+                "pinmpi":("Disable MPI pinning", None, "store_false", None), # don't set it by default. It will be set if needed
 
                 "rdma":("Force rdma device", None, "store_true", None),
                 "socket":("Force socket device", None, "store_true", None),

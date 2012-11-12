@@ -1,9 +1,13 @@
 ##
-# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2011-2012 Ghent University
+# Copyright 2011-2012 Stijn De Weirdt
 #
 # This file is part of VSC-tools,
-# originally created by the HPC team of the University of Ghent (http://ugent.be/hpc).
-#
+# originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
+# with support of Ghent University (http://ugent.be/hpc),
+# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
+# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/VSC-tools
 #
@@ -11,7 +15,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation v2.
 #
-# EasyBuild is distributed in the hope that it will be useful,
+# VSC-tools is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
@@ -34,6 +38,7 @@ import shutil
 import time
 import resource
 import stat
+import subprocess
 
 ## Going to guess myself
 
@@ -43,6 +48,16 @@ INSTALLATION_SUBDIRECTORY_NAME = 'mympirun'
 ## also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
+def get_subclasses(klass):
+    """
+    Get all subclasses recursively
+    """
+    res = []
+    for cl in klass.__subclasses__():
+        res.extend(get_subclasses(cl))
+        res.append(cl)
+    return res
+
 def whatMPI(name):
     """
     Return the scriptname and the MPI class
@@ -50,28 +65,27 @@ def whatMPI(name):
     fullscriptname = os.path.abspath(name)
     scriptname = os.path.basename(fullscriptname)
 
-    for mpi in MPI.__subclasses__():
+    found_mpi = get_subclasses(MPI)
+
+
+    ## check on scriptname
+    for mpi in found_mpi:
         if mpi._is_mpiscriptname_for(scriptname):
             stripfake() ## mandatory before return at this point
-            return scriptname, mpi
+            return scriptname, mpi, found_mpi
 
     ## not called through alias
     ## stripfake is in which
     mpirunname = which(['mpirun'])
     if mpirunname is None:
-        return None, None
+        return None, None, found_mpi
 
-    for mpi in MPI.__subclasses__():
-        ## check child classes first
-        for mpi_c in mpi.__subclasses__():
-            if mpi_c._is_mpirun_for(mpirunname):
-                return scriptname, mpi_c
-
+    for mpi in found_mpi:
         if mpi._is_mpirun_for(mpirunname):
-            return scriptname, mpi
+            return scriptname, mpi, found_mpi
 
     ## return found mpirunname
-    return mpirunname, None
+    return mpirunname, None, found_mpi
 
 
 def _setenv(name, value):
@@ -147,10 +161,12 @@ class MPI(object):
     PINNING_OVERRIDE_TYPE_DEFAULT = None
 
     MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME = "--rsh=%(rsh)s"
+    MPDBOOT_OPTIONS = []
 
     MPIEXEC_TEMPLATE_GOBAL_OPTION = "-genv %(name)s %(value)s"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "-env %(name)s %(value)s"
     MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-x %(name)s"
+    MPIEXEC_OPTIONS = []
 
     GLOBAL_VARIABLES_ENVIRONMENT_MODULES = ['MODULEPATH', 'LOADEDMODULES', 'MODULESHOME']
 
@@ -204,6 +220,7 @@ class MPI(object):
     #classmethod
     def _is_mpirun_for(cls, name):
         """see if this class can provide support for found mpirun"""
+        ## TODO report later in the initialization the found version
         reg = re.compile(r"(?:%s)%s(\d+(?:\.\d+(?:\.\d+\S+)?)?)" % ("|".join(cls._mpirun_for), os.sep))
         r = reg.search(name)
         if r:
@@ -714,7 +731,7 @@ class MPI(object):
     def make_mpdboot_options(self):
         """Make the mpdboot options. Customise this method."""
         ## the mpdboot options
-        self.mpdboot_options = []
+        self.mpdboot_options = self.MPDBOOT_OPTIONS[:]
 
         ## uniq hosts with ifhn for mpdboot start
         self.mpdboot_options.append("--file=%s" % self.mpdboot_node_filename)
@@ -773,11 +790,9 @@ class MPI(object):
 
         self.log.debug("make_mpiexec set options %s" % self.mpiexec_options)
 
-
-
     def make_mpiexec_options(self):
         """The mpiexec options"""
-        self.mpiexec_options = []
+        self.mpiexec_options = self.MPIEXEC_OPTIONS[:]
 
         if self.HYDRA:
             self.make_mpiexec_hydra_options()
@@ -954,7 +969,6 @@ class MPI(object):
 
 
     ### BEGIN mpirun ###
-
     def make_mpirun(self):
         """Make the mpirun command (or whatever). It typically consists of a mpdboot and a mpiexec part"""
 
@@ -962,8 +976,8 @@ class MPI(object):
 
         self._make_final_mpirun_cmd()
         if self.options.mpirunoptions is not None:
-            self.log.debug("make_mpirun: added user provided options %s" % self.options.mpirunopts)
-            self.mpirun_cmd.append(self.options.mpirunopts)
+            self.log.debug("make_mpirun: added user provided options %s" % self.options.mpirunoptions)
+            self.mpirun_cmd.append(self.options.mpirunoptions)
 
         if self.pinning_override_type is not None:
             p_o = self.pinning_override()
@@ -973,7 +987,11 @@ class MPI(object):
                 self.mpirun_cmd += [p_o]
 
         ## the executable
-        self.mpirun_cmd += self.cmdargs
+        ## use undocumented subprocess API call to quote whitespace (executed with Popen(shell=True))
+        ## (see http://stackoverflow.com/questions/4748344/whats-the-reverse-of-shlex-split for alternatives if needed)
+        quoted_args_string = subprocess.list2cmdline(self.cmdargs)
+        self.log.debug("make_mpirun: adding cmdargs %s (quoted %s)" % (self.cmdargs, quoted_args_string))
+        self.mpirun_cmd.append(quoted_args_string)
 
     def _make_final_mpirun_cmd(self):
         """Create the acual mpirun command
@@ -994,4 +1012,4 @@ class MPI(object):
             else:
                 return run_async_to_stdout(cmd)
 
-        return [(main_runfunc, " ".join(self.mpirun_cmd))]
+        return [(main_runfunc, self.mpirun_cmd)]
