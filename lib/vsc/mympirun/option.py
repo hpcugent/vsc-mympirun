@@ -1,4 +1,5 @@
 ##
+# Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 #
 # This file is part of VSC-tools,
@@ -27,9 +28,9 @@
 Optionparser for mympirun
 """
 
-from vsc.generaloption import GeneralOption
-from vsc.mympirun.mpi.mpi import MPI
 import sys
+from vsc.mympirun.mpi.mpi import MPI
+from vsc.utils.generaloption import GeneralOption
 
 ## introduce usage / -u option. (original has -h for --hybrid)
 ## TODO: generate real message with possible alias + mention all supported versions
@@ -75,7 +76,8 @@ class MympirunOption(GeneralOption):
                          "str", "store", None),
                 "basepath":("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
                             "str", "store", None),
-                "pinmpi":("Enable MPI pinning", None, "store_false", None), # don't set it by default. It will be set if needed
+                ## legacy naming
+                "pinmpi":("Disable MPI pinning", None, "store_false", None), # don't set it by default. It will be set if needed
 
                 "rdma":("Force rdma device", None, "store_true", None),
                 "socket":("Force socket device", None, "store_true", None),

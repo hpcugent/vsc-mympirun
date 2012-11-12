@@ -1,4 +1,5 @@
 ##
+# Copyright 2011-2012 Ghent University
 # Copyright 2011-2012 Stijn De Weirdt
 #
 # This file is part of VSC-tools,
@@ -114,6 +115,13 @@ class MPICH2Hydra(MVAPICH2Hydra):
 
     PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
 
+    def mpiexec_get_global_options(self):
+        # add pinning
+        options = super(MPICH2Hydra, self).mpiexec_get_global_options()
+        if self.options.pinmpi:
+            options.extend(['-binding', 'rr' , '-topolib' , 'hwloc'])
+        return options
+
 class MPICH2(MVAPICH2):
     _mpiscriptname_for = ['m2mpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
@@ -122,3 +130,9 @@ class MPICH2(MVAPICH2):
 
     PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
 
+    def mpiexec_get_global_options(self):
+        # add pinning
+        options = super(MPICH2Hydra, self).mpiexec_get_global_options()
+        if self.options.pinmpi:
+            options.extend(['-binding', 'rr' , '-topolib' , 'hwloc'])
+        return options
