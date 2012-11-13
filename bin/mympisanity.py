@@ -117,6 +117,21 @@ def check():
             if not len(af) == int(omp):
                 log.error("OMP_NUM_THREADS set for rank %s to %s does not match affinity width %s" % (rank, omp, af))
 
+    ## check for mapping
+    for idx, x in enumerate(recvbuf):
+        next_idx = (idx + 1) % len(recvbuf)
+        if recvbuf[idx]['hostname'] == recvbuf[next_idx]['hostname']:
+            if not recvbuf[idx]['affinity'][-1] == recvbuf[next_idx]['affinity'][0] - 1:
+                log.error("No nn on same node for rank %s (aff %s) and next rank %s (aff %s)" %
+                          (idx, recvbuf[idx]['affinity'], next_idx, recvbuf[next_idx]['affinity']))
+        else:
+            if not recvbuf[next_idx]['affinity'][0] == 0:
+                log.error("No nn on different nodes for rank %s (hn %s aff %s) and next rank %s (hn %s aff %s)" %
+                           (idx, recvbuf[idx]['hostname'], recvbuf[idx]['affinity'],
+                            next_idx, recvbuf[next_idx]['hostname'], recvbuf[next_idx]['affinity'])
+                          )
+
+
 if __name__ == '__main__':
     log = getLogger('mympisanity')
     setLogLevelInfo()
