@@ -111,17 +111,20 @@ class MympirunOption(GeneralOption):
                                (mpi.__name__, prefix, descr, opts))
                 self.add_group_parser(opts, descr, prefix=prefix)
 
-    def parseoptions(self, optionsstring=sys.argv[1:]):
+    def parseoptions(self, options_list=None):
         """Handle mpirun mode:
             continue with reduced set of commandline options
             These options are the keys of optsToRemove.
             The values of optsToRemove are the number of arguments of these options, that also need to be removed.
         """
+        if options_list is None:
+            options_list = self.default_parseoptions()
+
         optsToRemove = {'-np':1,
                         '-machinefile':1
                         }
 
-        newopts = optionsstring[:]  ## copy
+        newopts = options_list[:]  ## copy
         if self.mpirunmode:
             for opt in optsToRemove.keys():
                 try:
