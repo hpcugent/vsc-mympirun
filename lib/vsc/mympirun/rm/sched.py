@@ -128,7 +128,11 @@ class Sched(object):
         if nodes is None:
             nodes = self.nodes
 
-        self.uniquenodes = set(nodes)
+        # don't use set(), preserve order!
+        self.uniquenodes = []
+        for n in nodes:
+            if not n in self.uniquenodes:
+                self.uniquenodes.append(n)
         self.nruniquenodes = len(self.uniquenodes)
 
         self.log.debug("get_unique_nodes: %s uniquenodes: %s from %s" % (self.nruniquenodes, self.uniquenodes, nodes))
