@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2011-2012 Ghent University
 # Copyright 2011-2012 Stijn De Weirdt
 #
@@ -22,14 +22,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 
 """
 Intel MPI specific class
 """
 
 from distutils.version import LooseVersion
-from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.mpi.mpi import MPI, which
 import os, re
 import socket
 
@@ -72,7 +72,6 @@ class IntelMPI(MPI):
     def get_pinning_override_variable(self):
         return 'PMI_RANK'
 
-
     def make_mpdboot_options(self):
         """Make the mpdboot options.
             bulletproof customisation
@@ -106,7 +105,7 @@ class IntelMPI(MPI):
         """Set mpiexec global options"""
         super(IntelMPI, self).mpiexec_set_global_options()
 
-        ## this one also needs to be set at runtime
+        # # this one also needs to be set at runtime
         self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = "/tmp"
         self._setenv('I_MPI_MPD_TMPDIR', "/tmp")
 
@@ -140,7 +139,7 @@ class IntelMPI(MPI):
 
             self.mpiexec_global_options["I_MPI_PIN_DOMAIN"] = "auto:compact"
 
-            ## this only affects libiomp5 usage (ie intel compilers!)
+            # # this only affects libiomp5 usage (ie intel compilers!)
             self.mpiexec_global_options["KMP_AFFINITY"] = "compact"
 
             """
@@ -160,8 +159,8 @@ class IntelMPI(MPI):
 
     def mpirun_prepare_execution(self):
         """Small change"""
-        ## intel mpi mpirun strips the --file otion for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
-        ## - we don't want that
+        # # intel mpi mpirun strips the --file otion for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
+        # # - we don't want that
         self._setenv('PBS_ENVIRONMENT', 'PBS_BATCH_MPI')
 
         return super(IntelMPI, self).mpirun_prepare_execution()
@@ -176,6 +175,10 @@ class IntelHydraMPI(IntelMPI):
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
 
+    def make_mpiexec_hydra_options(self):
+        super(IntelMPI, self).make_mpiexec_hydra_options()
+        self.mpiexec_options.append("-perhost %d" % self.mpitotalppn)
+
 class IntelLegacy(IntelMPI):
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("3.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
@@ -186,9 +189,9 @@ class IntelLegacy(IntelMPI):
         self.log.raiseException("Legacy code, information purposes only!")
         ans = []
 
-        ## disable tuning file!!
+        # # disable tuning file!!
         self.tune = False
-        ## set this to manually start mpdboot
+        # # set this to manually start mpdboot
         self.mpitotalnum = self.sched.nruniq
 
         opts = self.getmpdboot()
@@ -246,8 +249,8 @@ class IntelLegacy(IntelMPI):
             if not os.path.exists(tmpdir):
                 self.log.error("path with configfiles %s not found" % tmpdir)
                 return ans
-            ## <app>_<device>_nn_<#nodes>_np_<#processes>_ppn_<#processes/node>.conf
-            ## 2 factors: np and nn
+            # # <app>_<device>_nn_<#nodes>_np_<#processes>_ppn_<#processes/node>.conf
+            # # 2 factors: np and nn
             w = 10
             goal = w * (self.sched.nrnodes + 1) + (self.sched.nruniq + 1)
             mindist = 10 * 1000 * 1000
