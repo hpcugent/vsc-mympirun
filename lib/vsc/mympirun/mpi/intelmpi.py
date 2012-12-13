@@ -45,7 +45,9 @@ class IntelMPI(MPI):
     _mpirun_version = staticmethod(_mpirun_version)
 
     RUNTIMEOPTION = {'options':{'mpdbulletproof':("Start MPD in bulletproof", None, "store_true", False),
-                                'fallback':("Enable device fallback", None, "store_true", False), },
+                                'fallback':("Enable device fallback", None, "store_true", False),
+                                'daplud':("Enable DAPL UD connections", None, "store_true", False),
+                                },
                      'prefix':'impi',
                      'description': ('Intel MPI options', 'Advanced options specific for Intel MPI'),
                      }
@@ -71,6 +73,20 @@ class IntelMPI(MPI):
 
     def get_pinning_override_variable(self):
         return 'PMI_RANK'
+
+    def _enable_disable(self, bool):
+        """Return enable/disazble for boolean value"""
+        if bool:
+            return 'enable'
+        else:
+            return 'disable'
+
+    def _one_zero(self, bool):
+        """Return enable/disazble for boolean value"""
+        if bool:
+            return 1
+        else:
+            return 0
 
     def make_mpdboot_options(self):
         """Make the mpdboot options.
@@ -114,10 +130,7 @@ class IntelMPI(MPI):
         if self.options.stats > 0:
             self.mpiexec_global_options['I_MPI_STATS'] = self.options.stats
 
-        if self.options.impi_fallback:
-            self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = 1
-        else:
-            self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = 0
+        self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = self._one_zero(self.options.impi_fallback)
 
         if self.device == 'det':
             self.mpiexec_global_options['I_MPI_DAT_LIBRARY'] = "libdatdet.so"
@@ -129,10 +142,7 @@ class IntelMPI(MPI):
         if self.netmask:
             self.mpiexec_global_options['I_MPI_NETMASK'] = self.netmask
 
-        if self.options.pinmpi:
-            self.mpiexec_global_options['I_MPI_PIN'] = 1
-        else:
-            self.mpiexec_global_options['I_MPI_PIN'] = 0
+        self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = self._one_zero(self.options.pinmpi)
 
         if self.options.hybrid is not None and self.options.hybrid > 1:
             self.mpiexec_global_options["I_MPI_CPUINFO"] = "auto"
@@ -175,9 +185,26 @@ class IntelHydraMPI(IntelMPI):
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
 
+    DEVICE_MPIDEVICE_MAP = {'ib':'dapl:shm', 'det':'det', 'shm':'shm', 'socket':'sock'}
+
     def make_mpiexec_hydra_options(self):
         super(IntelMPI, self).make_mpiexec_hydra_options()
         self.mpiexec_options.append("-perhost %d" % self.mpitotalppn)
+
+
+    def mpiexec_set_global_options(self):
+        """Set mpiexec global options"""
+        super(IntelHydraMPI, self).mpiexec_set_global_options()
+        self.mpiexec_global_options['I_MPI_FALLBACK'] = self._enable_disable(self.options.impi_fallback)
+
+        if 'I_MPI_DEVICE' in self.mpiexec_global_options:
+            del self.mpiexec_global_options['I_MPI_DEVICE']
+        self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
+
+        self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero(self.mpitotal > 64)
+
+        self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enabel_disable(self.options.ipmi_daplud)
+
 
 class IntelLegacy(IntelMPI):
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("3.0.0")
