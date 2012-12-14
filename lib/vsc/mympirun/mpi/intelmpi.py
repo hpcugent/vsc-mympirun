@@ -201,9 +201,9 @@ class IntelHydraMPI(IntelMPI):
             del self.mpiexec_global_options['I_MPI_DEVICE']
         self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero(self.mpitotal > 64)
+        self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero((self.mpitotalppn * self.nruniquenodes) > 64)
 
-        self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enabel_disable(self.options.ipmi_daplud)
+        self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enable_disable(self.options.ipmi_daplud)
 
 
 class IntelLegacy(IntelMPI):
