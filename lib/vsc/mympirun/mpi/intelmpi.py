@@ -185,7 +185,7 @@ class IntelHydraMPI(IntelMPI):
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
 
-    DEVICE_MPIDEVICE_MAP = {'ib':'dapl:shm', 'det':'det', 'shm':'shm', 'socket':'sock'}
+    DEVICE_MPIDEVICE_MAP = {'ib':'shm:dapl', 'det':'det', 'shm':'shm', 'socket':'sock'}
 
     def make_mpiexec_hydra_options(self):
         super(IntelMPI, self).make_mpiexec_hydra_options()
