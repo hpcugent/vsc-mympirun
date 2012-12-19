@@ -162,7 +162,7 @@ class IntelMPI(MPI):
         if self.options.qlogic_ipath:
             if 'I_MPI_DEVICE' in self.mpiexec_global_options:
                 del self.mpiexec_global_options['I_MPI_DEVICE']
-            self.mpiexec_global_options['I_MPI_FABRICS'] = 'tmi'
+            self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:tmi'  # TODO shm:tmi or tmi
             self.mpiexec_global_options['I_MPI_TMI_PROVIDER'] = 'psm'
             if self.options.debuglvl > 0:
                 self.mpiexec_global_options['TMI_DEBUG'] = '1'
