@@ -338,9 +338,9 @@ class MPI(object):
 
         ipathpath = "/ipathfs/0"
         if os.path.isdir(ipathpath):
-            self.global_vars['PSM_SHAREDCONTEXTS'] = '0'
+            self.mpiexec_global_options['PSM_SHAREDCONTEXTS'] = '0'
             if self.options.debuglvl > 0:
-                self.global_vars['PSM_TRACEMASK'] = '0x101'
+                self.mpiexec_global_options['PSM_TRACEMASK'] = '0x101'
             self.log.debug("qlogic_ipath: ipath found %s" % ipathpath)
             self.options.qlogic_ipath = True
         else:
