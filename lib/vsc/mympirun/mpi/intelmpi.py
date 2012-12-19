@@ -199,7 +199,8 @@ class IntelHydraMPI(IntelMPI):
 
         if 'I_MPI_DEVICE' in self.mpiexec_global_options:
             del self.mpiexec_global_options['I_MPI_DEVICE']
-        self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
+        if not 'I_MPI_FABRICS' in self.mpiexec_global_options:
+            self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero((self.mpitotalppn * self.nruniquenodes) > 64)
 
