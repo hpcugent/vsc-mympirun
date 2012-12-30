@@ -818,6 +818,8 @@ class MPI(object):
         """Hydra specific mpiexec options"""
         self.get_hydra_info()
         self.mpiexec_options.append("-f %s" % self.mpiexec_node_filename)
+        if self.options.branchcount is not None:
+            self.mpiexec_options.append("--branch-count %d" % self.options.branchcount)
 
         ## default launcher seems ssh
         if getattr(self, 'HYDRA_RMK', None) is not None:
