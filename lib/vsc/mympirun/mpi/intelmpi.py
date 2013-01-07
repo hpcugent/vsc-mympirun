@@ -185,7 +185,7 @@ class IntelHydraMPI(IntelMPI):
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
 
-    DEVICE_MPIDEVICE_MAP = {'ib':'shm:dapl', 'det':'det', 'shm':'shm', 'socket':'sock'}
+    DEVICE_MPIDEVICE_MAP = {'ib':'shm:dapl', 'det':'det', 'shm':'shm', 'socket':'shm:sock'}
 
     def make_mpiexec_hydra_options(self):
         super(IntelMPI, self).make_mpiexec_hydra_options()
@@ -212,7 +212,7 @@ class IntelLegacy(IntelMPI):
     _mpirun_version = staticmethod(_mpirun_version)
 
     def maketunecmds(self):
-        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for teh applciation
+        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for the application
         """
         self.log.raiseException("Legacy code, information purposes only!")
         ans = []
