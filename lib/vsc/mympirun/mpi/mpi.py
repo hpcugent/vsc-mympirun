@@ -313,6 +313,37 @@ class MPI(object):
 
         return vars_to_pass
 
+    def get_localhosts(self):
+        """
+        Get the localhost interfaces from the uniquenodes list
+        -- if hostname is different from the name in the nodelist
+        """
+        iface_prefix = ['eth', 'em', 'ib', 'wlan']
+        reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
+
+        res = []
+        for idx, hn in enumerate(self.uniquenodes):
+            ip = socket.gethostbyname(hn)
+            cmd = "/sbin/ip -4 -o addr show to %s/32" % ip  # TODO ipv6
+            ec, out = run_simple(cmd)
+            if ec == 0:
+                r = reg_iface.search(out)
+                if r:
+                    iface = r.group(1)
+                    self.log.debug("get_localhost idx %s: localhost interface %s found for %s (ip: %s)" %
+                                   (idx, iface, hn, ip))
+
+                    res.append((hn, iface))
+                else:
+                    # not a big issue, probably not
+                    self.log.debug(("get_localhost idx %s: no interface match for "
+                                    "prefixes %s out %s") % (idx, iface_prefix, out))
+
+        if len(res) == 0:
+            self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s" %
+                                    (self.uniquenodes))
+        return res
+
     def check_usable_cpus(self):
         """
         Check and act on fact of non-standard cpus (eg due to cpusets)
@@ -774,28 +805,21 @@ class MPI(object):
 
     def mpdboot_set_localhost_interface(self):
         """
-        Get the localhost mpdboot interface
-        -- if hostname is different from the name in the nodelist
+        Set the localhost mpdboot interface
         """
-        iface_prefix = ['eth', 'em', 'ib', 'wlan']
-        reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
-
-        for hn in self.uniquenodes:
-            ip = socket.gethostbyname(hn)
-            cmd = "/sbin/ip -4 -o addr show to %s/32" % ip  # TODO ipv6
-            ec, out = run_simple(cmd)
-            if ec == 0:
-                r = reg_iface.search(out)
-                if not r:
-                    self.log.raiseException(("mpdboot_set_localhost_interface: no interface match for "
-                                             "prefixes %s out %s") % (iface_prefix, out))
-                iface = r.group(1)
-                self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s (ip: %s)" %
-                               (iface, hn, ip))
-                self.mpdboot_localhost_interface = (hn, iface)
-                return
-        self.log.raiseException("set_mpd_localhost_interface: can't find mpd localhost from uniq nodes %s" %
-                                (self.uniquenodes))
+        localhosts = self.get_localhosts()
+        if len(localhosts) > 0:
+            if len(localhosts) > 1:
+                self.log.warning(("set_mpd_localhost_interface: more then one match "
+                                  "for localhost from unique nodes found %s, using 1st.") %
+                                 localhosts)
+            hn, iface = localhosts[0]  # take the first one
+            self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s" %
+                           (iface, hn))
+            self.mpdboot_localhost_interface = (hn, iface)
+        else:
+            self.log.raiseException("set_mpd_localhost_interface: can't find mpd localhost from uniq nodes %s" %
+                                    (self.uniquenodes))
 
     ### BEGIN mpiexec ###
     def make_mpiexec(self):
