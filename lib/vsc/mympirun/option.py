@@ -1,4 +1,4 @@
-# #
+#
 # Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 #
@@ -22,7 +22,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-# #
+#
 
 """
 Optionparser for mympirun
@@ -32,8 +32,8 @@ import sys
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
 
-# # introduce usage / -u option. (original has -h for --hybrid)
-# # TODO: generate real message with possible alias + mention all supported versions
+# introduce usage / -u option. (original has -h for --hybrid)
+# TODO: generate real message with possible alias + mention all supported versions
 class MympirunParser(GeneralOption.PARSER):
     """Simple class to implement other help messages"""
     shorthelp = ('u', '--shorthelp', '--usage',)
@@ -41,8 +41,8 @@ class MympirunParser(GeneralOption.PARSER):
 
 class MympirunOption(GeneralOption):
     PARSER = MympirunParser
-    ALLOPTSMANDATORY = False  # # eg scriptname and other options. same for mpirun options
-    INTERSPERSED = False  # # Stop parsing cmdline, all others opts are opts for the exe
+    ALLOPTSMANDATORY = False  # eg scriptname and other options. same for mpirun options
+    INTERSPERSED = False  # Stop parsing cmdline, all others opts are opts for the exe
 
     def __init__(self, ismpirun=False):
         self.mpirunmode = ismpirun
@@ -51,7 +51,7 @@ class MympirunOption(GeneralOption):
         GeneralOption.__init__(self)
 
     def make_init(self):
-        # # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
+        # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
                 "showmpi":("Print the known MPI classes and exit", None, "store_true", False, 'm'),
                 "showsched":("Print the known Sched classes and exit", None, "store_true", False, 's'),
@@ -66,7 +66,7 @@ class MympirunOption(GeneralOption):
                           None, "store_true", False),
 
                 "schedtype":("Specify scheduler (eg local, pbs...; will try to guess by default).",
-                             "str", "store", None, "S"),  # # TODO: generate list
+                             "str", "store", None, "S"),  # TODO: generate list
 
                 "output":("filename to write stdout/stderr directly to (instead of stdout)", "str", "store", None),
 
@@ -76,7 +76,7 @@ class MympirunOption(GeneralOption):
                          "str", "store", None),
                 "basepath":("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
                             "str", "store", None),
-                # # legacy naming
+                # legacy naming
                 "pinmpi":("Disable MPI pinning", None, "store_false", None),  # don't set it by default. It will be set if needed
 
                 "rdma":("Force rdma device", None, "store_true", None),
@@ -102,7 +102,7 @@ class MympirunOption(GeneralOption):
         self.log.debug("Add mympirun advanced option parser prefix %s descr %s opts %s" % (prefix, descr, opts))
         self.add_group_parser(opts, descr, prefix=prefix)
 
-        # # for all MPI classes, get the additional options
+        # for all MPI classes, get the additional options
         for mpi in MPI.__subclasses__():
             if not mpi.RUNTIMEOPTION is None:
                 opts = mpi.RUNTIMEOPTION['options']
@@ -125,12 +125,12 @@ class MympirunOption(GeneralOption):
                         '-machinefile':1
                         }
 
-        newopts = options_list[:]  # # copy
+        newopts = options_list[:]  # copy
         if self.mpirunmode:
             for opt in optsToRemove.keys():
                 try:
                     pos = newopts.index(opt)
-                    # # remove 1 + args
+                    # remove 1 + args
                     del newopts[pos:pos + 1 + optsToRemove[opt]]
                 except ValueError:
                     continue
@@ -140,7 +140,7 @@ class MympirunOption(GeneralOption):
     def postprocess(self):
         """Some additional processing"""
         if self.options.debugmpi:
-            # # set some
+            # set some
             self.options.debug = True
             self.options.debuglvl = 50
             if self.options.stats < 1:

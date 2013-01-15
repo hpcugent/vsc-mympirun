@@ -239,7 +239,7 @@ class MPI(object):
     _is_mpiscriptname_for = classmethod(_is_mpiscriptname_for)
 
 
-    # #
+    #
     # other general functionality
     #
     def _setenv(self, name, value):
