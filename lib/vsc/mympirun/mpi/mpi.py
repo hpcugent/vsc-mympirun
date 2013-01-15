@@ -67,7 +67,6 @@ def whatMPI(name):
 
     found_mpi = get_subclasses(MPI)
 
-
     # check on scriptname
     for mpi in found_mpi:
         if mpi._is_mpiscriptname_for(scriptname):
@@ -298,6 +297,21 @@ class MPI(object):
         self.make_node_file()
 
         self.set_pinning()
+
+    def get_pass_variables(self):
+        """Get the list of variable names to pass"""
+        vars_to_pass = []
+        for env_var in self.PASS_VARIABLES_BASE:
+            if env_var in os.environ and not env_var in vars_to_pass:
+                vars_to_pass.append(env_var)
+
+        for env_prefix in self.PASS_VARIABLES_CLASS_PREFIX + self.PASS_VARIABLES_BASE_PREFIX + self.options.variablesprefix:
+            for env_var in os.environ.keys():
+                # exact match or starts with <prefix>_
+                if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and not env_var in vars_to_pass:
+                    vars_to_pass.append(env_var)
+
+        return vars_to_pass
 
     def check_usable_cpus(self):
         """
@@ -712,7 +726,6 @@ class MPI(object):
 
         return wrapperpath
 
-
     ### BEGIN mpdboot ###
     def make_mpdboot(self):
         """Make the mpdboot configuration"""
@@ -910,16 +923,8 @@ class MPI(object):
 
     def mpiexec_set_local_pass_variable_options(self):
         """Set mpiexec pass variables"""
-        for env_var in self.PASS_VARIABLES_BASE:
-            if env_var in os.environ and not env_var in self.mpiexec_pass_environment:
-                self.mpiexec_pass_environment.append(env_var)
-
-        for env_prefix in self.PASS_VARIABLES_CLASS_PREFIX + self.PASS_VARIABLES_BASE_PREFIX + self.options.variablesprefix:
-            for env_var in os.environ.keys():
-                # exact match or starts with <prefix>_
-                if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and not env_var in self.mpiexec_pass_environment:
-                    self.mpiexec_pass_environment.append(env_var)
-
+        for var in self.get_pass_variables():
+            self.mpiexec_pass_environment.append(var)
 
     def mpiexec_get_global_options(self):
         """Create the global options to pass through mpiexec
@@ -969,7 +974,6 @@ class MPI(object):
         self.log.debug("mpiexec_get_local_pass_variable_options: template %s return options %s" %
                        (self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION, local_pass_options))
         return local_pass_options
-
 
     ### BEGIN mpirun ###
     def make_mpirun(self):
