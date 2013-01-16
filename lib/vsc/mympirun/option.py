@@ -53,47 +53,47 @@ class MympirunOption(GeneralOption):
     def make_init(self):
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
-                "showmpi":("Print the known MPI classes and exit", None, "store_true", False, 'm'),
-                "showsched":("Print the known Sched classes and exit", None, "store_true", False, 's'),
+                "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
+                "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
 
-                "debugmpi":("Enable MPI level debugging", None, "store_true", False),
-                "debuglvl":("Specify debug level", "int", "store", 0),
-                "mpdbootverbose":("Run verbose mpdboot", None, "store_true", False),
-                "stats":("Set MPI statistics level", "int", "store", 0),
+                "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
+                "debuglvl": ("Specify debug level", "int", "store", 0),
+                "mpdbootverbose": ("Run verbose mpdboot", None, "store_true", False),
+                "stats": ("Set MPI statistics level", "int", "store", 0),
 
-                "hybrid":("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
-                "double":("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
-                          None, "store_true", False),
+                "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
+                "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
+                           None, "store_true", False),
 
-                "schedtype":("Specify scheduler (eg local, pbs...; will try to guess by default).",
-                             "str", "store", None, "S"),  # TODO: generate list
+                "schedtype": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
+                              "str", "store", None, "S"),  # TODO: generate list
 
-                "output":("filename to write stdout/stderr directly to (instead of stdout)", "str", "store", None),
+                "output": ("filename to write stdout/stderr directly to (instead of stdout)", "str", "store", None),
 
-                "ssh":("Force ssh for mpd startup (will try to use optimised method by default)",
-                       None, "store_false", True),
-                "order":("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])",
-                         "str", "store", None),
-                "basepath":("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
-                            "str", "store", None),
+                "ssh": ("Force ssh for mpd startup (will try to use optimised method by default)",
+                        None, "store_false", True),
+                "order": ("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])",
+                          "str", "store", None),
+                "basepath": ("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
+                             "str", "store", None),
                 # legacy naming
-                "pinmpi":("Disable MPI pinning", None, "store_false", None),  # don't set it by default. It will be set if needed
+                "pinmpi": ("Disable MPI pinning", None, "store_false", None),  # don't set it by default. It will be set if needed
 
-                "rdma":("Force rdma device", None, "store_true", None),
-                "socket":("Force socket device", None, "store_true", None),
+                "rdma": ("Force rdma device", None, "store_true", None),
+                "socket": ("Force socket device", None, "store_true", None),
 
-                "universe":(("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
-                             "universe is all requested processes.)"), "int", "store", None),
-                "overridepin":(("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
-                                "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
-                                "e.g. 'cyclepin')."), "str", "store", None),
+                "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
+                              "universe is all requested processes.)"), "int", "store", None),
+                "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
+                                 "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
+                                 "e.g. 'cyclepin')."), "str", "store", None),
 
-                "variablesprefix":(("Comma-separated list of exact names or prefixes to match environment variables "
-                                    "(<prefix>_ should match) to pass through."), "string", "extend", []),
-                "noenvmodules":("Don't pass the environment modules variables", None, "store_true", False),
-                "mpirunoptions":("String with options to pass to mpirun (will be appended to generate comamnd)",
-                                 "str", "store", None),
-                'branchcount':("Set the hydra branchcount", "int", "store", None),
+                "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
+                                     "(<prefix>_ should match) to pass through."), "string", "extend", []),
+                "noenvmodules": ("Don't pass the environment modules variables", None, "store_true", False),
+                "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate comamnd)",
+                                  "str", "store", None),
+                'branchcount': ("Set the hydra branchcount", "int", "store", None),
                 }
 
         descr = ["mympirun options", "General advanced mympirun options"]

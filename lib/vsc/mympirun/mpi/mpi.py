@@ -29,8 +29,9 @@ Base MPI class, all actual classes should inherit from this one
 """
 
 from vsc.fancylogger import getLogger
-from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
 from vsc.utils.IPy import IP
+from vsc.utils.missing import nub
+from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
 
 import os, re
 import socket
@@ -300,10 +301,7 @@ class MPI(object):
 
     def get_pass_variables(self):
         """Get the list of variable names to pass"""
-        vars_to_pass = []
-        for env_var in self.PASS_VARIABLES_BASE:
-            if env_var in os.environ and not env_var in vars_to_pass:
-                vars_to_pass.append(env_var)
+        vars_to_pass = nub([v for v in self.PASS_VARIABLES_BASE if v in os.environ])
 
         for env_prefix in self.PASS_VARIABLES_CLASS_PREFIX + self.PASS_VARIABLES_BASE_PREFIX + self.options.variablesprefix:
             for env_var in os.environ.keys():
@@ -338,6 +336,8 @@ class MPI(object):
                     # not a big issue, probably not
                     self.log.debug(("get_localhost idx %s: no interface match for "
                                     "prefixes %s out %s") % (idx, iface_prefix, out))
+            else:
+                self.log.error("get_localhost idx %s: cmd %s failed with output %s" % (idx, cmd, out))
 
         if len(res) == 0:
             self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s" %

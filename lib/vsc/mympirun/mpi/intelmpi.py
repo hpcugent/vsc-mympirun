@@ -74,19 +74,13 @@ class IntelMPI(MPI):
     def get_pinning_override_variable(self):
         return 'PMI_RANK'
 
-    def _enable_disable(self, bool):
-        """Return enable/disazble for boolean value"""
-        if bool:
-            return 'enable'
-        else:
-            return 'disable'
+    def _enable_disable(self, boolvalue):
+        """Return enable/disable for boolean value"""
+        return {True:'enable', False:'disable'}.get(bool(boolvalue))
 
-    def _one_zero(self, bool):
-        """Return enable/disazble for boolean value"""
-        if bool:
-            return 1
-        else:
-            return 0
+    def _one_zero(self, boolvalue):
+        """Return enable/disable for boolean value"""
+        return int(bool(boolvalue))
 
     def make_mpdboot_options(self):
         """Make the mpdboot options.

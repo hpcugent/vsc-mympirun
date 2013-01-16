@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 #
@@ -22,23 +22,25 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 
 """
 Main sched class
 """
 
 
+import os
+import random
+import re
 from vsc.fancylogger import getLogger
 from vsc.mympirun.mpi.mpi import get_subclasses
-import os, re
-import random
+from vsc.utils.missing import nub
 
 def whatSched(requested):
     """Return the scheduler class"""
     found_sched = get_subclasses(Sched)
     for sched in found_sched:
-        #print sched.__name__, requested
+        # print sched.__name__, requested
         if sched._is_sched_for(requested):
             return sched, found_sched
     return None, found_sched
@@ -54,7 +56,7 @@ class Sched(object):
     SAFE_RSH_LARGE_CMD = 'sshsleep'
     RSH_CMD = None
     RSH_LARGE_CMD = None
-    RSH_LARGE_LIMIT = 16  ## nrof nodes considered large (relevant for internode communication for eg mpdboot)
+    RSH_LARGE_LIMIT = 16  # # nrof nodes considered large (relevant for internode communication for eg mpdboot)
 
     HYDRA_RMK = []
     HYDRA_LAUNCHER = ['ssh']
@@ -85,7 +87,7 @@ class Sched(object):
 
         self.cpus = []
 
-        ## collect data
+        # # collect data
         self.get_id()
         self.cores_on_this_node()
         self.which_cpus()
@@ -97,17 +99,17 @@ class Sched(object):
         super(Sched, self).__init__(**kwargs)
 
 
-    ## TODO these will also need a factory method to verify or guess the requested mode
-    ## factory methods for MPI
+    # # TODO these will also need a factory method to verify or guess the requested mode
+    # # factory methods for MPI
     # to add a new MPI class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
-    #classmethod
+    # classmethod
     def _is_sched_for(cls, name=None):
         """see if this class can provide support for sched class"""
         if name is not None:
-            return name in cls._sched_for + [cls.__name__] ## add class name as default
+            return name in cls._sched_for + [cls.__name__]  # # add class name as default
 
-        ## guess it from environment
+        # # guess it from environment
         totest = cls._sched_environ_test
         if cls._sched_environ_id is not None:
             totest.append(cls._sched_environ_id)
@@ -122,17 +124,14 @@ class Sched(object):
         return False
     _is_sched_for = classmethod(_is_sched_for)
 
-    ## other methods
+    # # other methods
     def get_unique_nodes(self, nodes=None):
         """Set unique nodes from self.nodes"""
         if nodes is None:
             nodes = self.nodes
 
         # don't use set(), preserve order!
-        self.uniquenodes = []
-        for n in nodes:
-            if not n in self.uniquenodes:
-                self.uniquenodes.append(n)
+        self.uniquenodes = nub(nodes)
         self.nruniquenodes = len(self.uniquenodes)
 
         self.log.debug("get_unique_nodes: %s uniquenodes: %s from %s" % (self.nruniquenodes, self.uniquenodes, nodes))
@@ -156,7 +155,7 @@ class Sched(object):
             self.get_unique_nodes()
 
         self.ppn = self.nrnodes // self.nruniquenodes
-        ## set default
+        # # set default
         self.totalppn = self.ppn
 
         self.log.debug("Set ppn to %s (totalppn %s)" % (self.ppn, self.totalppn))
@@ -186,7 +185,7 @@ class Sched(object):
             self.cores_on_this_node()
         self.cpus = range(self.foundppn)
 
-        cpusetprefix = '/dev/cpuset' ## should be mounted
+        cpusetprefix = '/dev/cpuset'  # # should be mounted
         myproccpuset = "/proc/%s/cpuset" % os.getpid()
         if os.path.isfile(myproccpuset):
             mycpusetsuffix = open(myproccpuset).read().strip()
@@ -200,7 +199,7 @@ class Sched(object):
                     if len(cpurange) == 1:
                         self.cpus.append(int(cpurange[0]))
                     else:
-                        self.cpus.extend(range(int(cpurange[0]), int(cpurange[1]) + 1)) ## range is inclusive
+                        self.cpus.extend(range(int(cpurange[0]), int(cpurange[1]) + 1))  # # range is inclusive
             else:
                 self.log.debug("which_cpus: found proccpuset %s but no cpus file %s" % (myproccpuset, cpusetfn))
         else:
@@ -223,18 +222,18 @@ class Sched(object):
     def get_rsh(self):
         """Determine remote shell command"""
         if hasattr(self.options, 'ssh') and self.options.ssh:
-            ## some safe fallback based on ssh
+            # # some safe fallback based on ssh
             if self.is_large():
                 rsh = self.SAFE_RSH_LARGE_CMD
             else:
                 rsh = self.SAFE_RSH_CMD
         else:
-            ## optimised
-            default_rsh = getattr(self, 'DEFAULT_RSH', None) ## set in MPI, not in RM
+            # # optimised
+            default_rsh = getattr(self, 'DEFAULT_RSH', None)  # # set in MPI, not in RM
             if default_rsh is not None:
                 rsh = default_rsh
             elif getattr(self, 'HYDRA', None):
-                rsh = 'ssh' ## default anyway
+                rsh = 'ssh'  # # default anyway
             elif self.is_large():
                 rsh = self.RSH_LARGE_CMD
             else:
@@ -252,11 +251,11 @@ class Sched(object):
         if self.uniquenodes is None:
             self.get_unique_nodes()
 
-        ## get the working mode from options
+        # # get the working mode from options
         hybrid = getattr(self.options, 'hybrid', None)
         double = getattr(self.options, 'double', False)
 
-        ## set the multiplier
+        # # set the multiplier
         if hybrid:
             multi = hybrid
         elif double:
@@ -271,24 +270,24 @@ class Sched(object):
             self.mpitotalppn = self.ppn * multi
             res = self.nodes * multi
         elif hybrid:
-            ## return multi unique nodes
-            ## mpitotalppn = 1 per node * multi
+            # # return multi unique nodes
+            # # mpitotalppn = 1 per node * multi
             self.mpitotalppn = multi
             for n in self.uniquenodes:
                 res.extend([n] * multi)
         else:
-            ## default mode
+            # # default mode
             self.mpitotalppn = self.ppn * multi
             for n in self.uniquenodes:
                 res.extend([n] * self.mpitotalppn)
 
-        ## reorder
+        # # reorder
         ordermode = getattr(self.options, 'order', None)
         if ordermode is None:
             ordermode = 'normal'
         ordermode = ordermode.split("_")
         if ordermode[0] in ('normal',):
-            ## do nothing
+            # # do nothing
             self.log.debug("make_node_list: no reordering (mode %s)" % ordermode)
         elif ordermode[0] in ('random',):
             if len(ordermode) == 2:
