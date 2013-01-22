@@ -1,4 +1,4 @@
-##
+#
 # Copyright 2011-2012 Ghent University
 # Copyright 2011-2012 Stijn De Weirdt
 #
@@ -22,14 +22,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-##
+#
 
 """
 Intel MPI specific class
 """
 
 from distutils.version import LooseVersion
-from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.mpi.mpi import MPI, which
 import os, re
 import socket
 
@@ -45,7 +45,9 @@ class IntelMPI(MPI):
     _mpirun_version = staticmethod(_mpirun_version)
 
     RUNTIMEOPTION = {'options':{'mpdbulletproof':("Start MPD in bulletproof", None, "store_true", False),
-                                'fallback':("Enable device fallback", None, "store_true", False), },
+                                'fallback':("Enable device fallback", None, "store_true", False),
+                                'daplud':("Enable DAPL UD connections", None, "store_true", False),
+                                },
                      'prefix':'impi',
                      'description': ('Intel MPI options', 'Advanced options specific for Intel MPI'),
                      }
@@ -72,6 +74,13 @@ class IntelMPI(MPI):
     def get_pinning_override_variable(self):
         return 'PMI_RANK'
 
+    def _enable_disable(self, boolvalue):
+        """Return enable/disable for boolean value"""
+        return {True:'enable', False:'disable'}.get(bool(boolvalue))
+
+    def _one_zero(self, boolvalue):
+        """Return enable/disable for boolean value"""
+        return int(bool(boolvalue))
 
     def make_mpdboot_options(self):
         """Make the mpdboot options.
@@ -106,7 +115,7 @@ class IntelMPI(MPI):
         """Set mpiexec global options"""
         super(IntelMPI, self).mpiexec_set_global_options()
 
-        ## this one also needs to be set at runtime
+        # this one also needs to be set at runtime
         self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = "/tmp"
         self._setenv('I_MPI_MPD_TMPDIR', "/tmp")
 
@@ -115,10 +124,7 @@ class IntelMPI(MPI):
         if self.options.stats > 0:
             self.mpiexec_global_options['I_MPI_STATS'] = self.options.stats
 
-        if self.options.impi_fallback:
-            self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = 1
-        else:
-            self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = 0
+        self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = self._one_zero(self.options.impi_fallback)
 
         if self.device == 'det':
             self.mpiexec_global_options['I_MPI_DAT_LIBRARY'] = "libdatdet.so"
@@ -130,17 +136,14 @@ class IntelMPI(MPI):
         if self.netmask:
             self.mpiexec_global_options['I_MPI_NETMASK'] = self.netmask
 
-        if self.options.pinmpi:
-            self.mpiexec_global_options['I_MPI_PIN'] = 1
-        else:
-            self.mpiexec_global_options['I_MPI_PIN'] = 0
+        self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = self._one_zero(self.options.pinmpi)
 
         if self.options.hybrid is not None and self.options.hybrid > 1:
             self.mpiexec_global_options["I_MPI_CPUINFO"] = "auto"
 
             self.mpiexec_global_options["I_MPI_PIN_DOMAIN"] = "auto:compact"
 
-            ## this only affects libiomp5 usage (ie intel compilers!)
+            # this only affects libiomp5 usage (ie intel compilers!)
             self.mpiexec_global_options["KMP_AFFINITY"] = "compact"
 
             """
@@ -153,15 +156,15 @@ class IntelMPI(MPI):
         if self.options.qlogic_ipath:
             if 'I_MPI_DEVICE' in self.mpiexec_global_options:
                 del self.mpiexec_global_options['I_MPI_DEVICE']
-            self.mpiexec_global_options['I_MPI_FABRICS'] = 'tmi'
+            self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:tmi'  # TODO shm:tmi or tmi
             self.mpiexec_global_options['I_MPI_TMI_PROVIDER'] = 'psm'
             if self.options.debuglvl > 0:
                 self.mpiexec_global_options['TMI_DEBUG'] = '1'
 
     def mpirun_prepare_execution(self):
         """Small change"""
-        ## intel mpi mpirun strips the --file otion for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
-        ## - we don't want that
+        # intel mpi mpirun strips the --file otion for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
+        # - we don't want that
         self._setenv('PBS_ENVIRONMENT', 'PBS_BATCH_MPI')
 
         return super(IntelMPI, self).mpirun_prepare_execution()
@@ -176,19 +179,41 @@ class IntelHydraMPI(IntelMPI):
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
 
+    DEVICE_MPIDEVICE_MAP = {'ib':'shm:dapl', 'det':'det', 'shm':'shm', 'socket':'shm:sock'}
+
+    def make_mpiexec_hydra_options(self):
+        super(IntelMPI, self).make_mpiexec_hydra_options()
+        self.mpiexec_options.append("-perhost %d" % self.mpitotalppn)
+
+
+    def mpiexec_set_global_options(self):
+        """Set mpiexec global options"""
+        super(IntelHydraMPI, self).mpiexec_set_global_options()
+        self.mpiexec_global_options['I_MPI_FALLBACK'] = self._enable_disable(self.options.impi_fallback)
+
+        if 'I_MPI_DEVICE' in self.mpiexec_global_options:
+            del self.mpiexec_global_options['I_MPI_DEVICE']
+        if not 'I_MPI_FABRICS' in self.mpiexec_global_options:
+            self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
+
+        self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero((self.mpitotalppn * self.nruniquenodes) > 64)
+
+        self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enable_disable(self.options.impi_daplud)
+
+
 class IntelLegacy(IntelMPI):
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("3.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
     def maketunecmds(self):
-        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for teh applciation
+        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for the application
         """
         self.log.raiseException("Legacy code, information purposes only!")
         ans = []
 
-        ## disable tuning file!!
+        # disable tuning file!!
         self.tune = False
-        ## set this to manually start mpdboot
+        # set this to manually start mpdboot
         self.mpitotalnum = self.sched.nruniq
 
         opts = self.getmpdboot()
@@ -246,8 +271,8 @@ class IntelLegacy(IntelMPI):
             if not os.path.exists(tmpdir):
                 self.log.error("path with configfiles %s not found" % tmpdir)
                 return ans
-            ## <app>_<device>_nn_<#nodes>_np_<#processes>_ppn_<#processes/node>.conf
-            ## 2 factors: np and nn
+            # <app>_<device>_nn_<#nodes>_np_<#processes>_ppn_<#processes/node>.conf
+            # 2 factors: np and nn
             w = 10
             goal = w * (self.sched.nrnodes + 1) + (self.sched.nruniq + 1)
             mindist = 10 * 1000 * 1000
