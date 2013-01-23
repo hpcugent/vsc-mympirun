@@ -29,7 +29,7 @@ Base MPI class, all actual classes should inherit from this one
 """
 
 from vsc.fancylogger import getLogger
-from vsc.utils.IPy import IP
+from IPy import IP
 from vsc.utils.missing import nub
 from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
 
