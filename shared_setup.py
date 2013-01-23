@@ -150,8 +150,6 @@ def cleanup(prefix=''):
         if os.path.isfile(ffn):
             os.remove(ffn)
 
-    make_setup(prefix=prefix)
-
 def make_setup(name='base',prefix=''):
     """Create the setup.py
         - default is base
