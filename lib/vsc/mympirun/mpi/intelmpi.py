@@ -53,7 +53,12 @@ class IntelMPI(MPI):
                      }
 
 
-    DEVICE_MPIDEVICE_MAP = {'ib':'rdssm', 'det':'det', 'shm':'shm', 'socket':'sock'}
+    DEVICE_MPIDEVICE_MAP = {
+                            'ib':'rdssm',
+                            'det':'det',
+                            'shm':'shm',
+                            'socket':'shm:sock',
+                            }
 
     MPIRUN_LOCALHOSTNAME = socket.gethostname()
 
@@ -102,15 +107,19 @@ class IntelMPI(MPI):
         """
         if not self.foundppn == len(self.cpus):
             # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
-            self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s" % (self.ppn, self.foundppn, len(self.cpus)))
+            self.log.info(("check_usable_cpus: non-standard cpus found: "
+                           "requested ppn %s, found cpus %s, usable cpus %s") %
+                          (self.ppn, self.foundppn, len(self.cpus)))
 
             if self.nruniquenodes > 1:
-                self.log.info("check_usable_cpus: more then one unique node requested. Not setting I_MPI_PIN_PROCESSOR_LIST.")
+                self.log.info(("check_usable_cpus: more then one unique node requested. "
+                               "Not setting I_MPI_PIN_PROCESSOR_LIST."))
             else:
                 txt = ",".join(["%d" % x for x in self.cpus])
                 self.mpiexec_global_options['I_MPI_PIN_PROCESSOR_LIST'] = txt
                 self._setenv('I_MPI_PIN_PROCESSOR_LIST', txt)
-                self.log.info("check_usable_cpus: one node requested. Setting I_MPI_PIN_PROCESSOR_LIST to %s" % txt)
+                self.log.info(("check_usable_cpus: one node requested. "
+                               "Setting I_MPI_PIN_PROCESSOR_LIST to %s") % txt)
 
     def mpiexec_set_global_options(self):
         """Set mpiexec global options"""
@@ -180,7 +189,12 @@ class IntelHydraMPI(IntelMPI):
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
 
-    DEVICE_MPIDEVICE_MAP = {'ib':'shm:dapl', 'det':'det', 'shm':'shm', 'socket':'shm:sock'}
+    DEVICE_MPIDEVICE_MAP = {
+                            'ib':'shm:dapl',
+                            'det':'det',
+                            'shm':'shm',
+                            'socket':'shm:sock',
+                            }
 
     def make_mpiexec_hydra_options(self):
         super(IntelMPI, self).make_mpiexec_hydra_options()
@@ -197,7 +211,8 @@ class IntelHydraMPI(IntelMPI):
         if not 'I_MPI_FABRICS' in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero((self.mpitotalppn * self.nruniquenodes) > 64)
+        scalable_progress = (self.mpitotalppn * self.nruniquenodes) > 64
+        self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero(scalable_progress)
 
         self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enable_disable(self.options.impi_daplud)
 

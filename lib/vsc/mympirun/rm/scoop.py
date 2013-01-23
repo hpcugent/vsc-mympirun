@@ -1,4 +1,4 @@
-# #
+#
 # Copyright 2009-2013 Ghent University
 # Copyright 2009-2013 Stijn De Weirdt
 #
@@ -22,7 +22,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-# #
+#
 
 """
 Local scheduler : no scheduler, act on single node
