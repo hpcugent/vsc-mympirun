@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 #
@@ -22,7 +22,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 
 """
 Local scheduler : no scheduler, act on single node
@@ -38,13 +38,10 @@ class Local(Sched):
     - will use the amount of cores found on localhost.
     """
     _sched_for = ['local']
+    SCHED_ENVIRON_ID = 'LOCAL_JOBID'
+    SCHED_ENVIRON_ID_AUTOGENERATE_JOBID = True
 
     HYDRA_LAUNCHER = ['local']
-    ## don't set _sched_environ_test. This one should always work, and will not be guessed. It will be fallback or requested.
-
-    def get_id(self):
-        self.id = "SCHED_Local%s%05d" % (time.strftime("%Y%m%d%H%M%S"), random.randint(0, 10 ** 5 - 1))
-        self.log.debug("get_id id %s" % self.id)
 
     def get_node_list(self):
         """Get the hostnames for the localnode
@@ -52,8 +49,8 @@ class Local(Sched):
         """
 
         localhostname = getattr(self, 'MPIRUN_LOCALHOSTNAME', 'localhost')
-        self.nodes = [localhostname] * self.foundppn
-        self.nrnodes = len(self.nodes)
+        self.nodes = [localhostname] * len(self.cpus)
+        self.nrnodes = len(self.nodes)  # same as len(self.cpus)
 
         self.log.debug("get_node_list: set %s nodes: %s" % (self.nrnodes, self.nodes))
 

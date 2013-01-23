@@ -101,6 +101,7 @@ class IntelMPI(MPI):
         - default: do nothing more then log
         """
         if not self.foundppn == len(self.cpus):
+            # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
             self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s" % (self.ppn, self.foundppn, len(self.cpus)))
 
             if self.nruniquenodes > 1:
