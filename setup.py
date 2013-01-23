@@ -38,7 +38,7 @@ PACKAGE = {
                          'vsc-base >= 0.95',
                          'IPy >= 0.75',
                          ],
-    'version': '3.0.7',
+    'version': '3.1.0',
     'author': [sdw],
     'maintainer': [sdw],
     'packages': ['vsc.mympirun', 'vsc.mympirun.mpi', 'vsc.mympirun.rm'],
