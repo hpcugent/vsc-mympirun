@@ -224,8 +224,6 @@ def action_target(target, setupfn=setup, extra_sdist=[]):
 
     cleanup()
 
-    # make_setup(name)
-
     build_setup_cfg_for_bdist_rpm(target)
     x = parse_target(target)
     setupfn(**x)
