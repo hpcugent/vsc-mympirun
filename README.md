@@ -1,4 +1,4 @@
-# VSC-tools
+# vsc-mympirunm
 
 [![Build Status](https://jenkins1.ugent.be/job/vsc-mympirun/badge/icon)](https://jenkins1.ugent.be/job/vsc-mympirun/)
 
