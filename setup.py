@@ -35,7 +35,7 @@ from shared_setup_mympirun import mympirun_vsc_install_scripts
 PACKAGE = {
     'name': 'vsc-mympirun',
     'install_requires': [
-                         'vsc-base >= 0.95',
+                         'vsc-base >= 0.99',
                          'IPy >= 0.75',
                          ],
     'version': '3.1.0',
