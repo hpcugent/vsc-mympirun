@@ -53,7 +53,7 @@ try:
         def new_func(txt):
             """The original metadata_listdir assumes no subdirectories in scripts dir.
                 fake/mpirun is the exception (mpirun itself is not listed !)
-                    The function is used through a whole bunch of Egg classes, now way we can easily intercept this
+                    The function is used through a whole bunch of Egg classes, no way we can easily intercept this
             """
             res = orig_func(txt)
             if txt == 'scripts':
@@ -87,14 +87,14 @@ class mympirun_vsc_install_scripts(vsc_install_scripts):
                 # make the fake dir, create all symlinks
 
                 # make all links
-                # they are create with relative paths !
+                # they are created with relative paths !
 
                 rel_script = os.path.basename(script)
                 rel_script_dir = os.path.dirname(script)
 
                 # abspath: all_syms = [os.path.join(self.install_dir, x) for x in MYMPIRUN_ALIASES]
                 # abspath: all_syms.append(os.path.join(abs_fakepath, 'mpirun'))
-                # with relative paths, we also ne to chdir for the fake/mpirun and ref to ../mympirun
+                # with relative paths, we also need to chdir for the fake/mpirun and ref to ../mympirun
                 previous_pwd = os.getcwd()
 
                 os.chdir(rel_script_dir)
