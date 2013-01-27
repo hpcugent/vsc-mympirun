@@ -25,7 +25,7 @@
 """
 @author: Stijn De Weirdt (Ghent University)
 
-Module(s) that are used by mympirun and can be installed through dependencies)
+Module(s) that are used by vsc-mympirun and can't be installed through dependencies)
 """
 import pkg_resources
 pkg_resources.declare_namespace(__name__)
