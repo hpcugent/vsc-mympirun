@@ -32,9 +32,10 @@ Main sched class
 import os
 import random
 import re
-from vsc.fancylogger import getLogger
+from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.mpi.mpi import get_subclasses
 from vsc.utils.missing import nub
+
 
 def whatSched(requested):
     """Return the scheduler class"""
@@ -61,7 +62,6 @@ class Sched(object):
     HYDRA_RMK = []
     HYDRA_LAUNCHER = ['ssh']
     HYDRA_LAUNCHER_EXEC = None
-
 
     def __init__(self, options=None, **kwargs):
         if not hasattr(self, 'log'):
@@ -97,7 +97,6 @@ class Sched(object):
         self.set_ppn()
 
         super(Sched, self).__init__(**kwargs)
-
 
     # # TODO these will also need a factory method to verify or guess the requested mode
     # # factory methods for MPI
@@ -169,7 +168,6 @@ class Sched(object):
 
         self.log.debug("coresOnThisnode: found %s" % self.foundppn)
 
-
     def which_cpus(self):
         """
         Determine which cpus can be used
@@ -204,7 +202,6 @@ class Sched(object):
                 self.log.debug("which_cpus: found proccpuset %s but no cpus file %s" % (myproccpuset, cpusetfn))
         else:
             self.log.debug("which_cpus: no proc cpuset %s found" % (myproccpuset))
-
 
         self.log.debug("which_cpus: using cpus %s" % (self.cpus))
 
@@ -306,5 +303,3 @@ class Sched(object):
 
         self.mpinodes = res
         self.nrmpinodes = len(res)
-
-

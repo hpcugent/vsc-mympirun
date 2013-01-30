@@ -43,15 +43,18 @@ TODO:
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.mpi.mpi import whatMPI
 from vsc.mympirun.rm.sched import whatSched
-from vsc.fancylogger import getLogger, setLogLevelInfo
+from vsc.utils.fancylogger import getLogger, setLogLevelInfo
 
-import sys, os
+import sys
+import os
 
 _logger = getLogger()
+
 
 class ExitException(Exception):
     """Raise and main sees this as regular exit"""
     pass
+
 
 def getInstance():
     """Make an instance of the relevant MPI class. Also set the RM instance"""
@@ -64,7 +67,6 @@ def getInstance():
     if mo.args is None or len(mo.args) == 0:
         mo.parser.print_shorthelp()
         raise ExitException("Exit no args provided")
-
 
     sched, found_sched = whatSched(getattr(mo.options, 'schedtype', None))
 

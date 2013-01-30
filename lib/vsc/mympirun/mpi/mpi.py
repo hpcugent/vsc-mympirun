@@ -28,12 +28,13 @@
 Base MPI class, all actual classes should inherit from this one
 """
 
-from vsc.fancylogger import getLogger
+from vsc.utils.fancylogger import getLogger
 from vsc.utils.IPy import IP
 from vsc.utils.missing import nub
 from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
 
-import os, re
+import os
+import re
 import socket
 import shutil
 import time
@@ -49,6 +50,7 @@ INSTALLATION_SUBDIRECTORY_NAME = 'mympirun'
 # also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
+
 def get_subclasses(klass):
     """
     Get all subclasses recursively
@@ -58,6 +60,7 @@ def get_subclasses(klass):
         res.extend(get_subclasses(cl))
         res.append(cl)
     return res
+
 
 def whatMPI(name):
     """
@@ -113,6 +116,7 @@ def stripfake(path=None):
 
     return newpath
 
+
 def which(names):
     """Find path to executable, similar to /usr/bin/which.
         @type names: list or string, returns first match.
@@ -151,11 +155,11 @@ class MPI(object):
     # HYDRA_LAUNCHER = 'ssh'
     # HYDRA_LAUNCHER_EXEC = None
 
-    DEVICE_LOCATION_MAP = {'ib':'/dev/infiniband', 'det':'/dev/det', 'shm':'/dev/shm', 'socket':None}
+    DEVICE_LOCATION_MAP = {'ib': '/dev/infiniband', 'det': '/dev/det', 'shm': '/dev/shm', 'socket': None}
     DEVICE_ORDER = ['ib', 'det', 'shm', 'socket']
-    DEVICE_MPIDEVICE_MAP = {'ib':'rdma', 'det':'det', 'shm':'shm', 'socket':'socket'}
+    DEVICE_MPIDEVICE_MAP = {'ib': 'rdma', 'det': 'det', 'shm': 'shm', 'socket': 'socket'}
 
-    NETMASK_TYPE_MAP = {'ib':'ib', 'det':'eth', 'shm':'eth', 'socket':'eth'}
+    NETMASK_TYPE_MAP = {'ib': 'ib', 'det': 'eth', 'shm': 'eth', 'socket': 'eth'}
 
     PINNING_OVERRIDE_METHOD = 'numactl'
     PINNING_OVERRIDE_TYPE_DEFAULT = None
@@ -204,7 +208,6 @@ class MPI(object):
 
         self.pinning_override_type = getattr(self.options, 'overridepin', self.PINNING_OVERRIDE_TYPE_DEFAULT)
 
-
         super(MPI, self).__init__(**kwargs)
 
         # sanity checks
@@ -239,14 +242,12 @@ class MPI(object):
         return name in cls._mpiscriptname_for
     _is_mpiscriptname_for = classmethod(_is_mpiscriptname_for)
 
-
     #
     # other general functionality
     #
     def _setenv(self, name, value):
         self.log.debug("_setenv; set name %s to value %s" % (name, value))
         _setenv(name, value)
-
 
     def cleanup(self):
         # remove mympirundir
@@ -375,7 +376,6 @@ class MPI(object):
 
         setattr(self.options, 'ompthreads', t)
 
-
     def qlogic_ipath(self):
         """See if a qlogic device is available to set PSM parameters
             - at least one port in /ipathfs
@@ -432,7 +432,7 @@ class MPI(object):
                     self._setenv('VSMP_PLACEMENT', 'SPREAD')
             self.log.debug("scalemp_vsmp: vSMP VSMP_PLACEMENT set to %s" % os.environ['VSMP_PLACEMENT'])
 
-            if not os.environ.has_key('VSMP_MEM_PIN'):
+            if not 'VSMP_MEM_PIN' in os.environ:
                 self._setenv('VSMP_MEM_PIN', 'YES')
             self.log.debug("scalemp_vsmp: vSMP VSMP_MEM_PIN set to %s" % os.environ['VSMP_MEM_PIN'])
             # add /opt/ScaleMP/numabind/bin to PATH
@@ -446,7 +446,6 @@ class MPI(object):
         self.log.debug("scalemp_vsmp: vSMP found %s with status" % out)
 
         self.options.scalemp_vsmp = True
-
 
     def set_device(self, force=False):
         if self.device is not None and not force:
@@ -489,13 +488,12 @@ class MPI(object):
         self.log.debug("set_device: set netmasktype %s for device %s (founddev %s)" %
                        (self.netmasktype, self.device, founddev))
 
-
     def set_netmask(self):
         if self.netmasktype is None:
             self.set_device()
 
-        device_ip_reg_map = {'eth':"ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
-                             'ib':"infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
+        device_ip_reg_map = {'eth': "ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
+                             'ib': "infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
                              }
         if not self.netmasktype in device_ip_reg_map:
             self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" %
@@ -519,11 +517,9 @@ class MPI(object):
             self.log.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s" %
                            (ipaddr_mask.group(1), network_netmask))
 
-
         self.log.debug("set_netmask: return complete netmask %s" % res)
         if len(res) > 0:
             self.netmask = ":".join(res)
-
 
     def make_mympirundir(self):
         basepath = getattr(self.options, 'basepath', None)
@@ -624,7 +620,6 @@ class MPI(object):
         """
         self.log.raiseException("get_pinning_override_variable: not implemented.")
 
-
     def pinning_override(self):
         """
         Create own pinning
@@ -704,7 +699,6 @@ class MPI(object):
             self.log.debug(("pinning_override: total number of mpiprocesses %s no exact multiple of "
                             "number of procs %s. Ignoring rest.") % (self.mpitotalppn, self.foundppn))
 
-
         map_func = None
         if override_type in ('packed', 'compact',):
             if multi:
@@ -732,8 +726,7 @@ class MPI(object):
             self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
                                     self.pinning_override_type)
 
-        rankmap = [ map_func(x) for x in range(self.mpitotalppn)]
-
+        rankmap = [map_func(x) for x in range(self.mpitotalppn)]
 
         wrappertxt += "%s=(%s)\n" % (rankmapname, ' '.join(rankmap))
 
@@ -772,7 +765,6 @@ class MPI(object):
 
         self.log.debug("make_mpdboot set options %s" % self.mpdboot_options)
 
-
     def make_mpdboot_options(self):
         """Make the mpdboot options. Customise this method."""
         # the mpdboot options
@@ -801,7 +793,7 @@ class MPI(object):
 
         # mpdboot rsh command
         if not self.HYDRA:
-            self.mpdboot_options.append(self.MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME % { 'rsh' : self.get_rsh()})
+            self.mpdboot_options.append(self.MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME % {'rsh': self.get_rsh()})
 
     def mpdboot_set_localhost_interface(self):
         """
@@ -913,9 +905,9 @@ class MPI(object):
             hydra_info[key] = values
         self.log.debug("get_hydra_info: found info %s" % hydra_info)
 
-        keymap = {"rmk":r'^resource\s+management\s+kernel.*available',
-                  "launcher":r'^%s.*available' % self.HYDRA_LAUNCHER_NAME,
-                  "chkpt":r'^checkpointing.*available',
+        keymap = {"rmk": r'^resource\s+management\s+kernel.*available',
+                  "launcher": r'^%s.*available' % self.HYDRA_LAUNCHER_NAME,
+                  "chkpt": r'^checkpointing.*available',
                   }
         self.hydra_info = {}
         for newkey, regtxt in keymap.items():
@@ -931,7 +923,6 @@ class MPI(object):
 
         self.log.debug("get_hydra_info: filtered info %s" % self.hydra_info)
 
-
     def mpiexec_set_global_options(self):
         """Set mpiexec global options"""
         self.mpiexec_global_options['MKL_NUM_THREADS'] = '1'
@@ -940,7 +931,6 @@ class MPI(object):
             for env_var in self.GLOBAL_VARIABLES_ENVIRONMENT_MODULES:
                 if env_var in os.environ and not env_var in self.mpiexec_global_options:
                     self.mpiexec_global_options[env_var] = os.environ[env_var]
-
 
     def mpiexec_set_local_options(self):
         """Set mpiexec local options"""
@@ -960,7 +950,7 @@ class MPI(object):
             if k in self.mpiexec_pass_environment:
                 self.log.debug("mpiexec_get_global_options: found global option %s in mpiexec_pass_environment." % k)
             else:
-                global_options.append(self.MPIEXEC_TEMPLATE_GOBAL_OPTION % {'name':k, "value":v})
+                global_options.append(self.MPIEXEC_TEMPLATE_GOBAL_OPTION % {'name': k, "value": v})
 
         self.log.debug("mpiexec_get_global_options: template %s return options %s" %
                        (self.MPIEXEC_TEMPLATE_GOBAL_OPTION, global_options))
@@ -975,7 +965,7 @@ class MPI(object):
             if k in self.mpiexec_pass_environment:
                 self.log.debug("mpiexec_get_local_options: found local option %s in mpiexec_pass_environment." % k)
             else:
-                local_options.append(self.MPIEXEC_TEMPLATE_LOCAL_OPTION % {'name':k, "value":v})
+                local_options.append(self.MPIEXEC_TEMPLATE_LOCAL_OPTION % {'name': k, "value": v})
 
         self.log.debug("mpiexec_get_local_options: templates %s return options %s" %
                        (self.MPIEXEC_TEMPLATE_LOCAL_OPTION, local_options))
@@ -985,7 +975,7 @@ class MPI(object):
         """Create the local options to pass environment vaiables through mpiexec
         """
         self.log.debug("mpiexec_get_local_pass_variable_options: variables (and current value) to pass: %s" %
-                       ([ [x, os.environ[x]] for x in self.mpiexec_pass_environment]))
+                       ([[x, os.environ[x]] for x in self.mpiexec_pass_environment]))
 
         if '%(commaseparated)s' in self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION:
             self.log.debug("mpiexec_get_local_pass_variable_options: found commaseparated in template.")
