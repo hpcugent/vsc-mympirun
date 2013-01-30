@@ -35,7 +35,7 @@ Small mpi4py script that collects and prints some sanity information
 import os
 from vsc.utils import affinity
 from mpi4py import MPI
-from vsc.fancylogger import getLogger, setLogLevelInfo
+from vsc.utils.fancylogger import getLogger, setLogLevelInfo
 
 
 class Report(dict):
