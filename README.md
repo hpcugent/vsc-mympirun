@@ -6,6 +6,9 @@ Python libraries interfacing different IPMI implementations.
 
 Originally created by the [HPC team of Ghent University](http://ugent.be/hpc).
 
+# Documentation
+https://jenkins1.ugent.be/job/vsc-mympirun/Documentation/
+
 # License
 
 `vsc-mympirun` is made available under the GNU General Public License
