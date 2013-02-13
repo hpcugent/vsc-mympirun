@@ -1,4 +1,4 @@
-# vsc-mympirunm
+# vsc-mympirun
 
 [![Build Status](https://jenkins1.ugent.be/job/vsc-mympirun/badge/icon)](https://jenkins1.ugent.be/job/vsc-mympirun/)
 
