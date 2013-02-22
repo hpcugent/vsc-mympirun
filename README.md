@@ -2,7 +2,7 @@
 
 [![Build Status](https://jenkins1.ugent.be/job/vsc-mympirun/badge/icon)](https://jenkins1.ugent.be/job/vsc-mympirun/)
 
-Python libraries interfacing different IPMI implementations.
+Python libraries interfacing different mpi implementations.
 
 Originally created by the [HPC team of Ghent University](http://ugent.be/hpc).
 
