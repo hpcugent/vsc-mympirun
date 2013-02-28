@@ -27,3 +27,5 @@ pip-log.txt
 
 html
 test-reports
+
+setup.cfg
