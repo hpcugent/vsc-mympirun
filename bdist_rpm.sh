@@ -58,8 +58,7 @@ ALL_PACKAGES=$all_packages
 
 for package in $ALL_PACKAGES; do
   echo "Building RPM for $package"
-  setup=`echo ${package#vsc-} |tr '-' '_'`
-  python ./setup_${setup}.py  bdist_rpm
+  python ./setup.py  bdist_rpm
   # get latest one (name-version syntax)
   rpm_target=`ls -t dist/${package}-[0-9]*noarch.rpm | head -1`
   rpm_target_name=`basename ${rpm_target}`
