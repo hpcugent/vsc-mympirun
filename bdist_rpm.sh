@@ -63,10 +63,16 @@ for package in $ALL_PACKAGES; do
   rpm_target=`ls -t dist/${package}-[0-9]*noarch.rpm | head -1`
   rpm_target_name=`basename ${rpm_target}`
 
+  if ! [ -f "setup.cfg" ]
+  then
+    echo "No setup.cfg. Refusing cowardly to continue."
+    exit 1
+  fi
   # user specified requirements can be found in setup.cfg
   requirements=`grep "requires" setup.cfg | cut -d" " -f3- | tr "," "\n" | grep -v "^python-" | tr "\n" "|" | sed -e 's/|$//'`
   if [ -z "$requirements" ]; then
-    requirements="no-match-etc-etc-etc"
+    echo "No requirements found. Refusing cowardly to continue."
+    exit 1
   fi
 
   if [ -z "$release" ]; then
