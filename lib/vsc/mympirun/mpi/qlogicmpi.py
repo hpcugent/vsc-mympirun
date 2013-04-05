@@ -31,6 +31,7 @@ QLogicMPI specific class
 from vsc.mympirun.mpi.mpi import MPI
 import os
 
+
 class QLogicMPI(MPI):
     """
     """
@@ -99,17 +100,15 @@ class QLogicMPI(MPI):
         except:
             self.log.raiseException('mpiexec_get_local_pass_variable_options: failed to write rcfile %s' % (fn))
 
-
         variables = "-rcfile %s" % fn
         self.log.debug("mpiexec_get_local_pass_variable_options returns %s" % variables)
         return [variables]
-
 
     def _make_final_mpirun_cmd(self):
         """Create the acual mpirun command
             add it to self.mpirun_cmd
         """
-        # # mpirun opts
+        # mpirun opts
         if self.options.debuglvl > 0:
             self.mpirun_cmd.append('-V')
 
@@ -122,6 +121,5 @@ class QLogicMPI(MPI):
             if self.options.stats > 10:
                 stats_map.append('all')
             self.mpirun_cmd.append("-print-stats=%s" % ','.join(stats_map))
-
 
         self.mpirun_cmd += self.mpiexec_options
