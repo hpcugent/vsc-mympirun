@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 #
@@ -22,7 +22,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 
 """
 QLogicMPI specific class
@@ -75,7 +75,7 @@ class QLogicMPI(MPI):
         """Using rcfile with all options
             Use it to set quiescence options
         """
-        quiescence_opts = self.MPIEXEC_QUIESCENCECHECK_MAP[self.options.quiescencecheck]
+        quiescence_opts = self.MPIEXEC_QUIESCENCECHECK_MAP[self.options.qlogicmpi_quiescencecheck]
         self.log.debug("mpiexec_get_global_options: only setting quiescence options here: %s." % quiescence_opts)
 
         return [quiescence_opts]
@@ -94,7 +94,7 @@ class QLogicMPI(MPI):
         txt = "\n".join(opts)
         try:
             fn = os.path.join(self.mympirundir, 'qlcrcfile')
-            file(fn, 'w').write()
+            file(fn, 'w').write(txt)
             self.log.debug("mpiexec_get_local_pass_variable_options: wrote rcfile %s:\n%s" % (fn, txt))
         except:
             self.log.raiseException('mpiexec_get_local_pass_variable_options: failed to write rcfile %s' % (fn))
@@ -109,7 +109,7 @@ class QLogicMPI(MPI):
         """Create the acual mpirun command
             add it to self.mpirun_cmd
         """
-        ## mpirun opts
+        # # mpirun opts
         if self.options.debuglvl > 0:
             self.mpirun_cmd.append('-V')
 
