@@ -74,7 +74,7 @@ except:
     from distutils.command.build_py import build_py
     from distutils.command.sdist import sdist
 
-    class vsc_egg_info():
+    class vsc_egg_info(object):
         pass  # dummy class for distutils
 
     has_setuptools = False
@@ -223,8 +223,6 @@ def action_target(target, setupfn=setup, extra_sdist=[]):
     name = '_'.join(target['name'].split('-')[1:])
 
     cleanup()
-
-    make_setup(name)
 
     build_setup_cfg_for_bdist_rpm(target)
     x = parse_target(target)
