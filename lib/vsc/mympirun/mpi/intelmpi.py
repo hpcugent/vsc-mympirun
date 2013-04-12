@@ -47,11 +47,11 @@ class IntelMPI(MPI):
     RUNTIMEOPTION = {'options':{'mpdbulletproof':("Start MPD in bulletproof", None, "store_true", False),
                                 'fallback':("Enable device fallback", None, "store_true", False),
                                 'daplud':("Enable DAPL UD connections", None, "store_true", False),
+                                'xrc':("Enable Mellanox XRC", None, "store_true", False),
                                 },
                      'prefix':'impi',
                      'description': ('Intel MPI options', 'Advanced options specific for Intel MPI'),
                      }
-
 
     DEVICE_MPIDEVICE_MAP = {'ib':'rdssm', 'det':'det', 'shm':'shm', 'socket':'sock'}
 
@@ -198,7 +198,16 @@ class IntelHydraMPI(IntelMPI):
 
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero((self.mpitotalppn * self.nruniquenodes) > 64)
 
-        self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enable_disable(self.options.impi_daplud)
+        if self.options.impi_daplud:
+            if self.options.impi_xrc:
+                self.log.warning('Ignoring XRC setting when also requesting UD')
+            self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enable_disable(self.options.impi_daplud)
+            if not 'I_MPI_DAPL_UD_PROVIDER' in os.environ:
+                self.mpiexec_global_options['I_MPI_DAPL_UD_PROVIDER'] = 'ofa-v2-mlx4_0-1u'
+        elif self.options.impi_xrc:
+            # force it
+            self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:ofa'
+            self.mpiexec_global_options['I_MPI_OFA_USE_XRC'] = 1
 
 
 class IntelLegacy(IntelMPI):
@@ -219,7 +228,6 @@ class IntelLegacy(IntelMPI):
         opts = self.getmpdboot()
         cmd = "%s %s" % ('mpdboot', ' '.join(opts))
         ans.append([cmd, False])
-
 
         rulesname = 'rules.xml'
         if not os.path.exists(rulesname):
@@ -248,7 +256,6 @@ class IntelLegacy(IntelMPI):
 
         self.log.debug("maketunecmds returns %s" % ans)
         return ans
-
 
     def gettuning(self):
         """Get a tuning config file that matches the current code"""
