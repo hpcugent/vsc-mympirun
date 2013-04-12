@@ -32,11 +32,11 @@ Main sched class
 import os
 import random
 import re
-import time
-from vsc.fancylogger import getLogger
+from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.mpi.mpi import get_subclasses
 from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.missing import nub
+
 
 def whatSched(requested):
     """Return the scheduler class"""
@@ -64,7 +64,6 @@ class Sched(object):
     HYDRA_RMK = []
     HYDRA_LAUNCHER = ['ssh']
     HYDRA_LAUNCHER_EXEC = None
-
 
     def __init__(self, options=None, **kwargs):
         if not hasattr(self, 'log'):
@@ -101,8 +100,13 @@ class Sched(object):
 
         super(Sched, self).__init__(**kwargs)
 
+<<<<<<< HEAD
 
     # factory methods for MPI
+=======
+    # # TODO these will also need a factory method to verify or guess the requested mode
+    # # factory methods for MPI
+>>>>>>> master
     # to add a new MPI class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
     # classmethod
@@ -183,7 +187,6 @@ class Sched(object):
 
         self.log.debug("_cores_on_thisnode: found %s" % self.foundppn)
 
-
     def which_cpus(self):
         """
         Determine which cpus can be used
@@ -198,12 +201,15 @@ class Sched(object):
         if self.foundppn is None:
             self._cores_on_this_node()
 
+<<<<<<< HEAD
         try:
             cs = sched_getaffinity()  # get affinity for current proc
             self.cpus = [idx for idx, cpu in enumerate(cs.cpus) if cpu == 1]
         except:
             self.cpus = range(self.foundppn)
 
+=======
+>>>>>>> master
         self.log.debug("which_cpus: using cpus %s" % (self.cpus))
 
     def is_large(self):
@@ -305,5 +311,3 @@ class Sched(object):
 
         self.mpinodes = res
         self.nrmpinodes = len(res)
-
-
