@@ -1,5 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env python
 ##
+# Copyright 2011-2012 Ghent University
 # Copyright 2011-2012 Jens Timmerman
 #
 # This file is part of VSC-tools,
@@ -23,18 +24,11 @@
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
 ##
-D="['$0',"
-for i in $@; do
- D="$D'$i',";
-done;
-D="$D]"
+"""
+Initialize vsc package.
+the vsc namespace is used in different folders allong the system
+so explicitly declare this is also the vsc namespace
+"""
+import pkg_resources
+pkg_resources.declare_namespace(__name__)
 
-#print help if asked
-if [[ "$D" == *-h* ]]
-then
-    python -c "import logdaemon; logdaemon.main($D)"
-#else: start the daemon and set the environment
-else
-    for i in `python -c "import logdaemon; logdaemon.main($D)"`; do export $i; echo $i; done;
-fi
-# now use mpi to get these environment variables to the clients.

@@ -1,6 +1,6 @@
 #
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2009-2013 Ghent University
+# Copyright 2009-2013 Stijn De Weirdt
 #
 # This file is part of VSC-tools,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -28,29 +28,13 @@
 Local scheduler : no scheduler, act on single node
 """
 
-from vsc.mympirun.rm.sched import Sched
-import time
-import random
+from vsc.mympirun.rm.local import Local
 
-class Local(Sched):
+class Scoop(Local):
     """
-    Local class for local debugging (ie no scheduler settings)
+    Class for jobs running on localhost started by SCOOP (ie no scheduler settings)
     - will use the amount of cores found on localhost.
     """
-    _sched_for = ['local']
-    SCHED_ENVIRON_ID = 'LOCAL_JOBID'
-    SCHED_ENVIRON_ID_AUTOGENERATE_JOBID = True
-
-    HYDRA_LAUNCHER = ['local']
-
-    def get_node_list(self):
-        """Get the hostnames for the localnode
-            MPIRUN_LOCALHOSTNAME is from multiple inheritance with MPI class
-        """
-
-        localhostname = getattr(self, 'MPIRUN_LOCALHOSTNAME', 'localhost')
-        self.nodes = [localhostname] * len(self.cpus)
-        self.nrnodes = len(self.nodes)  # same as len(self.cpus)
-
-        self.log.debug("get_node_list: set %s nodes: %s" % (self.nrnodes, self.nodes))
+    _sched_for = ['scoop']
+    SCHED_ENVIRON_ID = 'SCOOP_JOBID'  # with Local, this is optional
 
