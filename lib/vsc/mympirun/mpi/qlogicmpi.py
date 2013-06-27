@@ -126,7 +126,7 @@ class QLogicMPI(MPI):
 
     def qlogic_ipath(self):
         """Override some settings to deal with broken ipath load balancing"""
-        super(QLogicMPI).qlogic_ipath()
+        super(QLogicMPI, self).qlogic_ipath()
 
         # pin all resources on single adapter, allow shared contexts
         # can be externally disabled by setting PSM_SHAREDCONTEXTS=0 and IPATH_UNIT=-1
