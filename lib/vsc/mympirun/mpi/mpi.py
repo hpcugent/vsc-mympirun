@@ -102,7 +102,7 @@ def stripfake(path=None):
         assumes (VSC-tools|mympirun)/1.0.0/bin/fake
     """
     reg_fakepath = re.compile(r"" + os.sep.join(['.*?', INSTALLATION_SUBDIRECTORY_NAME + '.*?', 'bin',
-                                                 FAKE_SUBDIRECTORY_NAME, '[^%s].*$' % os.sep]))
+                                                 '%s(%s[^%s]*)?$' % (FAKE_SUBDIRECTORY_NAME, os.sep, os.sep)]))
 
     if path is None:
         path = []
