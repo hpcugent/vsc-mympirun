@@ -102,7 +102,6 @@ class Sched(object):
         super(Sched, self).__init__(**kwargs)
 
     # factory methods for MPI
-    # # factory methods for MPI
     # to add a new MPI class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
     # classmethod
