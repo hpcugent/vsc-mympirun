@@ -45,7 +45,7 @@ import subprocess
 # Going to guess myself
 
 # part of the directory that contains the installed fakes
-INSTALLATION_SUBDIRECTORY_NAME = 'mympirun'
+INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|mympirun)'
 # the fake subdir to contain the fake mpirun symlink
 # also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
@@ -99,7 +99,7 @@ def _setenv(name, value):
 
 def stripfake(path=None):
     """Remove the fake wrapper path:
-        assumes mympirun/1.0.0/bin/fake
+        assumes (VSC-tools|mympirun)/1.0.0/bin/fake
     """
     reg_fakepath = re.compile(r"" + os.sep.join(['.*?', INSTALLATION_SUBDIRECTORY_NAME + '.*?', 'bin',
                                                  FAKE_SUBDIRECTORY_NAME, '[^%s].*$' % os.sep]))
