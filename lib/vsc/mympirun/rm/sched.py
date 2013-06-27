@@ -32,6 +32,7 @@ Main sched class
 import os
 import random
 import re
+import time
 from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.mpi.mpi import get_subclasses
 from vsc.utils.affinity import sched_getaffinity
@@ -100,13 +101,7 @@ class Sched(object):
 
         super(Sched, self).__init__(**kwargs)
 
-<<<<<<< HEAD
-
     # factory methods for MPI
-=======
-    # # TODO these will also need a factory method to verify or guess the requested mode
-    # # factory methods for MPI
->>>>>>> master
     # to add a new MPI class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
     # classmethod
@@ -201,15 +196,12 @@ class Sched(object):
         if self.foundppn is None:
             self._cores_on_this_node()
 
-<<<<<<< HEAD
         try:
             cs = sched_getaffinity()  # get affinity for current proc
             self.cpus = [idx for idx, cpu in enumerate(cs.cpus) if cpu == 1]
         except:
             self.cpus = range(self.foundppn)
 
-=======
->>>>>>> master
         self.log.debug("which_cpus: using cpus %s" % (self.cpus))
 
     def is_large(self):
