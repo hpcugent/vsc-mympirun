@@ -123,3 +123,12 @@ class QLogicMPI(MPI):
             self.mpirun_cmd.append("-print-stats=%s" % ','.join(stats_map))
 
         self.mpirun_cmd += self.mpiexec_options
+
+    def qlogic_ipath(self):
+        """Override some settings to deal with broken ipath load balancing"""
+        super(QLogicMPI).qlogic_ipath()
+
+        # pin all resources on single adapter, allow shared contexts
+        # can be externally disabled by setting PSM_SHAREDCONTEXTS=0 and IPATH_UNIT=-1
+        self.mpiexec_global_options['PSM_SHAREDCONTEXTS'] = '1'
+        self.mpiexec_global_options['IPATH_UNIT'] = '0'
