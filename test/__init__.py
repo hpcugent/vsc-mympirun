@@ -1,5 +1,5 @@
-#!/usr/bin/env python
 ##
+#
 # Copyright 2012-2013 Ghent University
 #
 # This file is part of vsc-mympirun,
@@ -26,10 +26,8 @@
 ##
 """
 @author: Jens Timmerman (Ghent University)
-
-Initialize vsc package.
-the vsc namespace is used in different folders allong the system
-so explicitly declare this is also the vsc namespace
 """
-import pkg_resources
-pkg_resources.declare_namespace(__name__)
+from pkgutil import extend_path
+
+# we're not the only ones in this namespace
+__path__ = extend_path(__path__, __name__)  #@ReservedAssignment

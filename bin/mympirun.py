@@ -27,37 +27,39 @@
 """
 A mpirun wrapper
 
-Stijn De Weirdt HPC UGent / VSC
 v1 bash 10/08/2009
 v2 python rewrite 19/03/2010
 v3 refactored python 28/08/2012
+v4 cleanup 5/11/2013
 
 Expert mode:
     export MYMPIRUN_MAIN_EXCEPTION=1 to show all exceptions
 
 TODO:
-    force the prefix to MYMPIRUN ?
     intel tuning code
-"""
 
-from vsc.mympirun.option import MympirunOption
-from vsc.mympirun.mpi.mpi import whatMPI
-from vsc.mympirun.rm.sched import whatSched
-from vsc.utils.fancylogger import getLogger, setLogLevelInfo
+@author: Stijn De Weirdt, Jens Timmerman (HPC UGent / VSC)
+"""
 
 import sys
 import os
 
-_logger = getLogger()
+from vsc.utils import fancylogger
+from vsc.mympirun.mpi.factory import getinstance
+from vsc.mympirun.mpi.mpi import whatMPI
+from vsc.mympirun.option import MympirunOption
+from vsc.mympirun.rm.sched import whatSched
+
+_logger = fancylogger.getLogger()
 
 
 class ExitException(Exception):
-    """Raise and main sees this as regular exit"""
+    """Exception thrown when we wish to exit, but no real errors occured"""
     pass
 
 
-def getInstance():
-    """Make an instance of the relevant MPI class. Also set the RM instance"""
+def get_mpi_and_sched_and_options():
+    """Parses the mpi and scheduler based on current environment and guesses the best one to use"""
     scriptname, mpi, found_mpi = whatMPI(sys.argv[0])
 
     ismpirun = scriptname == 'mpirun'
@@ -74,12 +76,12 @@ def getInstance():
     found_sched_names = [x.__name__ for x in found_sched]
 
     if mo.options.showmpi:
-        setLogLevelInfo()
+        fancylogger.setLogLevelInfo()
         _logger.info("Found MPI classes %s" % (", ".join(found_mpi_names)))
         raise ExitException("Exit from showmpi")
 
     if mo.options.showsched:
-        setLogLevelInfo()
+        fancylogger.setLogLevelInfo()
         _logger.info("Found Sched classes %s" % (", ".join(found_sched_names)))
         raise ExitException("Exit from showsched")
 
@@ -98,19 +100,13 @@ def getInstance():
         mo.log.debug("Found sched class %s from options.schedtype %s (all Sched found %s)" %
                      (sched.__name__, mo.options.schedtype, ", ".join(found_sched_names)))
 
-    class M(mpi, sched):
-        """Temporary class to couple MPI and local sched"""
-        def __init__(self, **kwargs):
-            self.log = getLogger("%s_%s" % (mpi.__name__, sched.__name__))
-            super(M, self).__init__(**kwargs)
-
-    return M(options=mo.options, cmdargs=mo.args)
+    return mpi, sched, mo
 
 
-if __name__ == '__main__':
-    ## TODO wrap in try/except
+def main():
+    """Main function"""
     try:
-        m = getInstance()
+        m = getinstance(get_mpi_and_sched_and_options())
         m.main()
         ec = 0
     except ExitException:
@@ -122,3 +118,6 @@ if __name__ == '__main__':
         ec = 1
 
     sys.exit(ec)
+
+if __name__ == '__main__':
+    main()
