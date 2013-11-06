@@ -36,6 +36,8 @@ import time
 import resource
 import stat
 import subprocess
+import random
+import string
 
 
 from vsc.utils.fancylogger import getLogger
@@ -749,10 +751,13 @@ class MPI(object):
         """Make the mpdboot configuration"""
         # check .mpd.conf existence
         #TODO: use expanduser, create file if non exists.
-        mpdconffn = os.path.join(os.environ['HOME'], '.mpd.conf')
+        mpdconffn = os.path.expanduser('~/.mpd.conf')
         if not os.path.exists(mpdconffn):
-            self.log.raiseException(("make_mpdboot: mpd.conf file not found at %s. Create this file "
+            self.log.warning(("make_mpdboot: mpd.conf file not found at %s. Creating this file "
                                      "(text file with minimal entry 'password=<somesecretpassword>')") % mpdconffn)
+            mpdconff = open(mpdconffn, 'w')
+            mpdconff.write("password=%s" % ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(10)))
+            mpdconff.close()
 
         self.mpdboot_set_localhost_interface()
 

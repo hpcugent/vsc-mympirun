@@ -30,6 +30,7 @@ Tests for the vsc.utils.missing module.
 
 @author: Jens Timmerman (Ghent University)
 """
+import os
 from unittest import TestCase, TestLoader
 
 
@@ -37,6 +38,9 @@ from vsc.mympirun.mpi.factory import getinstance
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
+
+# we wish to use the mpirun we ship
+os.environ["PATH"] += os.pathsep + os.path.realpath(__file__)
 
 
 class TestMPI(TestCase):
@@ -46,7 +50,7 @@ class TestMPI(TestCase):
         """"Test the MPI class with the local scheduler"""
         # options
         m = MympirunOption()
-        m.args = ['echo foo']
+        m.args = ['echo', 'foo']
         # should not throw an error
         mpi_instance = getinstance(MPI, Local, m)
         mpi_instance.main()
