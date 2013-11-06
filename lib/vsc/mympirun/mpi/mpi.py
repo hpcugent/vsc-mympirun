@@ -1,6 +1,5 @@
-#
-# Copyright 2011-2012 Ghent University
-# Copyright 2011-2012 Stijn De Weirdt
+##
+# Copyright 2011-2013 Ghent University
 #
 # This file is part of VSC-tools,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -22,16 +21,12 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-#
-
+##
 """
 Base MPI class, all actual classes should inherit from this one
-"""
 
-from vsc.utils.fancylogger import getLogger
-from vsc.mympirun.external.IPy import IP
-from vsc.utils.missing import nub
-from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
+@author: Stijn De Weirdt
+"""
 
 import os
 import re
@@ -42,6 +37,12 @@ import resource
 import stat
 import subprocess
 
+
+from vsc.utils.fancylogger import getLogger
+from vsc.mympirun.external.IPy import IP
+from vsc.utils.missing import get_subclasses, nub
+from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
+
 # Going to guess myself
 
 # part of the directory that contains the installed fakes
@@ -49,17 +50,6 @@ INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|mympirun)'
 # the fake subdir to contain the fake mpirun symlink
 # also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
-
-
-def get_subclasses(klass):
-    """
-    Get all subclasses recursively
-    """
-    res = []
-    for cl in klass.__subclasses__():
-        res.extend(get_subclasses(cl))
-        res.append(cl)
-    return res
 
 
 def whatMPI(name):
@@ -102,10 +92,11 @@ def stripfake(path=None):
         assumes (VSC-tools|mympirun)/1.0.0/bin/fake
     """
     reg_fakepath = re.compile(r"" + os.sep.join(['.*?', INSTALLATION_SUBDIRECTORY_NAME + '.*?', 'bin',
-                                                 '%(fake_subdir)s(%(sep)s[^%(sep)s]*)?$' % {
-                                                        'fake_subdir': FAKE_SUBDIRECTORY_NAME,
-                                                        'sep': os.sep
-                                                        }]))
+                                                '%(fake_subdir)s(%(sep)s[^%(sep)s]*)?$' %
+                                                {
+                                                    'fake_subdir': FAKE_SUBDIRECTORY_NAME,
+                                                    'sep': os.sep
+                                                }]))
 
     if path is None:
         path = []
@@ -757,6 +748,7 @@ class MPI(object):
     def make_mpdboot(self):
         """Make the mpdboot configuration"""
         # check .mpd.conf existence
+        #TODO: use expanduser, create file if non exists.
         mpdconffn = os.path.join(os.environ['HOME'], '.mpd.conf')
         if not os.path.exists(mpdconffn):
             self.log.raiseException(("make_mpdboot: mpd.conf file not found at %s. Create this file "
