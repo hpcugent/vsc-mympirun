@@ -1,13 +1,16 @@
 # vsc-mympirun
 
-[![Build Status](https://jenkins1.ugent.be/job/vsc-mympirun/badge/icon)](https://jenkins1.ugent.be/job/vsc-mympirun/)
-
+### Build Status
+- Python 2.4 : [![Build Status](https://jenkins1.ugent.be/job/vsc-mympirun-python24/badge/icon)](https://jenkins1.ugent.be/job/vsc-mympirun-python24/)
+- Python 2.6 : [![Build Status](https://jenkins1.ugent.be/job/vsc-mympirun-python26/badge/icon)](https://jenkins1.ugent.be/job/vsc-mympirun-python26/)
+- Python 2.7 : [![Build Status](https://jenkins1.ugent.be/job/vsc-mympirun-python27/badge/icon)](https://jenkins1.ugent.be/job/vsc-mympirun-python27/)
+- 
 Python libraries interfacing different mpi implementations.
 
 Originally created by the [HPC team of Ghent University](http://ugent.be/hpc).
 
 # Documentation
-https://jenkins1.ugent.be/job/vsc-mympirun/Documentation/
+https://jenkins1.ugent.be/job/vsc-mympirun-python26/Documentation/
 
 # License
 
