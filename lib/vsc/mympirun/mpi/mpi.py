@@ -758,6 +758,8 @@ class MPI(object):
             mpdconff = open(mpdconffn, 'w')
             mpdconff.write("password=%s" % ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(10)))
             mpdconff.close()
+            # set correct permissions on this file.
+            os.chmod(mpdconffn, 0400)
 
         self.mpdboot_set_localhost_interface()
 

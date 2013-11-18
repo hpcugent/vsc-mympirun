@@ -31,6 +31,7 @@ Tests for the vsc.utils.missing module.
 @author: Jens Timmerman (Ghent University)
 """
 import os
+import stat
 from unittest import TestCase, TestLoader
 
 
@@ -54,6 +55,10 @@ class TestMPI(TestCase):
         # should not throw an error
         mpi_instance = getinstance(MPI, Local, m)
         mpi_instance.main()
+
+        # check for correct .mpd.conf file
+        mpdconffn = os.path.expanduser('~/.mpd.conf')
+        self.assertEqual(stat.S_IMODE(os.stat(mpdconffn).st_mode), 0400)
 
 
 def suite():
