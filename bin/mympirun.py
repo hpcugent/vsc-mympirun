@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-##
+# #
 # Copyright 2009-2012 Ghent University
 # Copyright 2009-2012 Stijn De Weirdt
 #
@@ -23,7 +23,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 """
 A mpirun wrapper
 
@@ -106,13 +106,13 @@ def get_mpi_and_sched_and_options():
 def main():
     """Main function"""
     try:
-        m = getinstance(get_mpi_and_sched_and_options())
+        m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
         ec = 0
     except ExitException:
         ec = 0
     except:
-        ## TODO: cleanup, only catch known exceptions
+        # # TODO: cleanup, only catch known exceptions
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
             _logger.exception("Main failed")
         ec = 1
