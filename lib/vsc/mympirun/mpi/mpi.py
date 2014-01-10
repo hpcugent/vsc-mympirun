@@ -1,4 +1,4 @@
-##
+# #
 # Copyright 2011-2013 Ghent University
 #
 # This file is part of VSC-tools,
@@ -21,7 +21,7 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-##
+# #
 """
 Base MPI class, all actual classes should inherit from this one
 
@@ -48,7 +48,7 @@ from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_asy
 # Going to guess myself
 
 # part of the directory that contains the installed fakes
-INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|mympirun)'
+INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
 # the fake subdir to contain the fake mpirun symlink
 # also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
@@ -750,7 +750,7 @@ class MPI(object):
     def make_mpdboot(self):
         """Make the mpdboot configuration"""
         # check .mpd.conf existence
-        #TODO: use expanduser, create file if non exists.
+        # TODO: use expanduser, create file if non exists.
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         if not os.path.exists(mpdconffn):
             self.log.warning(("make_mpdboot: mpd.conf file not found at %s. Creating this file "
