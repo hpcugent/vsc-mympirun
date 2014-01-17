@@ -39,9 +39,7 @@ PACKAGE = {
     'version': '3.2.3',
     'author': [sdw],
     'maintainer': [sdw],
-    'packages': ['vsc.mympirun', 'vsc.mympirun.mpi', 'vsc.mympirun.rm', 'vsc.mympirun.external'],
-    'py_modules': ['vsc.__init__'],
-    'namespace_packages': ['vsc'],
+    'packages': ['vsc.mympirun', 'vsc.mympirun.mpi', 'vsc.mympirun.rm', 'vsc.mympirun.external', 'vsc'],
     'scripts': ['bin/mympirun.py', 'bin/pbsssh.sh', 'bin/sshsleep.sh', 'bin/mympisanity.py'],
     'cmdclass': {
         "install_scripts": mympirun_vsc_install_scripts,
