@@ -162,6 +162,7 @@ class MPI(object):
 
     MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME = "--rsh=%(rsh)s"
     MPDBOOT_OPTIONS = []
+    MPDBOOT_SET_INTERFACE = True
 
     MPIEXEC_TEMPLATE_GOBAL_OPTION = "-genv %(name)s %(value)s"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "-env %(name)s %(value)s"
@@ -776,11 +777,15 @@ class MPI(object):
         self.mpdboot_options.append("--file=%s" % self.mpdboot_node_filename)
 
         # mpdboot ifhn
-        if self.HYDRA:
-            iface = "-iface %s" % self.mpdboot_localhost_interface[1]
+        if self.MPDBOOT_SET_INTERFACE:
+            if self.HYDRA:
+                iface = "-iface %s" % self.mpdboot_localhost_interface[1]
+            else:
+                iface = "--ifhn=%s" % self.mpdboot_localhost_interface[0]
+            self.log.debug('Set mpdboot interface option "%s"' % iface)
+            self.mpdboot_options.append(iface)
         else:
-            iface = "--ifhn=%s" % self.mpdboot_localhost_interface[0]
-        self.mpdboot_options.append(iface)
+            self.log.debug('No mpdboot interface option')
 
         if self.options.universe is not None and self.options.universe > 0:
             self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus())
