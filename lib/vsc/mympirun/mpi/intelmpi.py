@@ -141,7 +141,7 @@ class IntelMPI(MPI):
         if self.netmask:
             self.mpiexec_global_options['I_MPI_NETMASK'] = self.netmask
 
-        self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = self._one_zero(self.options.pinmpi)
+        self.mpiexec_global_options['I_MPI_PIN'] = self._one_zero(self.options.pinmpi)
 
         if self.options.hybrid is not None and self.options.hybrid > 1:
             self.mpiexec_global_options["I_MPI_CPUINFO"] = "auto"
