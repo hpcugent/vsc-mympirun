@@ -34,7 +34,7 @@ from shared_setup_mympirun import mympirun_vsc_install_scripts
 
 PACKAGE = {
     'name': 'vsc-mympirun',
-    'provides': 'vsc-mympirun = 3.2.2',
+    'provides': 'vsc-mympirun = 3.2.3',
     'install_requires': ['vsc-base >= 0.99'],
     'version': '3.2.2',
     'author': [sdw],
