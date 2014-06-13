@@ -188,7 +188,7 @@ class IntelHydraMPI(IntelMPI):
                             'ib':'shm:dapl',
                             'det':'det',
                             'shm':'shm',
-                            'socket':'shm:sock',
+                            'socket':'shm:tcp',
                             }
 
     def make_mpiexec_hydra_options(self):
