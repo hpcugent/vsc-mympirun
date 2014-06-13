@@ -184,11 +184,13 @@ class IntelHydraMPI(IntelMPI):
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
 
+    MPDBOOT_SET_INTERFACE = False
+
     DEVICE_MPIDEVICE_MAP = {
                             'ib':'shm:dapl',
                             'det':'det',
                             'shm':'shm',
-                            'socket':'shm:sock',
+                            'socket':'shm:tcp',
                             }
 
     def make_mpiexec_hydra_options(self):
