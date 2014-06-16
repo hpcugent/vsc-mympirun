@@ -32,11 +32,11 @@ Setup for mympirun
 from shared_setup import action_target, sdw
 from shared_setup_mympirun import mympirun_vsc_install_scripts
 
-VERSION = '3.4.0'
+VERSION = '3.4.1'
 PACKAGE = {
     'name': 'vsc-mympirun',
     'provides': 'vsc-mympirun = %s' % VERSION,
-    'install_requires': ['vsc-base >= 0.99'],
+    'install_requires': ['vsc-base >= 1.8.6'],
     'version': VERSION,
     'author': [sdw],
     'maintainer': [sdw],
