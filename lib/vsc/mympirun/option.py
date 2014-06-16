@@ -94,6 +94,7 @@ class MympirunOption(GeneralOption):
                 "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate comamnd)",
                                   "str", "store", None),
                 'branchcount': ("Set the hydra branchcount", "int", "store", None),
+                'qlogic_ipath': ("Force qlogic/true scale ipath", None, "store_true", None),
                 }
 
         descr = ["mympirun options", "General advanced mympirun options"]
