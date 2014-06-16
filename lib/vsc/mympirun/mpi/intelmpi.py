@@ -161,10 +161,26 @@ class IntelMPI(MPI):
         if self.options.qlogic_ipath:
             if 'I_MPI_DEVICE' in self.mpiexec_global_options:
                 del self.mpiexec_global_options['I_MPI_DEVICE']
+            if 'TMI_CONFIG' in os.environ:
+                tmicfg = os.environ.get('TMI_CONFIG')
+                if not os.path.exists(tmicfg):
+                    self.log.error('TMI_CONFIG set (%s), but not found.' % tmicfg)
+            elif not os.path.exists('/etc/tmi.conf'):
+                self.log.debug("No TMI_CONFIG and no /etc/tmi.conf found, creating one")
+                # make the psm tmi config
+                tmicfg = os.path.join(self.mympirundir, 'intelmpi.tmi.conf')
+                if not os.path.exists(tmicfg):
+                    open(tmicfg, 'w').write('psm 1.0 libtmip_psm.so " "')
+                self.mpiexec_global_options['TMI_CONFIG'] = tmicfg
             self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:tmi'  # TODO shm:tmi or tmi
             self.mpiexec_global_options['I_MPI_TMI_PROVIDER'] = 'psm'
             if self.options.debuglvl > 0:
                 self.mpiexec_global_options['TMI_DEBUG'] = '1'
+
+
+            if self.options.pinmpi:
+                self.log.debug('Have PSM set affinity (disable I_MPI_PIN)')
+                self.mpiexec_global_options['I_MPI_PIN'] = '0'
 
     def mpirun_prepare_execution(self):
         """Small change"""
