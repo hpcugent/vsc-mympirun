@@ -377,18 +377,52 @@ class MPI(object):
         """See if a qlogic device is available to set PSM parameters
             - at least one port in /ipathfs
         """
-        setattr(self.options, 'qlogic_ipath', None)
+        if self.options.qlogic_ipath is False:
+            self.log.debug("Skip the ipath checks")
+            return
 
-        ipathpath = "/ipathfs/0"
-        if os.path.isdir(ipathpath):
-            self.mpiexec_global_options['PSM_SHAREDCONTEXTS'] = '0'
+        ipathpaths = ["/dev/ipath", "/ipathfs/0", "/dev/ipath0"]
+        ipathpath = None
+        for ipp in ipathpaths:
+            if os.path.isdir(ipathpath):
+                ipathpath = ipp
+                break
+
+        if ipathpath:
+            # how many contexts?
+            contxts = 0
+            sharedcontexts = True
+            sysib = "/sys/class/infiniband"
+            hcas = 0
+            if os.path.isdir(sysib):
+                for qibdir in os.listdir(sysib):
+                    fn = os.path.join(sysib, qibdir, 'nctxts')
+                    if qibdir.startswith('qib') and os.path.exists(fn):
+                        contxts += int(open(fn).read())
+                        hcas += 1
+            if contxts <= self.ppn:
+                # enough HW contexts not to share (assuming this is the only job on the node)
+                sharedcontexts = False
+
+            self.log.debug("Found %s HCAs with %s contexts for %s ppn: detected shared context %s" %
+                           (hcas, contxts, self.ppn, sharedcontexts))
+            self.mpiexec_global_options['PSM_SHAREDCONTEXTS'] = '%d' % sharedcontexts
             if self.options.debuglvl > 0:
                 self.mpiexec_global_options['PSM_TRACEMASK'] = '0x101'
+
+            if self.options.pinmpi:
+                self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '0'
+            else:
+                self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '1'
+
             self.log.debug("qlogic_ipath: ipath found %s" % ipathpath)
             self.options.qlogic_ipath = True
         else:
-            self.log.debug("qlogic_ipath: ipath path %s not found" % ipathpath)
-            self.options.qlogic_ipath = False
+            if self.options.qlogic_ipath:
+                self.log.debug("qlogic_ipath: forced ipath, but ipath path not found from paths %s" % ipathpaths)
+            else:
+                self.log.debug("qlogic_ipath: ipath path not found from paths %s" % ipathpaths)
+                self.options.qlogic_ipath = False
 
     def scalemp_vsmp(self):
         """See if the node is using ScaleMP vSMP to set various parameters
