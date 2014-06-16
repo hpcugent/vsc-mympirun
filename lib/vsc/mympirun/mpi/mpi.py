@@ -184,7 +184,7 @@ class MPI(object):
         self.device = None
 
         self.hydra_info = None
-        self.has_hydra = self.set_has_hydra()
+        self.has_hydra = self._has_hydra()
 
         self.netmasktype = None
         self.netmask = None
@@ -247,7 +247,7 @@ class MPI(object):
         self.log.debug("_setenv; set name %s to value %s" % (name, value))
         _setenv(name, value)
 
-    def set_has_hydra(self):
+    def _has_hydra(self):
         """Has HYDRA or not"""
         return self.HYDRA
 

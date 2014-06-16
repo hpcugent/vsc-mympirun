@@ -61,13 +61,14 @@ class IntelMPI(MPI):
 
     MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-envlist %(commaseparated)s"
 
-    def set_has_hydra(self):
+    def _has_hydra(self):
         """Has HYDRA or not"""
         mgr = os.environ.get('I_MPI_PROCESS_MANAGER', None)
         if mgr == 'mpd':
+            self.log.debug("No hydra, I_MPI_PROCESS_MANAGER set to %s" % mgr)
             return False
         else:
-            return self.HYDRA
+            return super(IntelMPI, self)._has_hydra()
 
     def _pin_flavour(self, mp=None):
         if self.options.hybrid is not None and self.options.hybrid in (4,):
