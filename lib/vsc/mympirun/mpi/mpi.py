@@ -184,6 +184,7 @@ class MPI(object):
         self.device = None
 
         self.hydra_info = None
+        self.has_hydra = self.set_has_hydra()
 
         self.netmasktype = None
         self.netmask = None
@@ -245,6 +246,10 @@ class MPI(object):
     def _setenv(self, name, value):
         self.log.debug("_setenv; set name %s to value %s" % (name, value))
         _setenv(name, value)
+
+    def set_has_hydra(self):
+        """Has HYDRA or not"""
+        return self.HYDRA
 
     def cleanup(self):
         # remove mympirundir
@@ -585,7 +590,7 @@ class MPI(object):
         mpdboottxt = ""
         for n in self.uniquenodes:
             txt = "%s" % n
-            if not self.HYDRA:
+            if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
                     txt += ":%s" % self.get_universe_ncpus()
                 txt += " ifhn=%s" % n
@@ -812,7 +817,7 @@ class MPI(object):
 
         # mpdboot ifhn
         if self.MPDBOOT_SET_INTERFACE:
-            if self.HYDRA:
+            if self.has_hydra:
                 iface = "-iface %s" % self.mpdboot_localhost_interface[1]
             else:
                 iface = "--ifhn=%s" % self.mpdboot_localhost_interface[0]
@@ -833,7 +838,7 @@ class MPI(object):
             self.mpdboot_options.append("--verbose")
 
         # mpdboot rsh command
-        if not self.HYDRA:
+        if not self.has_hydra:
             self.mpdboot_options.append(self.MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME % {'rsh': self.get_rsh()})
 
     def mpdboot_set_localhost_interface(self):
@@ -865,7 +870,7 @@ class MPI(object):
         """The mpiexec options"""
         self.mpiexec_options = self.MPIEXEC_OPTIONS[:]
 
-        if self.HYDRA:
+        if self.has_hydra:
             self.make_mpiexec_hydra_options()
         else:
             self.mpiexec_options.append("-machinefile %s" % self.mpiexec_node_filename)
