@@ -177,15 +177,14 @@ class IntelMPI(MPI):
             elif not os.path.exists('/etc/tmi.conf'):
                 self.log.debug("No TMI_CONFIG and no /etc/tmi.conf found, creating one")
                 # make the psm tmi config
-                tmicfg = os.path.join(self.mympirundir, 'intelmpi.tmi.conf')
+                tmicfg = os.path.join(self.mympirunbasedir, 'intelmpi.tmi.conf')
                 if not os.path.exists(tmicfg):
-                    open(tmicfg, 'w').write('psm 1.0 libtmip_psm.so " "')
+                    open(tmicfg, 'w').write('psm 1.0 libtmip_psm.so " "\n')
                 self.mpiexec_global_options['TMI_CONFIG'] = tmicfg
             self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:tmi'  # TODO shm:tmi or tmi
             self.mpiexec_global_options['I_MPI_TMI_PROVIDER'] = 'psm'
             if self.options.debuglvl > 0:
                 self.mpiexec_global_options['TMI_DEBUG'] = '1'
-
 
             if self.options.pinmpi:
                 self.log.debug('Have PSM set affinity (disable I_MPI_PIN)')
