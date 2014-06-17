@@ -228,7 +228,7 @@ class Sched(object):
             default_rsh = getattr(self, 'DEFAULT_RSH', None)  # set in MPI, not in RM
             if default_rsh is not None:
                 rsh = default_rsh
-            elif getattr(self, 'HYDRA', None):
+            elif getattr(self, 'has_hydra', None):
                 rsh = 'ssh'  # default anyway
             elif self.is_large():
                 rsh = self.RSH_LARGE_CMD

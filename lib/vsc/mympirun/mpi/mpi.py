@@ -184,6 +184,7 @@ class MPI(object):
         self.device = None
 
         self.hydra_info = None
+        self.has_hydra = self._has_hydra()
 
         self.netmasktype = None
         self.netmask = None
@@ -245,6 +246,10 @@ class MPI(object):
     def _setenv(self, name, value):
         self.log.debug("_setenv; set name %s to value %s" % (name, value))
         _setenv(name, value)
+
+    def _has_hydra(self):
+        """Has HYDRA or not"""
+        return self.HYDRA
 
     def cleanup(self):
         # remove mympirundir
@@ -377,18 +382,52 @@ class MPI(object):
         """See if a qlogic device is available to set PSM parameters
             - at least one port in /ipathfs
         """
-        setattr(self.options, 'qlogic_ipath', None)
+        if self.options.qlogic_ipath is False:
+            self.log.debug("Skip the ipath checks")
+            return
 
-        ipathpath = "/ipathfs/0"
-        if os.path.isdir(ipathpath):
-            self.mpiexec_global_options['PSM_SHAREDCONTEXTS'] = '0'
+        ipathpaths = ["/dev/ipath", "/ipathfs/0", "/dev/ipath0"]
+        ipathpath = None
+        for ipp in ipathpaths:
+            if os.path.isdir(ipathpath):
+                ipathpath = ipp
+                break
+
+        if ipathpath:
+            # how many contexts?
+            contxts = 0
+            sharedcontexts = True
+            sysib = "/sys/class/infiniband"
+            hcas = 0
+            if os.path.isdir(sysib):
+                for qibdir in os.listdir(sysib):
+                    fn = os.path.join(sysib, qibdir, 'nctxts')
+                    if qibdir.startswith('qib') and os.path.exists(fn):
+                        contxts += int(open(fn).read())
+                        hcas += 1
+            if contxts <= self.ppn:
+                # enough HW contexts not to share (assuming this is the only job on the node)
+                sharedcontexts = False
+
+            self.log.debug("Found %s HCAs with %s contexts for %s ppn: detected shared context %s" %
+                           (hcas, contxts, self.ppn, sharedcontexts))
+            self.mpiexec_global_options['PSM_SHAREDCONTEXTS'] = '%d' % sharedcontexts
             if self.options.debuglvl > 0:
                 self.mpiexec_global_options['PSM_TRACEMASK'] = '0x101'
+
+            if self.options.pinmpi:
+                self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '0'
+            else:
+                self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '1'
+
             self.log.debug("qlogic_ipath: ipath found %s" % ipathpath)
             self.options.qlogic_ipath = True
         else:
-            self.log.debug("qlogic_ipath: ipath path %s not found" % ipathpath)
-            self.options.qlogic_ipath = False
+            if self.options.qlogic_ipath:
+                self.log.debug("qlogic_ipath: forced ipath, but ipath path not found from paths %s" % ipathpaths)
+            else:
+                self.log.debug("qlogic_ipath: ipath path not found from paths %s" % ipathpaths)
+                self.options.qlogic_ipath = False
 
     def scalemp_vsmp(self):
         """See if the node is using ScaleMP vSMP to set various parameters
@@ -551,7 +590,7 @@ class MPI(object):
         mpdboottxt = ""
         for n in self.uniquenodes:
             txt = "%s" % n
-            if not self.HYDRA:
+            if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
                     txt += ":%s" % self.get_universe_ncpus()
                 txt += " ifhn=%s" % n
@@ -778,7 +817,7 @@ class MPI(object):
 
         # mpdboot ifhn
         if self.MPDBOOT_SET_INTERFACE:
-            if self.HYDRA:
+            if self.has_hydra:
                 iface = "-iface %s" % self.mpdboot_localhost_interface[1]
             else:
                 iface = "--ifhn=%s" % self.mpdboot_localhost_interface[0]
@@ -799,7 +838,7 @@ class MPI(object):
             self.mpdboot_options.append("--verbose")
 
         # mpdboot rsh command
-        if not self.HYDRA:
+        if not self.has_hydra:
             self.mpdboot_options.append(self.MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME % {'rsh': self.get_rsh()})
 
     def mpdboot_set_localhost_interface(self):
@@ -831,7 +870,7 @@ class MPI(object):
         """The mpiexec options"""
         self.mpiexec_options = self.MPIEXEC_OPTIONS[:]
 
-        if self.HYDRA:
+        if self.has_hydra:
             self.make_mpiexec_hydra_options()
         else:
             self.mpiexec_options.append("-machinefile %s" % self.mpiexec_node_filename)
