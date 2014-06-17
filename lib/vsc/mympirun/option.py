@@ -77,7 +77,9 @@ class MympirunOption(GeneralOption):
                 "basepath": ("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
                              "str", "store", None),
                 # legacy naming
-                "pinmpi": ("Disable MPI pinning", None, "store_false", None),  # don't set it by default. It will be set if needed
+
+                # don't set it by default. It will be set if needed (eg ipath)
+                "pinmpi": ("Disable MPI pinning", None, "store_false", None),  
 
                 "rdma": ("Force rdma device", None, "store_true", None),
                 "socket": ("Force socket device", None, "store_true", None),

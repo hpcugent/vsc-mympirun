@@ -189,6 +189,7 @@ class MPI(object):
         self.netmasktype = None
         self.netmask = None
 
+        self.mympirunbasedir = None
         self.mympirundir = None
 
         self.mpdboot_node_filename = None
@@ -293,6 +294,8 @@ class MPI(object):
         self.check_limit()
 
         self.set_omp_threads()
+
+        # ipath can force process pinning
         self.qlogic_ipath()
         self.scalemp_vsmp()
 
@@ -389,7 +392,7 @@ class MPI(object):
         ipathpaths = ["/dev/ipath", "/ipathfs/0", "/dev/ipath0"]
         ipathpath = None
         for ipp in ipathpaths:
-            if os.path.isdir(ipathpath):
+            if os.path.exists(ipp):
                 ipathpath = ipp
                 break
 
@@ -415,10 +418,15 @@ class MPI(object):
             if self.options.debuglvl > 0:
                 self.mpiexec_global_options['PSM_TRACEMASK'] = '0x101'
 
+            # not processed, so None by default. if so, PSM takes over
+            # IPATH_NO_CPUAFFINITY means: Prevent PSM from setting affinity?
             if self.options.pinmpi:
-                self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '0'
-            else:
                 self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '1'
+            else:
+                # Don't set the variable. The existince, not the value is checked.
+                # (Although traceback reports it properly, the actual process of setting it just checks the existence)
+                # self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '0'
+                self.options.pinmpi = False
 
             self.log.debug("qlogic_ipath: ipath found %s" % ipathpath)
             self.options.qlogic_ipath = True
@@ -564,7 +572,8 @@ class MPI(object):
         if not os.path.exists(basepath):
             self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
 
-        destdir = os.path.join(basepath, '.mympirun', "%s_%s" % (self.id, time.strftime("%Y%m%d_%H%M%S")))
+        self.mympirunbasedir = os.path.join(basepath, '.mympirun')
+        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.id, time.strftime("%Y%m%d_%H%M%S")))
         if not os.path.exists(destdir):
             try:
                 os.makedirs(destdir)
