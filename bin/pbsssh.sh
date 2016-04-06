@@ -1,12 +1,13 @@
-#!/bin/sh
+#!/bin/bash
 ##
 # Copyright 2009-2012 Stijn De Weirdt
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of VSC-tools,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
 # the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
 # http://github.com/hpcugent/VSC-tools
@@ -41,7 +42,7 @@ then
    done
 fi
 
-while [ ! -z "$1" ] && [ ${1:0:1} == "-" ]
+while [ ! -z "$1" ] && [ "${1:0:1}" == "-" ]
 do
   arg=$1
   shift
@@ -58,24 +59,18 @@ fullhost="$1"
 shift 1
 
 ## is fullhost an ip address?
-tmphost=`ipcalc -h $fullhost 2>&1`
+tmphost=`ipcalc -h "$fullhost" 2>&1`
 if [ "$?" = "0" ]
 then
   ## fullhost was an IP
   fullhost=${tmphost#*=}
 fi
 
-shorthost=${fullhost%%.*}
-## pbsdsh needs hostname as listed in pbsnodes (ie uname -a)
-## assume same convention on whole cluster
-## extract possible domainname from local hostname and add it
-suffix=`hostname | sed "s/^[^.]\+//"`
-
-host=$shorthost$suffix
+host=$fullhost
 
 ## postprocess options placed after the hostname?
 ## cmd can't start with -X
-while [ ! -z "$1" ] && [ ${1:0:1} == "-" ]
+while [ ! -z "$1" ] && [ "${1:0:1}" == "-" ]
 do
   arg=$1
   shift
@@ -95,7 +90,7 @@ cmd="$extraenv $@"
 if [ "$PBSSSHMODE" == "ssh" ]
 then
   ## plain old ssh mode
-  ssh $host "$cmd"
+  ssh "$host" "$cmd"
 else
   ## pbsssh mode
 
