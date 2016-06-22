@@ -1,30 +1,27 @@
-#!/usr/bin/env python
-##
 #
-# Copyright 2012-2013 Ghent University
+# Copyright 2012-2016 Ghent University
 #
-# This file is part of vsc-ldap,
+# This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/vsc-ldap
+# https://github.com/hpcugent/vsc-mympirun
 #
-# vsc-ldap is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Library General Public License as
-# published by the Free Software Foundation, either version 2 of
-# the License, or (at your option) any later version.
+# vsc-mympirun is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation v2.
 #
-# vsc-ldap is distributed in the hope that it will be useful,
+# vsc-mympirun is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-# GNU Library General Public License for more details.
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
 #
-# You should have received a copy of the GNU Library General Public License
-# along with vsc-ldap. If not, see <http://www.gnu.org/licenses/>.
-##
+# You should have received a copy of the GNU General Public License
+# along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
+#
 """
 Tests for the vsc.utils.missing module.
 
@@ -32,7 +29,7 @@ Tests for the vsc.utils.missing module.
 """
 import os
 import stat
-from unittest import TestCase, TestLoader
+from unittest import TestCase
 
 
 from vsc.mympirun.mpi.factory import getinstance
@@ -41,7 +38,7 @@ from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
 
 # we wish to use the mpirun we ship
-os.environ["PATH"] += os.pathsep + os.path.realpath(__file__)
+os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
 
 
 class TestMPI(TestCase):
@@ -58,9 +55,6 @@ class TestMPI(TestCase):
 
         # check for correct .mpd.conf file
         mpdconffn = os.path.expanduser('~/.mpd.conf')
-        self.assertEqual(stat.S_IMODE(os.stat(mpdconffn).st_mode), 0400)
+        perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
+        self.assertEqual(perms, 0400, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
 
-
-def suite():
-    """ return all the tests"""
-    return TestLoader().loadTestsFromTestCase(TestMPI)

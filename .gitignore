@@ -1,11 +1,16 @@
 *.py[co]
+*.swp
+*~
+
 
 # Packages
 *.egg
 *.egg-info
 dist
+setup.cfg
 build
 eggs
+.eggs
 parts
 var
 sdist
