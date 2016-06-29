@@ -1,29 +1,28 @@
 #!/usr/bin/env python
-# #
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
 #
-# This file is part of VSC-tools,
+# Copyright 2009-2016 Ghent University
+#
+# This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/VSC-tools
+# https://github.com/hpcugent/vsc-mympirun
 #
-# VSC-tools is free software: you can redistribute it and/or modify
+# vsc-mympirun is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation v2.
 #
-# VSC-tools is distributed in the hope that it will be useful,
+# vsc-mympirun is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-# #
+# along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
+#
 """
 A mpirun wrapper
 
@@ -43,24 +42,34 @@ TODO:
 
 import sys
 import os
+import traceback
 
 from vsc.utils import fancylogger
-from vsc.mympirun.mpi.factory import getinstance
+from vsc.mympirun.rm.factory import getinstance
 from vsc.mympirun.mpi.mpi import whatMPI
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.sched import whatSched
 
 _logger = fancylogger.getLogger()
-
+fancylogger.setLogLevelInfo()
 
 class ExitException(Exception):
     """Exception thrown when we wish to exit, but no real errors occured"""
-    pass
+    _logger.info("ExitException was thrown: %s", Exception)
 
 
 def get_mpi_and_sched_and_options():
-    """Parses the mpi and scheduler based on current environment and guesses the best one to use"""
+    """Parses the mpi and scheduler based on current environment and guesses the best one to use
+
+    returns:
+    mpi             --
+    sched           --
+    mo              --
+    """
+    _logger.info("get_mpi_and_sched_and_options()")
+
     scriptname, mpi, found_mpi = whatMPI(sys.argv[0])
+    _logger.info("whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" % (scriptname,mpi,found_mpi))
 
     ismpirun = scriptname == 'mpirun'
 
@@ -86,7 +95,7 @@ def get_mpi_and_sched_and_options():
         raise ExitException("Exit from showsched")
 
     if mpi is None:
-        mo.parser.print_shorthelp()
+        #mo.parser.print_shorthelp()
         mo.log.raiseException(("No MPI class found (scriptname %s; ismpirun %s). Please use mympirun through one "
                                "of the direct calls or make sure the mpirun command can be found. "
                                "Found MPI %s") % (scriptname, ismpirun, ", ".join(found_mpi_names)))
@@ -105,17 +114,23 @@ def get_mpi_and_sched_and_options():
 
 def main():
     """Main function"""
+    _logger.info("main()")
+
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
         ec = 0
     except ExitException:
         ec = 0
-    except:
+    except Exception, e:
+        _logger.info("Main failed")
+        tb = traceback.format_exc()
         # # TODO: cleanup, only catch known exceptions
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
             _logger.exception("Main failed")
         ec = 1
+    finally:
+        _logger.info("Trace: \n %s", tb)
 
     sys.exit(ec)
 

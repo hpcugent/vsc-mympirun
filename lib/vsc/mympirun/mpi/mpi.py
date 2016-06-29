@@ -25,24 +25,25 @@
 """
 Base MPI class, all actual classes should inherit from this one
 
-@author: Stijn De Weirdt
+@author: Stijn De Weirdt, Jeroen De Clerck
 """
 
-import os
-import re
-import sys
-import inspect
-import socket
-import shutil
-import time
-import resource
-import stat
-import subprocess
-import random
-import string
 import glob
+import os
+import random
+import re
+import stat
+import sys
 
+import inspect
 from IPy import IP
+import resource
+import shutil
+import socket
+import subprocess
+import string
+import time
+
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
 from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
@@ -57,7 +58,16 @@ FAKE_SUBDIRECTORY_NAME = 'fake'
 
 
 def whatMPI(name):
-    """Return the path of the selected mpirun and its class"""
+    """Return the path of the selected mpirun and its class
+
+    arguments:
+    name            -- the command used to run mympirun (sys.argv[0])
+
+    returns:
+    *name           --
+    mpi             --
+    foundmpi        --
+    """
     _logger = getLogger()
     _logger.info("whatMPI(%s)", name)
 
@@ -69,7 +79,8 @@ def whatMPI(name):
     found_mpi = get_subclasses(MPI)
     _logger.info("whatMPI found_mpi: %s", found_mpi)
 
-    # iterate over the MPI implementations and check if the one that was called is available
+    # iterate over the MPI implementations
+    # check if the one that was called is available
     for mpi in found_mpi:
         if mpi._is_mpiscriptname_for(scriptname):
             stripfake()  # mandatory before return at this point
@@ -102,17 +113,18 @@ def import_mpi_variants():
 
     # parse the folder structure to get the module hierarchy
     modulehierarchy = []
-    (path,tail) = os.path.split(path)
+    (path, tail) = os.path.split(path)
     while not tail.endswith(".egg") or tail == "lib":
         modulehierarchy.insert(0, tail)
-        (path,tail) = os.path.split(path)
+        (path, tail) = os.path.split(path)
         if path == "/":
             raise Exception("could not parse module hierarchy")
 
     _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
 
     # transform the paths to module names while discarding __init__.py
-    modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3] for f in modulepaths[1:] if os.path.isfile(f)]
+    modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
+                   for f in modulepaths[1:] if os.path.isfile(f)]
 
     # import the modules
     modules = map(__import__, modulenames)
@@ -135,12 +147,16 @@ def stripfake(path=None):
     _logger = getLogger()
     _logger.info("stripfake()")
 
-    reg_fakepath = re.compile(r"" + os.sep.join(['.*?', INSTALLATION_SUBDIRECTORY_NAME + '.*?', 'bin',
-                                                 '%(fake_subdir)s(%(sep)s[^%(sep)s]*)?$' %
-                                                 {
-                                                     'fake_subdir': FAKE_SUBDIRECTORY_NAME,
-                                                     'sep': os.sep
-                                                 }]))
+    reg_fakepath = re.compile(
+        r"" + os.sep.join(['.*?',
+                           INSTALLATION_SUBDIRECTORY_NAME + '.*?',
+                           'bin',
+                           '%(fake_subdir)s(%(sep)s[^%(sep)s]*)?$' %
+                           {
+                               'fake_subdir': FAKE_SUBDIRECTORY_NAME,
+                               'sep': os.sep
+                           }
+                           ]))
 
     if path is None:
         path = []
@@ -174,12 +190,9 @@ def which(names):
     return None
 
 
-# very basic class. has all the class method magic
 class MPI(object):
+    """Base MPI class to generate the mpirun command line"""
 
-    """
-    Base MPI class to generate the mpirun command line
-    """
     RUNTIMEOPTION = None
 
     _mpirun_for = []

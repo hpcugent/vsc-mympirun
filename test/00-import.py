@@ -22,4 +22,4 @@
 # You should have received a copy of the GNU General Public License
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+from vsc.install.commontest import CommonTest
