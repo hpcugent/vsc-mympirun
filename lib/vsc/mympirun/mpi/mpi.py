@@ -61,55 +61,53 @@ def whatMPI(name):
     """Return the path of the selected mpirun and its class
 
     Arguments:
-        name        --  The name of the command used to run mympirun (sys.argv[0])
+        name            --  The name of the command used to run mympirun (sys.argv[0])
 
     Returns:
-        *name       --  The path to the command used to run mympirun
-                        (should be the path to an mpirun implementation)
-        mpi         --  The corresponding python class of the MPI variant
-        foundmpi    --  The python classes of the supported MPI variants (from
-                        the various .py files in mympirun/mpi)
+        *name           --  The path to the command used to run mympirun
+                            (should be the path to an mpirun implementation)
+        mpi             --  The corresponding python class of the MPI variant
+        supp_mpi_impl   --  The python classes of the supported MPI
+                            implementations (from the various .py files in
+                            mympirun/mpi)
     """
     _logger = getLogger()
     _logger.info("whatMPI(%s)", name)
 
-    fullscriptname = os.path.abspath(name)
-    scriptname = os.path.basename(fullscriptname)
-
-    import_mpi_variants()
-
-    found_mpi = get_subclasses(MPI)
+    scriptname = os.path.basename(os.path.abspath(name))
+    supp_mpi_impl = get_supported_mpi_implementations()
+    _logger.info("PATH: %s", os.environ['PATH'])
 
     # iterate over the MPI implementations
-    # check if the one that was called is available
-    for mpi in found_mpi:
+    # check if the one that was called is supported
+    for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname):
             stripfake()  # mandatory before return at this point
-            return scriptname, mpi, found_mpi
+            return scriptname, mpi, supp_mpi_impl
+    _logger.info("PATH: %s", os.environ['PATH'])
 
     # not called through alias
     # stripfake is in which
     mpirunname = which(['mpirun'])
     if mpirunname is None:
-        return None, None, found_mpi
+        return None, None, supp_mpi_impl
 
-    for mpi in found_mpi:
+    for mpi in supp_mpi_impl:
         if mpi._is_mpirun_for(mpirunname):
-            return scriptname, mpi, found_mpi
+            return scriptname, mpi, supp_mpi_impl
 
     # return found mpirunname
-    return mpirunname, None, found_mpi
+    return mpirunname, None, supp_mpi_impl
 
 
-def import_mpi_variants():
-    """searches and imports the MPI variants in mympirun/mpi/, so they can be
-    found by subclasses(MPI)
+def get_supported_mpi_implementations():
+    """searches, imports and returns the MPI implementations in mympirun/mpi/
 
     Raises:
         Exception   --  If the function could not resolve the module hierarchy
     """
     _logger = getLogger()
-    _logger.info("import_mpi_variants()")
+    _logger.info("get_supported_mpi_implementations()")
 
     # get absolute path of the mpi folder
     path = os.path.join(os.path.dirname(__file__))
@@ -137,19 +135,7 @@ def import_mpi_variants():
     modules = map(__import__, modulenames)
     _logger.info("imported modules: %s", modulenames)
 
-
-def _setenv(name, value):
-    """Set environment variable. In principle os.environ should be sufficient.
-
-    Arguments:
-        name        --
-        value       --
-    """
-    _logger = getLogger()
-    _logger.info("_setenv(%s, %s)", name, value)
-
-    os.putenv(name, "%s" % value)
-    os.environ[name] = "%s" % value
+    return get_subclasses(MPI)
 
 
 def stripfake(path=None):
@@ -178,7 +164,7 @@ def stripfake(path=None):
 
     newpath = [x for x in path if not reg_fakepath.match(x)]
 
-    _setenv('PATH', ':'.join(newpath))
+    os.environ['PATH'] = "%s" % ':'.join(newpath)
 
     return newpath
 
@@ -326,10 +312,6 @@ class MPI(object):
     #
     # other general functionality
     #
-    def _setenv(self, name, value):
-        self.log.debug("_setenv; set name %s to value %s" % (name, value))
-        _setenv(name, value)
-
     def _has_hydra(self):
         """Has HYDRA or not"""
         return self.HYDRA
@@ -459,7 +441,7 @@ class MPI(object):
 
         self.log.debug("Set OMP_NUM_THREADS to %s" % t)
 
-        self._setenv('OMP_NUM_THREADS', t)
+        os.environ['OMP_NUM_THREADS'] = "%s" % t
 
         setattr(self.options, 'ompthreads', t)
 
@@ -540,7 +522,7 @@ class MPI(object):
         preload_lib = '/opt/ScaleMP/libvsmpclib/0.1/lib64/libvsmpclib.so'
         if os.path.exists(preload_lib):
             # space separated list
-            self._setenv('LD_PRELOAD', " ".join([preload_lib] + os.environ.get('LD_PRELOAD', '').split(" ")))
+            os.environ['LD_PRELOAD'] = "%s" % " ".join([preload_lib] + os.environ.get('LD_PRELOAD', '').split(" "))
 
         if self.options.pinmpi:
             # enable pinning
@@ -553,21 +535,23 @@ class MPI(object):
                     for x in self.cpus:
                         ind = len(placement)
                         placement.append("%s:%s" % (ind, x))
-                    self._setenv('VSMP_PLACEMENT', ",".join(placement))
+                    os.environ['VSMP_PLACEMENT'] = "%s" % ",".join(placement)
+
                 else:
-                    self._setenv('VSMP_PLACEMENT', 'SPREAD')
+                    os.environ['VSMP_PLACEMENT'] = "%s" % 'SPREAD'
+
             self.log.debug("scalemp_vsmp: vSMP VSMP_PLACEMENT set to %s" % os.environ['VSMP_PLACEMENT'])
 
             if not 'VSMP_MEM_PIN' in os.environ:
-                self._setenv('VSMP_MEM_PIN', 'YES')
+                os.environ['VSMP_MEM_PIN'] = "%s" % 'YES'
             self.log.debug("scalemp_vsmp: vSMP VSMP_MEM_PIN set to %s" % os.environ['VSMP_MEM_PIN'])
             # add /opt/ScaleMP/numabind/bin to PATH
             numabindpath = '/opt/ScaleMP/numabind/bin'
             if os.path.exists(numabindpath):
-                self._setenv('PATH', ":".join([numabindpath] + os.environ.get('PATH', '').split(":")))
+                os.environ['PATH'] = "%s" % ":".join([numabindpath] + os.environ.get('PATH', '').split(":"))
 
         if self.options.debuglvl > 0:
-            self._setenv('VSMP_VERBOSE', 1)
+            os.environ['VSMP_VERBOSE'] = "%s" % 1
 
         self.log.debug("scalemp_vsmp: vSMP found %s with status" % out)
 

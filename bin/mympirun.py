@@ -115,6 +115,7 @@ def get_mpi_and_sched_and_options():
 def main():
     """Main function"""
     _logger.info("main()")
+    _logger.info("PATH: %s", os.environ['PATH'])
 
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
