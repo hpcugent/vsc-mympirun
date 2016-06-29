@@ -1,27 +1,27 @@
-# #
-# Copyright 2011-2013 Ghent University
 #
-# This file is part of VSC-tools,
+# Copyright 2011-2016 Ghent University
+#
+# This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
 # with support of Ghent University (http://ugent.be/hpc),
-# the Flemish Supercomputer Centre (VSC) (https://vscentrum.be/nl/en),
-# the Hercules foundation (http://www.herculesstichting.be/in_English)
+# the Flemish Supercomputer Centre (VSC) (https://www.vscentrum.be),
+# the Flemish Research Foundation (FWO) (http://www.fwo.be/en)
 # and the Department of Economy, Science and Innovation (EWI) (http://www.ewi-vlaanderen.be/en).
 #
-# http://github.com/hpcugent/VSC-tools
+# https://github.com/hpcugent/vsc-mympirun
 #
-# VSC-tools is free software: you can redistribute it and/or modify
+# vsc-mympirun is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation v2.
 #
-# VSC-tools is distributed in the hope that it will be useful,
+# vsc-mympirun is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with VSC-tools. If not, see <http://www.gnu.org/licenses/>.
-# #
+# along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
+#
 """
 Base MPI class, all actual classes should inherit from this one
 
@@ -30,6 +30,8 @@ Base MPI class, all actual classes should inherit from this one
 
 import os
 import re
+import sys
+import inspect
 import socket
 import shutil
 import time
@@ -38,10 +40,10 @@ import stat
 import subprocess
 import random
 import string
+import glob
 
-
+from IPy import IP
 from vsc.utils.fancylogger import getLogger
-from vsc.mympirun.external.IPy import IP
 from vsc.utils.missing import get_subclasses, nub
 from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
 
@@ -55,15 +57,19 @@ FAKE_SUBDIRECTORY_NAME = 'fake'
 
 
 def whatMPI(name):
-    """
-    Return the scriptname and the MPI class
-    """
+    """Return the path of the selected mpirun and its class"""
+    _logger = getLogger()
+    _logger.info("whatMPI(%s)", name)
+
     fullscriptname = os.path.abspath(name)
     scriptname = os.path.basename(fullscriptname)
 
-    found_mpi = get_subclasses(MPI)
+    import_mpi_variants()
 
-    # check on scriptname
+    found_mpi = get_subclasses(MPI)
+    _logger.info("whatMPI found_mpi: %s", found_mpi)
+
+    # iterate over the MPI implementations and check if the one that was called is available
     for mpi in found_mpi:
         if mpi._is_mpiscriptname_for(scriptname):
             stripfake()  # mandatory before return at this point
@@ -83,8 +89,41 @@ def whatMPI(name):
     return mpirunname, None, found_mpi
 
 
+def import_mpi_variants():
+    _logger = getLogger()
+    _logger.info("import_mpi_variants()")
+
+    # get absolute path of the mpi folder
+    path = os.path.join(os.path.dirname(__file__))
+    _logger.info("path: %s", path)
+
+    # get the paths of all the python files in the mpi folder
+    modulepaths = glob.glob(path + "/*.py")
+
+    # parse the folder structure to get the module hierarchy
+    modulehierarchy = []
+    (path,tail) = os.path.split(path)
+    while not tail.endswith(".egg") or tail == "lib":
+        modulehierarchy.insert(0, tail)
+        (path,tail) = os.path.split(path)
+        if path == "/":
+            raise Exception("could not parse module hierarchy")
+
+    _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
+
+    # transform the paths to module names while discarding __init__.py
+    modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3] for f in modulepaths[1:] if os.path.isfile(f)]
+
+    # import the modules
+    modules = map(__import__, modulenames)
+    _logger.info("imported modules: %s", modulenames)
+
+
 def _setenv(name, value):
     """Set environment variable. In principle os.environ should be sufficient."""
+    _logger = getLogger()
+    _logger.info("_setenv(%s, %s)", name, value)
+
     os.putenv(name, "%s" % value)
     os.environ[name] = "%s" % value
 
@@ -93,12 +132,15 @@ def stripfake(path=None):
     """Remove the fake wrapper path:
         assumes (VSC-tools|mympirun)/1.0.0/bin/fake
     """
+    _logger = getLogger()
+    _logger.info("stripfake()")
+
     reg_fakepath = re.compile(r"" + os.sep.join(['.*?', INSTALLATION_SUBDIRECTORY_NAME + '.*?', 'bin',
-                                                '%(fake_subdir)s(%(sep)s[^%(sep)s]*)?$' %
-                                                {
-                                                    'fake_subdir': FAKE_SUBDIRECTORY_NAME,
-                                                    'sep': os.sep
-                                                }]))
+                                                 '%(fake_subdir)s(%(sep)s[^%(sep)s]*)?$' %
+                                                 {
+                                                     'fake_subdir': FAKE_SUBDIRECTORY_NAME,
+                                                     'sep': os.sep
+                                                 }]))
 
     if path is None:
         path = []
@@ -117,6 +159,9 @@ def which(names):
     """Find path to executable, similar to /usr/bin/which.
         @type names: list or string, returns first match.
     """
+    _logger = getLogger()
+    _logger.info("which(%s)", names)
+
     if isinstance(names, str):
         names = [names]
     linuxdefaultpath = ['/usr/local/bin', '/usr/bin', '/usr/sbin', '/bin', '/sbin']
@@ -131,6 +176,7 @@ def which(names):
 
 # very basic class. has all the class method magic
 class MPI(object):
+
     """
     Base MPI class to generate the mpirun command line
     """
@@ -238,6 +284,9 @@ class MPI(object):
 
     def _is_mpiscriptname_for(cls, name):
         """see if this class can provide support for scriptname"""
+        _logger = getLogger()
+        _logger.info("_is_mpiscriptname_for(%s, %s)", cls, name)
+
         return name in cls._mpiscriptname_for
     _is_mpiscriptname_for = classmethod(_is_mpiscriptname_for)
 
@@ -803,9 +852,10 @@ class MPI(object):
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         if not os.path.exists(mpdconffn):
             self.log.warning(("make_mpdboot: mpd.conf file not found at %s. Creating this file "
-                                     "(text file with minimal entry 'password=<somesecretpassword>')") % mpdconffn)
+                              "(text file with minimal entry 'password=<somesecretpassword>')") % mpdconffn)
             mpdconff = open(mpdconffn, 'w')
-            mpdconff.write("password=%s" % ''.join(random.choice(string.ascii_uppercase + string.digits) for x in range(10)))
+            mpdconff.write("password=%s" % ''.join(random.choice(string.ascii_uppercase + string.digits)
+                                                   for x in range(10)))
             mpdconff.close()
             # set correct permissions on this file.
             os.chmod(mpdconffn, 0400)
@@ -1038,7 +1088,7 @@ class MPI(object):
                                   {'commaseparated': ','.join(self.mpiexec_pass_environment)}]
         else:
             local_pass_options = [self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION %
-                                  {'name':x, 'value':os.environ[x]} for x in self.mpiexec_pass_environment]
+                                  {'name': x, 'value': os.environ[x]} for x in self.mpiexec_pass_environment]
 
         self.log.debug("mpiexec_get_local_pass_variable_options: template %s return options %s" %
                        (self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION, local_pass_options))

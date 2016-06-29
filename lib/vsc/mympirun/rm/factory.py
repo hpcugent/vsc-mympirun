@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2016 Ghent University
+# Copyright 2011-2016 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,40 +23,31 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Torque / PBS
+Factory for MPI instance, this will return a instance based on the given
+mpi and scheduler class
+
+@author: Stijn De Weirdt, Jens Timmerman
 """
 
-from vsc.mympirun.rm.sched import Sched
-import os
+from vsc.utils import fancylogger
 
-class PBS(Sched):
-    """Torque/PBS based"""
-    _sched_for = ['pbs', 'torque']
-    SCHED_ENVIRON_ID = 'PBS_JOBID'
-
-    RSH_LARGE_CMD = 'pbsssh'
-    RSH_LARGE_LIMIT = 'pbsssh'
-    HYDRA_LAUNCHER_EXEC = 'pbsssh'
-    HYDRA_RMK = ['pbs']
-
-    def get_node_list(self):
-
-        nodevar = 'PBS_NODEFILE'
-        fn = os.environ.get(nodevar, None)
-        if fn is None:
-            self.log.raiseException("get_node_list: failed to get %s from environment" % nodevar)
-
-        try:
-            self.nodes = [ x.strip() for x in file(fn).read().split("\n") if len(x.strip()) > 0]
-            self.nrnodes = len(self.nodes)
-            self.log.debug("get_node_list: found %s nodes in %s: %s" % (self.nrnodes, fn, self.nodes))
-        except:
-            self.log.raiseException("get_node_list: failed to get nodes from nodefile %s" % fn)
-
-        self.log.debug("get_node_list: set %s nodes: %s" % (self.nrnodes, self.nodes))
+_logger = fancylogger.getLogger()
 
 
+def getinstance(mpi, sched, options):
+    """Make an instance of the relevant MPI class. Also set the RM instance
 
+    @param mpi: a class subclassing from MPI (e.g. retunred by whatMPI)
+    @param sched: a class subclassing from sched (e.g. returned by whatSched)
+    @param mo: an instance of MympirunOption
+    """
+    _logger = getLogger()
+    _logger.info("getinstance(%s, %s, %s)", mpi, sched, options)
 
+    class M(mpi, sched):
+        """Temporary class to couple MPI and local sched"""
+        def __init__(self, **kwargs):
+            self.log = fancylogger.getLogger("%s_%s" % (mpi.__name__, sched.__name__))
+            super(M, self).__init__(**kwargs)
 
-
+    return M(options=options.options, cmdargs=options.args)
