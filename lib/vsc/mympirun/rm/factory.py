@@ -41,7 +41,6 @@ def getinstance(mpi, sched, options):
     @param sched: a class subclassing from sched (e.g. returned by whatSched)
     @param mo: an instance of MympirunOption
     """
-    _logger = getLogger()
     _logger.info("getinstance(%s, %s, %s)", mpi, sched, options)
 
     class M(mpi, sched):

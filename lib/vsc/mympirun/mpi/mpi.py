@@ -141,7 +141,7 @@ def get_supported_mpi_implementations():
 
 
 def stripfake(path_to_append=None):
-    """Removes the fake wrapper path
+    """Removes the fake wrapper path from $PATH
     assumes (VSC-tools|mympirun)/1.0.0/bin/fake
 
     Arguments:
