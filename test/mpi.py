@@ -57,4 +57,3 @@ class TestMPI(TestCase):
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
         self.assertEqual(perms, 0400, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
-
