@@ -60,13 +60,15 @@ FAKE_SUBDIRECTORY_NAME = 'fake'
 def whatMPI(name):
     """Return the path of the selected mpirun and its class
 
-    arguments:
-    name            -- the command used to run mympirun (sys.argv[0])
+    Arguments:
+        name        --  The name of the command used to run mympirun (sys.argv[0])
 
-    returns:
-    *name           --
-    mpi             --
-    foundmpi        --
+    Returns:
+        *name       --  The path to the command used to run mympirun
+                        (should be the path to an mpirun implementation)
+        mpi         --  The corresponding python class of the MPI variant
+        foundmpi    --  The python classes of the supported MPI variants (from
+                        the various .py files in mympirun/mpi)
     """
     _logger = getLogger()
     _logger.info("whatMPI(%s)", name)
@@ -77,7 +79,6 @@ def whatMPI(name):
     import_mpi_variants()
 
     found_mpi = get_subclasses(MPI)
-    _logger.info("whatMPI found_mpi: %s", found_mpi)
 
     # iterate over the MPI implementations
     # check if the one that was called is available
@@ -101,6 +102,12 @@ def whatMPI(name):
 
 
 def import_mpi_variants():
+    """searches and imports the MPI variants in mympirun/mpi/, so they can be
+    found by subclasses(MPI)
+
+    Raises:
+        Exception   --  If the function could not resolve the module hierarchy
+    """
     _logger = getLogger()
     _logger.info("import_mpi_variants()")
 
@@ -132,7 +139,12 @@ def import_mpi_variants():
 
 
 def _setenv(name, value):
-    """Set environment variable. In principle os.environ should be sufficient."""
+    """Set environment variable. In principle os.environ should be sufficient.
+
+    Arguments:
+        name        --
+        value       --
+    """
     _logger = getLogger()
     _logger.info("_setenv(%s, %s)", name, value)
 
@@ -141,8 +153,8 @@ def _setenv(name, value):
 
 
 def stripfake(path=None):
-    """Remove the fake wrapper path:
-        assumes (VSC-tools|mympirun)/1.0.0/bin/fake
+    """Remove the fake wrapper path
+    assumes (VSC-tools|mympirun)/1.0.0/bin/fake
     """
     _logger = getLogger()
     _logger.info("stripfake()")
@@ -296,9 +308,17 @@ class MPI(object):
     _is_mpirun_for = classmethod(_is_mpirun_for)
 
     def _is_mpiscriptname_for(cls, name):
-        """see if this class can provide support for scriptname"""
+        """see if this class can provide support for scriptname
+
+        Arguments:
+            cls         --
+            name        --
+
+        Returns:
+            name        --
+        """
         _logger = getLogger()
-        _logger.info("_is_mpiscriptname_for(%s, %s)", cls, name)
+        _logger.info("_is_mpiscriptname_for(%s, %s)", cls.__name__, name)
 
         return name in cls._mpiscriptname_for
     _is_mpiscriptname_for = classmethod(_is_mpiscriptname_for)
