@@ -46,7 +46,8 @@ import time
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
+from vsc.utils.run import (run_simple, run_simple_noworries,
+                           run_to_file, run_async_to_stdout)
 
 # Going to guess myself
 
@@ -61,7 +62,8 @@ def whatMPI(name):
     """Return the path of the selected mpirun and its class
 
     Arguments:
-        name            --  The name of the command used to run mympirun (sys.argv[0])
+        name            --  The name of the command used to run
+                            mympirun (sys.argv[0])
 
     Returns:
         *name           --  The path to the command used to run mympirun
@@ -171,7 +173,7 @@ def stripfake(path_to_append=None):
     newpath = envpath + [x for x in path_to_append if not x in envpath]
 
     # remove all $PATH elements that match the fakepath regex
-    newpath = [x for x in path if not reg_fakepath.match(x)]
+    newpath = [x for x in newpath if not reg_fakepath.match(x)]
 
     os.environ['PATH'] = "%s" % ':'.join(newpath)
 
