@@ -138,13 +138,21 @@ def get_supported_mpi_implementations():
     return get_subclasses(MPI)
 
 
-def stripfake(path=None):
-    """Remove the fake wrapper path
+def stripfake(path_to_append=None):
+    """Removes the fake wrapper path
     assumes (VSC-tools|mympirun)/1.0.0/bin/fake
+
+    Arguments:
+        path_to_append  --  one or more path(s) that needs to be added to $PATH
+
+    Returns:
+        newpath         --  The new $PATH, without the fake mpirun and with the
+                            path_to_append appended
     """
     _logger = getLogger()
     _logger.info("stripfake()")
 
+    # compile a regex that matches the faked mpirun
     reg_fakepath = re.compile(
         r"" + os.sep.join(['.*?',
                            INSTALLATION_SUBDIRECTORY_NAME + '.*?',
@@ -156,12 +164,13 @@ def stripfake(path=None):
                            }
                            ]))
 
-    if path is None:
-        path = []
+    # merge the current $PATH and the path_to_append
+    if path_to_append is None:
+        path_to_append = []
     envpath = os.environ.get('PATH', '').split(os.pathsep)
-    # do not append doubles (respect search order)
-    path = envpath + [x for x in path if not x in envpath]
+    newpath = envpath + [x for x in path_to_append if not x in envpath]
 
+    # remove all $PATH elements that match the fakepath regex
     newpath = [x for x in path if not reg_fakepath.match(x)]
 
     os.environ['PATH'] = "%s" % ':'.join(newpath)
@@ -180,7 +189,7 @@ def which(names):
         names = [names]
     linuxdefaultpath = ['/usr/local/bin', '/usr/bin', '/usr/sbin', '/bin', '/sbin']
 
-    newpath = stripfake(path=linuxdefaultpath)
+    newpath = stripfake(path_to_append=linuxdefaultpath)
     for seekName in names:
         for name in [os.path.join(p, seekName) for p in newpath]:
             if os.path.isfile(name):
