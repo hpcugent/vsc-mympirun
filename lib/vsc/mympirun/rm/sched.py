@@ -74,11 +74,11 @@ def get_supported_sched_implementations():
         if path == "/":
             raise Exception("could not parse module hierarchy")
 
-    _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
-
     # transform the paths to module names while discarding __init__.py
     modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
                    for f in modulepaths[1:] if os.path.isfile(f)]
+
+    _logger.info("remaining path: %s, hierarchy: %s, modulenames: %s", path, modulehierarchy, modulenames)
 
     # import the modules
     modules = map(__import__, modulenames)
