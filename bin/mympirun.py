@@ -43,6 +43,8 @@ TODO:
 import sys
 import os
 import traceback
+import glob
+import inspect
 
 from vsc.utils import fancylogger
 from vsc.mympirun.rm.factory import getinstance
@@ -68,6 +70,7 @@ def get_mpi_and_sched_and_options():
     """
     _logger.info("get_mpi_and_sched_and_options()")
 
+    get_implementations(inspect.getmodule(whatMPI))
     scriptname, mpi, found_mpi = whatMPI(sys.argv[0])
     _logger.info("whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" % (scriptname,mpi,found_mpi))
 
@@ -79,6 +82,7 @@ def get_mpi_and_sched_and_options():
         mo.parser.print_shorthelp()
         raise ExitException("Exit no args provided")
 
+    get_implementations(inspect.getmodule(whatSched))
     sched, found_sched = whatSched(getattr(mo.options, 'schedtype', None))
     _logger.info("whatSched returned sched: %s, found_sched: %s" % (sched, found_sched))
 
@@ -111,6 +115,46 @@ def get_mpi_and_sched_and_options():
                      (sched.__name__, mo.options.schedtype, ", ".join(found_sched_names)))
 
     return mpi, sched, mo
+
+def get_implementations(module):
+    """searches and imports python files in the some folder as a module
+
+    Arguments:
+        module      --  the module
+
+    Raises:
+        Exception   --  If the function could not resolve the module hierarchy
+    """
+
+    _logger.info("get_supported_sched_implementations()")
+
+    # get absolute path of the mpi folder
+    path = os.path.join(os.path.dirname(module.__file__))
+
+    # get the paths of all the python files in the mpi folder
+    modulepaths = glob.glob(path + "/*.py")
+
+    # parse the folder structure to get the module hierarchy
+    modulehierarchy = []
+    (path, tail) = os.path.split(path)
+    while not tail.endswith(".egg") or tail == "lib":
+        modulehierarchy.insert(0, tail)
+        (path, tail) = os.path.split(path)
+        if path == "/":
+            raise Exception("could not parse module hierarchy")
+
+    # transform the paths to module names while discarding __init__.py
+    modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
+                   for f in modulepaths if os.path.isfile(f)
+                                        and "__init__" not in f]
+
+    _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
+
+    # import the modules
+    modules = map(__import__, modulenames)
+    _logger.info("imported modules: %s", modulenames)
+
+    return
 
 
 def main():
