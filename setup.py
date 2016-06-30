@@ -29,9 +29,10 @@
 """
 Setup for mympirun
 """
+import os
 import sys
 import vsc.install.shared_setup as shared_setup
-from vsc.install.shared_setup import action_target, vsc_setup, log, sdw
+from vsc.install.shared_setup import vsc_setup, log, sdw
 
 # issue #51: should taken from the code where it is used
 FAKE_SUBDIRECTORY_NAME = 'fake'
@@ -42,18 +43,19 @@ MYMPIRUN_ALIASES = ['%smpirun' % x for x in ['i', 'ih', 'o', 'm', 'mh', 'mm', 'q
 PACKAGE = {
     'install_requires': [
         'vsc-base >= 2.5.0',
+        'vsc-install >= 0.10.9', # for modified subclassing
         'IPy',
     ],
     'version': '3.4.4',
     'author': [sdw],
     'maintainer': [sdw],
+    'zip_safe': False,
 }
 
-# Monkeypatch shared_setup.vsc_setup
-# because subclassing vsc_setup and it's the classes is tricky
-# (lots of vsc_setup() self-referencing in shared_setup?)
+
 class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
     def run(self):
+        log.info("mympirun_vsc_install_scripts")
         # old-style class
         vsc_setup.vsc_install_scripts.run(self)
 
@@ -105,7 +107,8 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
 
                 os.chdir(previous_pwd)
 
-vsc_setup.vsc_install_scripts = mympirun_vsc_install_scripts
+class mympirun_vsc_setup(vsc_setup):
+    vsc_install_scripts = mympirun_vsc_install_scripts
 
 # Monkeypatch setuptools.easy_install
 # because easy_install ignores the easy_install cmdclass
@@ -124,6 +127,7 @@ try:
             """
             res = orig_func(txt)
             if txt == 'scripts':
+                log.debug('mympirun easy_install.install_egg_scripts scripts res %s' % res)
                 if FAKE_SUBDIRECTORY_NAME in res:
                     idx = res.index(FAKE_SUBDIRECTORY_NAME)
                     if idx >= 0:
