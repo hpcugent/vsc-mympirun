@@ -87,8 +87,8 @@ def whatMPI(name):
 
     # get the path of the mpirun cli command
     # stripfake() is called in which
-    mpirunname = which(['mpirun'])
-    if mpirunname is None:
+    mpirun_path = which(['mpirun'])
+    if mpirun_path is None:
         # no MPI implementation installed
         _logger.warn("no mpirun command found")
         return None, None, supp_mpi_impl
@@ -96,13 +96,13 @@ def whatMPI(name):
     # mympirun was not called through a known alias, so find out which MPI
     # implimentation the user has installed
     for mpi in supp_mpi_impl:
-        if mpi._is_mpirun_for(mpirunname):
+        if mpi._is_mpirun_for(mpirun_path):
             return scriptname, mpi, supp_mpi_impl
 
-    # return found mpirunname
+    # return found mpirun_path
     _logger.warn("The cli command that called mympirun isn't supported"
-                 ", defaulting to %s", mpirunname)
-    return mpirunname, None, supp_mpi_impl
+                 ", defaulting to %s", mpirun_path)
+    return mpirun_path, None, supp_mpi_impl
 
 
 def get_supported_mpi_implementations():
@@ -144,14 +144,16 @@ def get_supported_mpi_implementations():
 
 def stripfake(path_to_append=None):
     """Removes the fake wrapper path from $PATH
+
     assumes (VSC-tools|mympirun)/1.0.0/bin/fake
 
     Arguments:
-        path_to_append  --  one or more path(s) that needs to be added to $PATH
+        path_to_append  --  a list of paths that needs to be added to $PATH
 
     Returns:
-        newpath         --  The new $PATH, without the fake mpirun and with the
-                            path_to_append appended
+        newpath         --  a list of the directories in the new $PATH
+                            (without the fake mpirun and with path_to_append
+                            appended)
     """
     _logger = getLogger()
     _logger.info("PATH before stripfake(): %s", os.environ['PATH'])
@@ -185,7 +187,12 @@ def stripfake(path_to_append=None):
 
 def which(names):
     """Find path to executable, similar to /usr/bin/which.
-        @type names: list or string, returns first match.
+
+    Arguments:
+        names           --  list or string, returns first match.
+
+    Returns:
+        name            --
     """
     _logger = getLogger()
     _logger.info("which(%s)", names)
@@ -203,7 +210,11 @@ def which(names):
 
 
 class MPI(object):
-    """Base MPI class to generate the mpirun command line"""
+    """Base MPI class to generate the mpirun command line
+
+    to add a new MPI class just create a new class that extends the MPI class
+    see http://stackoverflow.com/q/456672
+    """
 
     RUNTIMEOPTION = None
 
@@ -288,16 +299,27 @@ class MPI(object):
             self.log.raiseException("__init__: no executable or command provided")
 
     # factory methods for MPI
-    # to add a new MPI class just create a new class that extends the cluster class
-    # see http://stackoverflow.com/questions/456672/class-factory-in-python
-    @classmethod
-    def _is_mpirun_for(cls, name):
-        """check if this class can provide support for the MPI implementation that was called"""
-        _logger = getLogger()
-        _logger.info("_is_mpisrun_for(%s), scriptnames of %s: %s", name, cls.__name__, cls._mpirun_version)
 
-        reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" % ("|".join(cls._mpirun_for), os.sep))
-        r = reg.search(name)
+    @classmethod
+    def _is_mpirun_for(cls, mpirun_path):
+        """check if this class provides support for the mpirun that was called
+
+        Arguments:
+            cls         --  the class that calls this function
+            mpirun_path --  the path to the mpirun aka `which mpirun`
+
+        Returns:
+            bool        --  true if $mpirun_path is defined as an mpirun
+                            implementation of $cls
+        """
+
+        _logger = getLogger()
+        _logger.info("_is_mpisrun_for(%s), scriptnames of %s: %s",
+                     mpirun_path, cls.__name__, cls._mpirun_version)
+
+        reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
+                         ("|".join(cls._mpirun_for), os.sep))
+        r = reg.search(mpirun_path)
         _logger.info("_is_mpisrun_for(), r: %s", r)
         if r:
             if cls._mpirun_version is None:
@@ -309,20 +331,23 @@ class MPI(object):
             return False
 
     @classmethod
-    def _is_mpiscriptname_for(cls, name):
-        """see if this class can provide support for scriptname
+    def _is_mpiscriptname_for(cls, scriptname):
+        """check if this class provides support for scriptname
 
         Arguments:
             cls         --  the class that calls this function
-            name        --  the scriptname
+            scriptname  --  the executable that called mympirun
 
         Returns:
-            bool        --  true if $name is defined as a scriptname of $class
+            bool        --  true if $scriptname is defined as an
+                            mpiscriptname of $cls
         """
-        _logger = getLogger()
-        _logger.info("_is_mpiscriptname_for(%s), scriptnames of %s: %s", name, cls.__name__, cls._mpiscriptname_for)
 
-        return name in cls._mpiscriptname_for
+        _logger = getLogger()
+        _logger.info("_is_mpiscriptname_for(%s), scriptnames of %s: %s",
+                     scriptname, cls.__name__, cls._mpiscriptname_for)
+
+        return scriptname in cls._mpiscriptname_for
 
     #
     # other general functionality
