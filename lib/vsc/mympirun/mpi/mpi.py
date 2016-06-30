@@ -71,6 +71,7 @@ def whatMPI(name):
                             implementations (from the various .py files in
                             mympirun/mpi)
     """
+
     _logger = getLogger()
     _logger.info("whatMPI(%s)", name)
 
@@ -82,7 +83,7 @@ def whatMPI(name):
     for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname):
             _logger.info("%s was used to call mympirun", scriptname)
-            stripfake() # mandatory before return at this point
+            stripfake()  # mandatory before return at this point
             return scriptname, mpi, supp_mpi_impl
 
     # get the path of the mpirun cli command
@@ -111,6 +112,7 @@ def get_supported_mpi_implementations():
     Raises:
         Exception   --  If the function could not resolve the module hierarchy
     """
+
     _logger = getLogger()
     _logger.info("get_supported_mpi_implementations()")
 
@@ -155,6 +157,7 @@ def stripfake(path_to_append=None):
                             (without the fake mpirun and with path_to_append
                             appended)
     """
+
     _logger = getLogger()
     _logger.info("PATH before stripfake(): %s", os.environ['PATH'])
 
@@ -189,27 +192,32 @@ def which(names):
     """Find path to executable, similar to /usr/bin/which.
 
     Arguments:
-        names           --  list or string, returns first match.
+        names           --  one or more commands
 
     Returns:
-        name            --
+        path            --  first path that is the location of an element in
+                            $names
     """
+
     _logger = getLogger()
     _logger.info("which(%s)", names)
 
     if isinstance(names, str):
         names = [names]
     linuxdefaultpath = ['/usr/local/bin', '/usr/bin', '/usr/sbin', '/bin', '/sbin']
-
     newpath = stripfake(path_to_append=linuxdefaultpath)
+
+    # iterate over all combinations of $PATH[i]/$names[j]
+    # return if the combination exists and is a file
     for seekName in names:
-        for name in [os.path.join(p, seekName) for p in newpath]:
-            if os.path.isfile(name):
-                return name
+        for path in [os.path.join(p, seekName) for p in newpath]:
+            if os.path.isfile(path):
+                return path
     return None
 
 
 class MPI(object):
+
     """Base MPI class to generate the mpirun command line
 
     to add a new MPI class just create a new class that extends the MPI class
