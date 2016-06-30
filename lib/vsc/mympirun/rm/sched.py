@@ -76,9 +76,10 @@ def get_supported_sched_implementations():
 
     # transform the paths to module names while discarding __init__.py
     modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
-                   for f in modulepaths[1:] if os.path.isfile(f)]
+                   for f in modulepaths if os.path.isfile(f)
+                                        and "__init__" not in f]
 
-    _logger.info("remaining path: %s, hierarchy: %s, modulenames: %s", path, modulehierarchy, modulenames)
+    _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
 
     # import the modules
     modules = map(__import__, modulenames)

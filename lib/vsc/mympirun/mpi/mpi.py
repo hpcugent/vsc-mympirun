@@ -135,7 +135,8 @@ def get_supported_mpi_implementations():
 
     # transform the paths to module names while discarding __init__.py
     modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
-                   for f in modulepaths[1:] if os.path.isfile(f)]
+                   for f in modulepaths if os.path.isfile(f)
+                                        and "__init__" not in f]
 
     # import the modules
     modules = map(__import__, modulenames)
@@ -310,8 +311,7 @@ class MPI(object):
     # factory methods for MPI
     @classmethod
     def _is_mpirun_for(cls, mpirun_path):
-        """check if this class provides support for the mpirun executable
-        that was called
+        """check if this class provides support for the mpirun that was called
 
         Arguments:
             cls         --  the class that calls this function
