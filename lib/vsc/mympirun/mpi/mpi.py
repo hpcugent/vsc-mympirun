@@ -204,7 +204,8 @@ def which(names):
 
     if isinstance(names, str):
         names = [names]
-    linuxdefaultpath = ['/usr/local/bin', '/usr/bin', '/usr/sbin', '/bin', '/sbin']
+    linuxdefaultpath = ['/usr/local/bin', '/usr/bin',
+                        '/usr/sbin', '/bin', '/sbin']
     newpath = stripfake(path_to_append=linuxdefaultpath)
 
     # iterate over all combinations of $PATH[i]/$names[j]
@@ -325,6 +326,7 @@ class MPI(object):
         _logger.info("_is_mpisrun_for(%s), scriptnames of %s: %s",
                      mpirun_path, cls.__name__, cls._mpirun_version)
 
+        # regex should match mpirun_for/versionnumber
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
                          ("|".join(cls._mpirun_for), os.sep))
         r = reg.search(mpirun_path)
