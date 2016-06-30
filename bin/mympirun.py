@@ -80,6 +80,7 @@ def get_mpi_and_sched_and_options():
         raise ExitException("Exit no args provided")
 
     sched, found_sched = whatSched(getattr(mo.options, 'schedtype', None))
+    _logger.info("whatSched returned sched: %s, found_sched: %s" % (sched, found_sched))
 
     found_mpi_names = [x.__name__ for x in found_mpi]
     found_sched_names = [x.__name__ for x in found_sched]

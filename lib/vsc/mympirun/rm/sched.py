@@ -39,12 +39,50 @@ from vsc.utils.missing import nub
 
 def whatSched(requested):
     """Return the scheduler class"""
-    found_sched = get_subclasses(Sched)
+
+    found_sched = get_supported_sched_implementations()
     for sched in found_sched:
         # print sched.__name__, requested
         if sched._is_sched_for(requested):
             return sched, found_sched
     return None, found_sched
+
+def get_supported_sched_implementations():
+    """searches, imports and returns the Sched implementations in mympirun/mpi/
+
+    Raises:
+        Exception   --  If the function could not resolve the module hierarchy
+    """
+
+    _logger = getLogger()
+    _logger.info("get_supported_sched_implementations()")
+
+    # get absolute path of the mpi folder
+    path = os.path.join(os.path.dirname(__file__))
+
+    # get the paths of all the python files in the mpi folder
+    modulepaths = glob.glob(path + "/*.py")
+
+    # parse the folder structure to get the module hierarchy
+    modulehierarchy = []
+    (path, tail) = os.path.split(path)
+    while not tail.endswith(".egg") or tail == "lib":
+        modulehierarchy.insert(0, tail)
+        (path, tail) = os.path.split(path)
+        if path == "/":
+            raise Exception("could not parse module hierarchy")
+
+    _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
+
+    # transform the paths to module names while discarding __init__.py
+    modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
+                   for f in modulepaths[1:] if os.path.isfile(f)]
+
+    # import the modules
+    modules = map(__import__, modulenames)
+    _logger.info("imported modules: %s", modulenames)
+
+    return get_subclasses(Sched)
 
 
 class Sched(object):
