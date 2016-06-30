@@ -28,7 +28,6 @@ Base MPI class, all actual classes should inherit from this one
 @author: Stijn De Weirdt, Jeroen De Clerck
 """
 
-import glob
 import os
 import random
 import re
@@ -76,7 +75,7 @@ def whatMPI(name):
     _logger.info("whatMPI(%s)", name)
 
     scriptname = os.path.basename(os.path.abspath(name))
-    supp_mpi_impl = get_supported_mpi_implementations()
+    supp_mpi_impl = get_subclasses(MPI) # support MPI implementations
 
     # check if mympirun was called by a known mpirun alias (like
     # ompirun for OpenMPI or mhmpirun for mpich)
@@ -104,44 +103,6 @@ def whatMPI(name):
     _logger.warn("The executable that called mympirun isn't supported"
                  ", defaulting to %s", mpirun_path)
     return mpirun_path, None, supp_mpi_impl
-
-
-def get_supported_mpi_implementations():
-    """searches, imports and returns the MPI implementations in mympirun/mpi/
-
-    Raises:
-        Exception   --  If the function could not resolve the module hierarchy
-    """
-
-    _logger = getLogger()
-    _logger.info("get_supported_mpi_implementations()")
-
-    # get absolute path of the mpi folder
-    path = os.path.join(os.path.dirname(__file__))
-
-    # get the paths of all the python files in the mpi folder
-    modulepaths = glob.glob(path + "/*.py")
-
-    # parse the folder structure to get the module hierarchy
-    modulehierarchy = []
-    (path, tail) = os.path.split(path)
-    while not tail.endswith(".egg") or tail == "lib":
-        modulehierarchy.insert(0, tail)
-        (path, tail) = os.path.split(path)
-        if path == "/":
-            raise Exception("could not parse module hierarchy")
-
-    _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
-
-    # transform the paths to module names while discarding __init__.py
-    modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
-                   for f in modulepaths[1:] if os.path.isfile(f)]
-
-    # import the modules
-    modules = map(__import__, modulenames)
-    _logger.info("imported modules: %s", modulenames)
-
-    return get_subclasses(MPI)
 
 
 def stripfake(path_to_append=None):
@@ -310,8 +271,7 @@ class MPI(object):
     # factory methods for MPI
     @classmethod
     def _is_mpirun_for(cls, mpirun_path):
-        """check if this class provides support for the mpirun executable
-        that was called
+        """check if this class provides support for the mpirun that was called
 
         Arguments:
             cls         --  the class that calls this function
