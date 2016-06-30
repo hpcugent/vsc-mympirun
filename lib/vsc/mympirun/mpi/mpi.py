@@ -49,8 +49,6 @@ from vsc.utils.missing import get_subclasses, nub
 from vsc.utils.run import (run_simple, run_simple_noworries,
                            run_to_file, run_async_to_stdout)
 
-# Going to guess myself
-
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
 # the fake subdir to contain the fake mpirun symlink
@@ -78,27 +76,32 @@ def whatMPI(name):
 
     scriptname = os.path.basename(os.path.abspath(name))
     supp_mpi_impl = get_supported_mpi_implementations()
-    _logger.info("PATH: %s", os.environ['PATH'])
 
-    # iterate over the MPI implementations
-    # check if the one that was called is supported
+    # check if mympirun was called by a known mpirun alias (like
+    # ompirun for OpenMPI or mhmpirun for mpich)
     for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname):
-            stripfake()  # mandatory before return at this point
+            _logger.info("%s was used to call mympirun", scriptname)
+            stripfake() # mandatory before return at this point
             return scriptname, mpi, supp_mpi_impl
-    _logger.info("PATH: %s", os.environ['PATH'])
 
-    # not called through alias
-    # stripfake is in which
+    # get the path of the mpirun cli command
+    # stripfake() is called in which
     mpirunname = which(['mpirun'])
     if mpirunname is None:
+        # no MPI implementation installed
+        _logger.warn("no mpirun command found")
         return None, None, supp_mpi_impl
 
+    # mympirun was not called through a known alias, so find out which MPI
+    # implimentation the user has installed
     for mpi in supp_mpi_impl:
         if mpi._is_mpirun_for(mpirunname):
             return scriptname, mpi, supp_mpi_impl
 
     # return found mpirunname
+    _logger.warn("The cli command that called mympirun isn't supported"
+                 ", defaulting to %s", mpirunname)
     return mpirunname, None, supp_mpi_impl
 
 
@@ -113,7 +116,6 @@ def get_supported_mpi_implementations():
 
     # get absolute path of the mpi folder
     path = os.path.join(os.path.dirname(__file__))
-    _logger.info("path: %s", path)
 
     # get the paths of all the python files in the mpi folder
     modulepaths = glob.glob(path + "/*.py")
@@ -152,7 +154,7 @@ def stripfake(path_to_append=None):
                             path_to_append appended
     """
     _logger = getLogger()
-    _logger.info("stripfake()")
+    _logger.info("PATH before stripfake(): %s", os.environ['PATH'])
 
     # compile a regex that matches the faked mpirun
     reg_fakepath = re.compile(
@@ -177,6 +179,7 @@ def stripfake(path_to_append=None):
 
     os.environ['PATH'] = "%s" % ':'.join(newpath)
 
+    _logger.info("PATH after stripfake(): %s", os.environ['PATH'])
     return newpath
 
 
@@ -287,12 +290,15 @@ class MPI(object):
     # factory methods for MPI
     # to add a new MPI class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
-    # classmethod
+    @classmethod
     def _is_mpirun_for(cls, name):
-        """see if this class can provide support for found mpirun"""
-        # TODO report later in the initialization the found version
+        """check if this class can provide support for the MPI implementation that was called"""
+        _logger = getLogger()
+        _logger.info("_is_mpisrun_for(%s), scriptnames of %s: %s", name, cls.__name__, cls._mpirun_version)
+
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" % ("|".join(cls._mpirun_for), os.sep))
         r = reg.search(name)
+        _logger.info("_is_mpisrun_for(), r: %s", r)
         if r:
             if cls._mpirun_version is None:
                 return True
@@ -302,23 +308,21 @@ class MPI(object):
         else:
             return False
 
-    _is_mpirun_for = classmethod(_is_mpirun_for)
-
+    @classmethod
     def _is_mpiscriptname_for(cls, name):
         """see if this class can provide support for scriptname
 
         Arguments:
-            cls         --
-            name        --
+            cls         --  the class that calls this function
+            name        --  the scriptname
 
         Returns:
-            name        --
+            bool        --  true if $name is defined as a scriptname of $class
         """
         _logger = getLogger()
-        _logger.info("_is_mpiscriptname_for(%s, %s)", cls.__name__, name)
+        _logger.info("_is_mpiscriptname_for(%s), scriptnames of %s: %s", name, cls.__name__, cls._mpiscriptname_for)
 
         return name in cls._mpiscriptname_for
-    _is_mpiscriptname_for = classmethod(_is_mpiscriptname_for)
 
     #
     # other general functionality

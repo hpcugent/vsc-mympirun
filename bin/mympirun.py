@@ -96,7 +96,7 @@ def get_mpi_and_sched_and_options():
 
     if mpi is None:
         #mo.parser.print_shorthelp()
-        mo.log.raiseException(("No MPI class found (scriptname %s; ismpirun %s). Please use mympirun through one "
+        mo.log.raiseException(("No MPI class found that supports scriptname %s; ismpirun %s). Please use mympirun through one "
                                "of the direct calls or make sure the mpirun command can be found. "
                                "Found MPI %s") % (scriptname, ismpirun, ", ".join(found_mpi_names)))
     else:
@@ -115,8 +115,6 @@ def get_mpi_and_sched_and_options():
 def main():
     """Main function"""
     _logger.info("main()")
-    _logger.info("PATH: %s", os.environ['PATH'])
-
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
