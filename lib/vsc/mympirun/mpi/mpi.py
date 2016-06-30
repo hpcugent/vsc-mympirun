@@ -60,11 +60,11 @@ def whatMPI(name):
     """Return the path of the selected mpirun and its class
 
     Arguments:
-        name            --  The name of the command used to run
+        name            --  The name of the executable used to run
                             mympirun (sys.argv[0])
 
     Returns:
-        *name           --  The path to the command used to run mympirun
+        *name           --  The path to the executable used to run mympirun
                             (should be the path to an mpirun implementation)
         mpi             --  The corresponding python class of the MPI variant
         supp_mpi_impl   --  The python classes of the supported MPI
@@ -86,7 +86,7 @@ def whatMPI(name):
             stripfake()  # mandatory before return at this point
             return scriptname, mpi, supp_mpi_impl
 
-    # get the path of the mpirun cli command
+    # get the path of the mpirun executable
     # stripfake() is called in which
     mpirun_path = which(['mpirun'])
     if mpirun_path is None:
@@ -101,7 +101,7 @@ def whatMPI(name):
             return scriptname, mpi, supp_mpi_impl
 
     # return found mpirun_path
-    _logger.warn("The cli command that called mympirun isn't supported"
+    _logger.warn("The executable that called mympirun isn't supported"
                  ", defaulting to %s", mpirun_path)
     return mpirun_path, None, supp_mpi_impl
 
@@ -308,10 +308,10 @@ class MPI(object):
             self.log.raiseException("__init__: no executable or command provided")
 
     # factory methods for MPI
-
     @classmethod
     def _is_mpirun_for(cls, mpirun_path):
-        """check if this class provides support for the mpirun that was called
+        """check if this class provides support for the mpirun executable
+        that was called
 
         Arguments:
             cls         --  the class that calls this function
@@ -326,7 +326,7 @@ class MPI(object):
         _logger.info("_is_mpisrun_for(%s), scriptnames of %s: %s",
                      mpirun_path, cls.__name__, cls._mpirun_version)
 
-        # regex should match mpirun_for/versionnumber
+        # regex matches "cls._mpirun_for/version number"
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
                          ("|".join(cls._mpirun_for), os.sep))
         r = reg.search(mpirun_path)
@@ -335,7 +335,7 @@ class MPI(object):
             if cls._mpirun_version is None:
                 return True
             else:
-                # do major,minor version check
+                # do version check (r.group(1) is the version number)
                 return cls._mpirun_version(r.group(1))
         else:
             return False
