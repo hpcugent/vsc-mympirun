@@ -31,6 +31,8 @@ import os
 import random
 import re
 import time
+import glob
+
 from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.mpi.mpi import get_subclasses
 from vsc.utils.affinity import sched_getaffinity
