@@ -173,7 +173,6 @@ def main():
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
             _logger.exception("Main failed")
         ec = 1
-    finally:
         _logger.info("Trace: \n %s", tb)
 
     sys.exit(ec)
