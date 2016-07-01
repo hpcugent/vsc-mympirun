@@ -82,7 +82,8 @@ class MympirunOption(GeneralOption):
                        "per node."), "int", "store", None, 'h'),
 
             "double": (("Run double the amount of processes (eg for GAMESS; "
-                       "to change multiplier, use --hybrid)"), None, "store_true", False),
+                       "to change multiplier, use --hybrid)"), None,
+                       "store_true", False),
 
             "output": (("filename to write stdout/stderr directly to (instead "
                        "of stdout)"), "str", "store", None),

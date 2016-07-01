@@ -119,7 +119,7 @@ class IntelMPI(MPI):
             else:
                 txt = ",".join(["%d" % x for x in self.cpus])
                 self.mpiexec_global_options['I_MPI_PIN_PROCESSOR_LIST'] = txt
-                self._setenv('I_MPI_PIN_PROCESSOR_LIST', txt)
+                os.environ['I_MPI_PIN_PROCESSOR_LIST'] = txt
                 self.log.info(("check_usable_cpus: one node requested. "
                                "Setting I_MPI_PIN_PROCESSOR_LIST to %s") % txt)
 
@@ -129,7 +129,7 @@ class IntelMPI(MPI):
 
         # this one also needs to be set at runtime
         self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = "/tmp"
-        self._setenv('I_MPI_MPD_TMPDIR', "/tmp")
+        os.environ['I_MPI_MPD_TMPDIR'] = "/tmp"
 
         if self.options.debuglvl > 0:
             self.mpiexec_global_options['I_MPI_DEBUG'] = "+%s" % self.options.debuglvl
@@ -192,7 +192,7 @@ class IntelMPI(MPI):
         """Small change"""
         # intel mpi mpirun strips the --file otion for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
         # - we don't want that
-        self._setenv('PBS_ENVIRONMENT', 'PBS_BATCH_MPI')
+        os.environ['PBS_ENVIRONMENT'] = 'PBS_BATCH_MPI'
 
         return super(IntelMPI, self).mpirun_prepare_execution()
 

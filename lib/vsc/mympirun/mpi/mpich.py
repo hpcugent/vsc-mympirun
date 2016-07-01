@@ -48,10 +48,10 @@ class MVAPICH2Hydra(MPI):
         super(MVAPICH2Hydra, self).prepare()
 
         if self.options.pinmpi:
-            self._setenv('MV2_ENABLE_AFFINITY', 1)
-            self._setenv('MV2_CPU_BINDING_POLICY', 'bunch')
+            os.environ['MV2_ENABLE_AFFINITY'] = 1
+            os.environ['MV2_CPU_BINDING_POLICY'] = 'bunch'
         else:
-            self._setenv('MV2_ENABLE_AFFINITY', 0)
+            os.environ['MV2_ENABLE_AFFINITY'] = 0
 
     def mpiexec_set_global_options(self):
         """Set mpiexec global options"""
