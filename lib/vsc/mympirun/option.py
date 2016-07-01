@@ -159,12 +159,12 @@ class MympirunOption(GeneralOption):
         if options_list is None:
             options_list = self.default_parseoptions()
 
-        optsToRemove = {'-np': 1,
-                        '-machinefile': 1
-                        }
-
         newopts = options_list[:]  # copy
         if self.mpirunmode:
+            optsToRemove = {'-np': 1,
+                            '-machinefile': 1
+                            }
+
             for opt in optsToRemove.keys():
                 try:
                     pos = newopts.index(opt)

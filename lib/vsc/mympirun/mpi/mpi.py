@@ -375,7 +375,7 @@ class MPI(object):
 
         self.set_netmask()
 
-        self.make_node_file()
+        fself.make_node_file()
 
         self.set_pinning()
 
