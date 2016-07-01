@@ -71,7 +71,7 @@ class MympirunOption(GeneralOption):
             "setsched": (("Specify scheduler (eg local, pbs...; will try to "
                           "guess by default)."), "str", "store", None, "S"),
 
-            "debuglvl": ("Specify debug level", "int", "store", 0, "d"),
+            "debuglvl": ("Specify debug level", "int", "store", 0),
 
             "mpdbootverbose": ("Run verbose mpdboot", None, "store_true",
                                False),
@@ -82,7 +82,7 @@ class MympirunOption(GeneralOption):
                        "per node."), "int", "store", None, 'h'),
 
             "double": (("Run double the amount of processes (eg for GAMESS; "
-                       "to change multiplier, use --hybrid)"), None,
+                       "to change multiplier, use --hybrid)"), None, "store_true", False),
 
             "output": (("filename to write stdout/stderr directly to (instead "
                        "of stdout)"), "str", "store", None),
