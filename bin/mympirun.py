@@ -176,7 +176,7 @@ def main():
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
-        sys.exitxport(0)
+        sys.exit(0)
     except Exception, e:
         # # TODO: cleanup, only catch known exceptions
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
