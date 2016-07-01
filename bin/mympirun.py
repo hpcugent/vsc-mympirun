@@ -55,11 +55,6 @@ from vsc.mympirun.rm.sched import whatSched
 _logger = fancylogger.getLogger()
 fancylogger.setLogLevelInfo()
 
-class ExitException(Exception):
-    """Exception thrown when we wish to exit, but no real errors occured"""
-    _logger.info("ExitException was thrown: %s", Exception)
-
-
 def get_mpi_and_sched_and_options():
     """Parses the mpi and scheduler based on current environment and guesses the best one to use
 
@@ -80,7 +75,8 @@ def get_mpi_and_sched_and_options():
 
     if mo.args is None or len(mo.args) == 0:
         mo.parser.print_shorthelp()
-        raise ExitException("Exit no args provided")
+        _logger.warn("no arguments provided, exiting")
+        sys.exit(0)
 
     get_implementations(inspect.getmodule(whatSched))
     sched, found_sched = whatSched(getattr(mo.options, 'schedtype', None))
@@ -92,12 +88,12 @@ def get_mpi_and_sched_and_options():
     if mo.options.showmpi:
         fancylogger.setLogLevelInfo()
         _logger.info("Found MPI classes %s" % (", ".join(found_mpi_names)))
-        raise ExitException("Exit from showmpi")
+        sys.exit(0)
 
     if mo.options.showsched:
         fancylogger.setLogLevelInfo()
         _logger.info("Found Sched classes %s" % (", ".join(found_sched_names)))
-        raise ExitException("Exit from showsched")
+        sys.exit(0)
 
     if mpi is None:
         #mo.parser.print_shorthelp()
@@ -163,19 +159,15 @@ def main():
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
-        ec = 0
-    except ExitException:
-        ec = 0
+        sys.exit(0)
     except Exception, e:
-        _logger.info("Main failed")
-        tb = traceback.format_exc()
         # # TODO: cleanup, only catch known exceptions
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
             _logger.exception("Main failed")
-        ec = 1
-        _logger.info("Trace: \n %s", tb)
+        _logger.info("Main failed; Trace: \n %s", traceback.format_exc())
+        sys.exit(1)
 
-    sys.exit(ec)
+
 
 if __name__ == '__main__':
     main()
