@@ -57,8 +57,7 @@ class MympirunOption(GeneralOption):
         GeneralOption.__init__(self)
 
     def make_init(self):
-        _logger = getLogger()
-        _logger.debug("option.py - initializing options")
+        self.log.debug("option.py - initializing options")
 
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
@@ -169,8 +168,7 @@ class MympirunOption(GeneralOption):
             The values of optsToRemove are the number of arguments of these options, that also need to be removed.
         """
 
-        _logger = getLogger()
-        _logger.debug("option.py - parseoptions()")
+        self.log.debug("option.py - parseoptions()")
 
 
         if options_list is None:
@@ -195,8 +193,7 @@ class MympirunOption(GeneralOption):
     def postprocess(self):
         """Some additional processing"""
 
-        _logger = getLogger()
-        _logger.debug("option.py - postprocess()")
+        self.log.debug("option.py - postprocess()")
 
         if self.options.debugmpi:
             # set some
@@ -205,3 +202,5 @@ class MympirunOption(GeneralOption):
             if self.options.stats < 1:
                 self.options.stats = 2
             self.options.mpdbootverbose = True
+
+        self.log.debug("final options: %s", self.options)

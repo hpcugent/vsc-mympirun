@@ -42,7 +42,7 @@ class IntelMPI(MPI):
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("4.1.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
-    RUNTIMEOPTION = {'options':{'impi_mpdbulletproof':("Start MPD in bulletproof", None, "store_true", False),
+    RUNTIMEOPTION = {'options':{'mpdbulletproof':("Start MPD in bulletproof", None, "store_true", False),
                                 'fallback':("Enable device fallback", None, "store_true", False),
                                 'daplud':("Enable DAPL UD connections", None, "store_true", False),
                                 'xrc':("Enable Mellanox XRC", None, "store_true", False),
