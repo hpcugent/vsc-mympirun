@@ -43,7 +43,8 @@ class MVAPICH2Hydra(MPI):
 
     PASS_VARIABLES_CLASS_PREFIX = ['MV2', 'HYDRA']
 
-    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-envlist %(commaseparated)s"
+    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-x %(name)s=%(value)s"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "-x %(name)s=%(value)s"
 
     def prepare(self):
         super(MVAPICH2Hydra, self).prepare()
