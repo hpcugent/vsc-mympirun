@@ -151,7 +151,7 @@ def import_implementations(module):
                    for f in modulepaths if os.path.isfile(f) and
                    "__init__" not in f]
 
-    _logger.debug("mympirun.py - remaining path: %s, namespace: %s", path, namespace)
+    _logger.debug("namespace: %s", namespace)
 
     # import the modules
     modules = map(__import__, modulenames)
