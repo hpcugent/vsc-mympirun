@@ -150,12 +150,7 @@ class MympirunOption(GeneralOption):
                         (opts, descr, prefix))
         self.add_group_parser(opts, descr, prefix=prefix)
 
-    def addMPIoptions(self):
         # for all MPI classes, get the additional options
-
-        _logger = getLogger()
-        _logger.debug("option.py - addMPIoptions()")
-
         for mpi in MPI.__subclasses__():
             if not mpi.RUNTIMEOPTION is None:
                 opts = mpi.RUNTIMEOPTION['options']

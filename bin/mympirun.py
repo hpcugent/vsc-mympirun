@@ -48,9 +48,9 @@ import inspect
 
 from vsc.utils import fancylogger
 from vsc.mympirun.rm.factory import getinstance
-from vsc.mympirun.mpi.mpi import whatMPI
+import vsc.mympirun.mpi.mpi
 from vsc.mympirun.option import MympirunOption
-from vsc.mympirun.rm.sched import whatSched
+import vsc.mympirun.rm.sched
 
 _logger = fancylogger.getLogger()
 fancylogger.setLogLevelInfo()
@@ -66,28 +66,27 @@ def get_mpi_and_sched_and_options():
     mo              --
     """
     _logger.debug("mympirun.py - get_mpi_and_sched_and_options()")
+    get_implementations(vsc.mympirun.mpi.mpi)
+    get_implementations(vsc.mympirun.rm.sched)
 
     mo = MympirunOption()
 
     setmpi = getattr(mo.options, 'setmpi') if getattr(mo.options, 'setmpi') else sys.argv[0]
     _logger.debug("mympirun.py - setmpi: %s", setmpi)
 
-    get_implementations(inspect.getmodule(whatMPI))
-    scriptname, mpi, found_mpi = whatMPI(setmpi)
+    scriptname, mpi, found_mpi = vsc.mympirun.mpi.mpi.whatMPI(setmpi)
     _logger.debug("mympirun.py - whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" %
                  (scriptname, mpi, found_mpi))
 
     ismpirun = scriptname == 'mpirun'
     mo.mpirunmode = ismpirun
-    mo.addMPIoptions()
 
     if mo.args is None or len(mo.args) == 0:
         mo.parser.print_shorthelp()
         _logger.warn("no arguments provided, exiting")
         sys.exit(0)
 
-    get_implementations(inspect.getmodule(whatSched))
-    sched, found_sched = whatSched(getattr(mo.options, 'setsched', None))
+    sched, found_sched = vsc.mympirun.rm.sched.whatSched(getattr(mo.options, 'setsched', None))
     _logger.debug("mympirun.py - whatSched returned sched: %s, found_sched: %s" %
                  (sched, found_sched))
 
@@ -141,25 +140,19 @@ def get_implementations(module):
         Exception   --  If the function could not resolve the module hierarchy
     """
 
-    _logger.debug("mympirun.py - get_supported_sched_implementations()")
+    _logger.debug("mympirun.py - get_implementations()")
 
     # get absolute path of the mpi folder
-    path = os.path.join(os.path.dirname(module.__file__))
+    path = os.path.dirname(module.__file__)
 
     # get the paths of all the python files in the mpi folder
     modulepaths = glob.glob(path + "/*.py")
 
     # parse the folder structure to get the module hierarchy
-    modulehierarchy = []
-    (path, tail) = os.path.split(path)
-    while not tail.endswith(".egg") or tail == "lib":
-        modulehierarchy.insert(0, tail)
-        (path, tail) = os.path.split(path)
-        if path == "/":
-            raise Exception("could not parse module hierarchy")
+    modulehierarchy = ".".join(module.__name__.split('.')[:-1])
 
     # transform the paths to module names while discarding __init__.py
-    modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
+    modulenames = [modulehierarchy + "." + os.path.basename(os.path.splitext(f)[0])
                    for f in modulepaths if os.path.isfile(f)
                    and "__init__" not in f]
 
