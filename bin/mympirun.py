@@ -53,8 +53,7 @@ from vsc.mympirun.option import MympirunOption
 import vsc.mympirun.rm.sched
 
 _logger = fancylogger.getLogger()
-fancylogger.setLogLevelInfo()
-
+fancylogger.setLogLevelDebug()
 
 def get_mpi_and_sched_and_options():
     """Parses the mpi and scheduler based on current environment and
