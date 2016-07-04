@@ -40,45 +40,46 @@ TODO:
 @author: Stijn De Weirdt, Jens Timmerman (HPC UGent / VSC)
 """
 
-import sys
-import os
-import traceback
 import glob
 import inspect
+import os
+import sys
+import traceback
 
-from vsc.utils import fancylogger
-from vsc.mympirun.rm.factory import getinstance
 import vsc.mympirun.mpi.mpi
 from vsc.mympirun.option import MympirunOption
+from vsc.mympirun.rm.factory import getinstance
 import vsc.mympirun.rm.sched
+from vsc.utils import fancylogger
 
 _logger = fancylogger.getLogger()
 fancylogger.setLogLevelDebug()
 
 def get_mpi_and_sched_and_options():
-    """Parses the mpi and scheduler based on current environment and
-    guesses the best one to use
+    """selects mpi flavor and scheduler based on environment and arguments
 
     returns:
-    mpi             --
-    sched           --
-    mo              --
+    mpi             -- the chosen MPI flavor
+    sched           -- the chosen scheduler
+    mo              -- the MympirunOption class
     """
     _logger.debug("mympirun.py - get_mpi_and_sched_and_options()")
 
+    # import the various MPI flavours and Schedulers
     import_implementations(vsc.mympirun.mpi.mpi)
     import_implementations(vsc.mympirun.rm.sched)
 
+    # see if an mpi flaver was explicitly chosen as an argument
+    # if not, just use the mpirun that was called
+    # We are using sys.argv because generaloption depends on the the returned
+    # scriptname
     setmpi_index = sys.argv.index("-M") if "-M" in sys.argv else 0
     setmpi = sys.argv[setmpi_index+1] if setmpi_index else sys.argv[0]
     _logger.debug("mympirun.py - setmpi: %s" % setmpi)
-
     scriptname, mpi, found_mpi = vsc.mympirun.mpi.mpi.whatMPI(setmpi)
-    _logger.debug("mympirun.py - whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" %
-                 (scriptname, mpi, found_mpi))
 
+    # init generaloption with the various mpirun cli options
     ismpirun = scriptname == 'mpirun'
-
     mo = MympirunOption(ismpirun=ismpirun)
 
     if mo.args is None or len(mo.args) == 0:
@@ -86,6 +87,7 @@ def get_mpi_and_sched_and_options():
         _logger.warn("no arguments provided, exiting")
         sys.exit(0)
 
+    # Select a Scheduler from the available schedulers
     sched, found_sched = vsc.mympirun.rm.sched.whatSched(getattr(mo.options, 'setsched', None))
     _logger.debug("mympirun.py - whatSched returned sched: %s, found_sched: %s" %
                  (sched, found_sched))
@@ -106,7 +108,6 @@ def get_mpi_and_sched_and_options():
         sys.exit(0)
 
     if mpi is None:
-        # mo.parser.print_shorthelp()
         mo.log.raiseException(
             ("No MPI class found that supports scriptname %s; ismpirun %s). "
              "Please use mympirun through one of the direct calls or make sure "
@@ -167,7 +168,6 @@ def main():
         m.main()
         sys.exit(0)
     except Exception, e:
-        # # TODO: cleanup, only catch known exceptions
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
             _logger.exception("Main failed")
         _logger.debug("mympirun.py - Main failed; Trace: \n %s", traceback.format_exc())
