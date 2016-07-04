@@ -25,6 +25,7 @@
 """
 MPICH specific classes
 """
+import os
 
 from distutils.version import LooseVersion
 
@@ -48,10 +49,10 @@ class MVAPICH2Hydra(MPI):
         super(MVAPICH2Hydra, self).prepare()
 
         if self.options.pinmpi:
-            os.environ['MV2_ENABLE_AFFINITY'] = 1
+            os.environ['MV2_ENABLE_AFFINITY'] = "1"
             os.environ['MV2_CPU_BINDING_POLICY'] = 'bunch'
         else:
-            os.environ['MV2_ENABLE_AFFINITY'] = 0
+            os.environ['MV2_ENABLE_AFFINITY'] = "0"
 
     def mpiexec_set_global_options(self):
         """Set mpiexec global options"""

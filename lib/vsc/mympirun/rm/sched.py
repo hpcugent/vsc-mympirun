@@ -49,6 +49,7 @@ def whatSched(requested):
             return sched, found_sched
     return None, found_sched
 
+
 def get_supported_sched_implementations():
     """searches, imports and returns the Sched implementations in mympirun/mpi/
 
@@ -57,7 +58,7 @@ def get_supported_sched_implementations():
     """
 
     _logger = getLogger()
-    _logger.info("get_supported_sched_implementations()")
+    _logger.info("sched.py - get_supported_sched_implementations()")
 
     # get absolute path of the mpi folder
     path = os.path.join(os.path.dirname(__file__))
@@ -76,30 +77,37 @@ def get_supported_sched_implementations():
 
     # transform the paths to module names while discarding __init__.py
     modulenames = [".".join(modulehierarchy) + "." + os.path.basename(f)[:-3]
-                   for f in modulepaths if os.path.isfile(f)
-                                        and "__init__" not in f]
+                   for f in modulepaths if os.path.isfile(f) and
+                   "__init__" not in f]
 
-    _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
+    _logger.info("sched.py - remaining path: %s, hierarchy: %s",
+                 path, modulehierarchy)
 
     # import the modules
-    modules = map(__import__, modulenames)
-    _logger.info("imported modules: %s", modulenames)
+    map(__import__, modulenames)
+    _logger.info("sched.py - imported modules: %s", modulenames)
 
     return get_subclasses(Sched)
 
 
 class Sched(object):
+
     """General class for scheduler/resource manager related functions."""
     _sched_for = []  # classname is default added
     _sched_environ_test = []
     SCHED_ENVIRON_ID = None
-    SCHED_ENVIRON_ID_AUTOGENERATE_JOBID = False  # if the SCHED_ENVIRON_ID is not found, create one yourself
+
+    # if the SCHED_ENVIRON_ID is not found, create one yourself
+    SCHED_ENVIRON_ID_AUTOGENERATE_JOBID = False
 
     SAFE_RSH_CMD = 'ssh'
     SAFE_RSH_LARGE_CMD = 'sshsleep'
     RSH_CMD = None
     RSH_LARGE_CMD = None
-    RSH_LARGE_LIMIT = 16  # nr of nodes considered large (relevant for internode communication for eg mpdboot)
+
+    # nr of nodes considered large
+    # relevant for internode communication for eg mpdboot
+    RSH_LARGE_LIMIT = 16
 
     HYDRA_RMK = []
     HYDRA_LAUNCHER = ['ssh']
@@ -140,14 +148,15 @@ class Sched(object):
 
         super(Sched, self).__init__(**kwargs)
 
-    # factory methods for MPI
-    # to add a new MPI class just create a new class that extends the cluster class
+    # factory methods for MPI. To add a new MPI class just create a new class
+    # that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
-    # classmethod
+    @classmethod
     def _is_sched_for(cls, name=None):
         """see if this class can provide support for sched class"""
         if name is not None:
-            return name in cls._sched_for + [cls.__name__]  # add class name as default
+            # add class name as default
+            return name in cls._sched_for + [cls.__name__]
 
         # guess it from environment
         totest = cls._sched_environ_test
@@ -162,7 +171,6 @@ class Sched(object):
                 return True
 
         return False
-    _is_sched_for = classmethod(_is_sched_for)
 
     # other methods
     def get_unique_nodes(self, nodes=None):
@@ -189,15 +197,17 @@ class Sched(object):
         if self.id is None:
             if self.SCHED_ENVIRON_ID is not None:
                 if self.SCHED_ENVIRON_ID_AUTOGENERATE_JOBID:
-                    self.log.info("get_id: failed to get id from environment variable %s, will generate one." %
+                    self.log.info(("get_id: failed to get id from environment "
+                                   "variable %s, will generate one.") %
                                   self.SCHED_ENVIRON_ID)
                     self.id = "SCHED_%s%s%05d" % (self.__class__.__name__,
                                                   time.strftime("%Y%m%d%H%M%S"),
                                                   random.randint(0, 10 ** 5 - 1))
                     self.log.debug("get_id: using generated id %s" % self.id)
                 else:
-                    self.log.raiseException("get_id: failed to get id from environment variable %s" %
-                                            self.SCHED_ENVIRON_ID)
+                    self.log.raiseException(
+                        "get_id: failed to get id from environment variable %s"
+                         % self.SCHED_ENVIRON_ID)
 
     def set_ppn(self):
         """Determine the ppn from nodes and unique nodes"""
@@ -210,10 +220,13 @@ class Sched(object):
         # set default
         self.totalppn = self.ppn
 
-        self.log.debug("Set ppn to %s (totalppn %s)" % (self.ppn, self.totalppn))
+        self.log.debug("Set ppn to %s (totalppn %s)" %
+                       (self.ppn, self.totalppn))
 
     def _cores_on_this_node(self):
-        """Determine the number of available cores on this node based on /proc/cpuinfo"""
+        """Determine the number of available cores on this node
+        based on /proc/cpuinfo
+        """
         fn = '/proc/cpuinfo'
         regcores = re.compile(r"^processor\s*:\s*\d+\s*$", re.M)
 
@@ -250,7 +263,8 @@ class Sched(object):
         if self.foundppn is None:
             self.which_cpus()
 
-        res = (self.nrnodes > self.RSH_LARGE_LIMIT) and (self.ppn == self.foundppn)
+        res = ((self.nrnodes > self.RSH_LARGE_LIMIT) and
+               (self.ppn == self.foundppn))
         self.log.debug("is_large returns %s" % res)
         return res
 
@@ -264,7 +278,8 @@ class Sched(object):
                 rsh = self.SAFE_RSH_CMD
         else:
             # optimised
-            default_rsh = getattr(self, 'DEFAULT_RSH', None)  # set in MPI, not in RM
+            # set in MPI, not in RM
+            default_rsh = getattr(self, 'DEFAULT_RSH', None)
             if default_rsh is not None:
                 rsh = default_rsh
             elif getattr(self, 'has_hydra', None):
@@ -298,7 +313,8 @@ class Sched(object):
         else:
             multi = 1
 
-        self.log.debug("make_node_list: hybrid %s double %s multi %s" % (hybrid, double, multi))
+        self.log.debug("make_node_list: hybrid %s double %s multi %s" %
+                       (hybrid, double, multi))
 
         res = []
         if double:
@@ -323,22 +339,25 @@ class Sched(object):
         ordermode = ordermode.split("_")
         if ordermode[0] in ('normal',):
             # do nothing
-            self.log.debug("make_node_list: no reordering (mode %s)" % ordermode)
+            self.log.debug("make_node_list: no reordering (mode %s)" %
+                           ordermode)
         elif ordermode[0] in ('random',):
             if len(ordermode) == 2:
                 seed = int(ordermode[1])
                 random.seed(seed)
                 self.log.debug("make_node_list: setting random seed %s" % seed)
             random.shuffle(res)
-            self.log.debug("make_node_list shuffled nodes (mode %s)" % ordermode)
+            self.log.debug("make_node_list shuffled nodes (mode %s)" %
+                           ordermode)
         elif ordermode[0] in ('sort',):
             res.sort()
             self.log.debug("make_node_list sort nodes (mode %s)" % ordermode)
         else:
-            self.log.raiseExcepetion("make_node_list unknown ordermode %s" % ordermode)
+            self.log.raiseExcepetion("make_node_list unknown ordermode %s" %
+                                     ordermode)
 
-        self.log.debug("make_node_list: ordered node list %s (mpitotalppn %s)" %
-                       (res, self.mpitotalppn))
+        self.log.debug("make_node_list: ordered node list %s (mpitotalppn %s)"
+                       % (res, self.mpitotalppn))
 
         self.mpinodes = res
         self.nrmpinodes = len(res)

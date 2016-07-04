@@ -65,16 +65,16 @@ def get_mpi_and_sched_and_options():
     sched           --
     mo              --
     """
-    _logger.info("get_mpi_and_sched_and_options()")
+    _logger.info("mympirun.py - get_mpi_and_sched_and_options()")
 
     mo = MympirunOption()
 
     setmpi = getattr(mo.options, 'setmpi') if getattr(mo.options, 'setmpi') else sys.argv[0]
-    _logger.info("setmpi: %s", setmpi)
+    _logger.info("mympirun.py - setmpi: %s", setmpi)
 
     get_implementations(inspect.getmodule(whatMPI))
     scriptname, mpi, found_mpi = whatMPI(setmpi)
-    _logger.info("whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" %
+    _logger.info("mympirun.py - whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" %
                  (scriptname, mpi, found_mpi))
 
     ismpirun = scriptname == 'mpirun'
@@ -88,7 +88,7 @@ def get_mpi_and_sched_and_options():
 
     get_implementations(inspect.getmodule(whatSched))
     sched, found_sched = whatSched(getattr(mo.options, 'setsched', None))
-    _logger.info("whatSched returned sched: %s, found_sched: %s" %
+    _logger.info("mympirun.py - whatSched returned sched: %s, found_sched: %s" %
                  (sched, found_sched))
 
     found_mpi_names = [x.__name__ for x in found_mpi]
@@ -96,12 +96,12 @@ def get_mpi_and_sched_and_options():
 
     if mo.options.showmpi:
         fancylogger.setLogLevelInfo()
-        _logger.info("Found MPI classes %s" % (", ".join(found_mpi_names)))
+        _logger.info("mympirun.py - Found MPI classes %s" % (", ".join(found_mpi_names)))
         sys.exit(0)
 
     if mo.options.showsched:
         fancylogger.setLogLevelInfo()
-        _logger.info("Found Sched classes %s" % (", ".join(found_sched_names)))
+        _logger.info("mympirun.py - Found Sched classes %s" % (", ".join(found_sched_names)))
         sys.exit(0)
 
     if mpi is None:
@@ -139,7 +139,7 @@ def get_implementations(module):
         Exception   --  If the function could not resolve the module hierarchy
     """
 
-    _logger.info("get_supported_sched_implementations()")
+    _logger.info("mympirun.py - get_supported_sched_implementations()")
 
     # get absolute path of the mpi folder
     path = os.path.join(os.path.dirname(module.__file__))
@@ -161,18 +161,18 @@ def get_implementations(module):
                    for f in modulepaths if os.path.isfile(f)
                    and "__init__" not in f]
 
-    _logger.info("remaining path: %s, hierarchy: %s", path, modulehierarchy)
+    _logger.info("mympirun.py - remaining path: %s, hierarchy: %s", path, modulehierarchy)
 
     # import the modules
     modules = map(__import__, modulenames)
-    _logger.info("imported modules: %s", modulenames)
+    _logger.info("mympirun.py - imported modules: %s", modulenames)
 
     return
 
 
 def main():
     """Main function"""
-    _logger.info("main()")
+    _logger.info("mympirun.py - main()")
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
@@ -181,7 +181,7 @@ def main():
         # # TODO: cleanup, only catch known exceptions
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
             _logger.exception("Main failed")
-        _logger.info("Main failed; Trace: \n %s", traceback.format_exc())
+        _logger.info("mympirun.py - Main failed; Trace: \n %s", traceback.format_exc())
         sys.exit(1)
 
 

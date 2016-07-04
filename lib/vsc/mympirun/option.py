@@ -29,6 +29,7 @@ Optionparser for mympirun
 import sys
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
+from vsc.utils.fancylogger import getLogger
 
 # introduce usage / -u option. (original has -h for --hybrid)
 # TODO: generate real message with possible alias + mention all supported versions
@@ -47,12 +48,18 @@ class MympirunOption(GeneralOption):
     INTERSPERSED = False  # Stop parsing cmdline, all others opts are opts for the exe
 
     def __init__(self, ismpirun=False):
+        _logger = getLogger()
+        _logger.info("option.py - initializing MympirunOption")
+
         self.mpirunmode = ismpirun
 
         # super(MympirunOption, self).__init__()
         GeneralOption.__init__(self)
 
     def make_init(self):
+        _logger = getLogger()
+        _logger.info("option.py - initializing options")
+
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
             #long option: (description, type, action, default, short option)
@@ -157,6 +164,11 @@ class MympirunOption(GeneralOption):
             These options are the keys of optsToRemove.
             The values of optsToRemove are the number of arguments of these options, that also need to be removed.
         """
+
+        _logger = getLogger()
+        _logger.info("option.py - parseoptions()")
+
+
         if options_list is None:
             options_list = self.default_parseoptions()
 
@@ -178,6 +190,10 @@ class MympirunOption(GeneralOption):
 
     def postprocess(self):
         """Some additional processing"""
+
+        _logger = getLogger()
+        _logger.info("option.py - postprocess()")
+
         if self.options.debugmpi:
             # set some
             self.options.debug = True
