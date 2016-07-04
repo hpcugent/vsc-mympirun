@@ -66,20 +66,21 @@ def get_mpi_and_sched_and_options():
     mo              --
     """
     _logger.debug("mympirun.py - get_mpi_and_sched_and_options()")
-    get_implementations(vsc.mympirun.mpi.mpi)
-    get_implementations(vsc.mympirun.rm.sched)
 
-    mo = MympirunOption()
+    import_implementations(vsc.mympirun.mpi.mpi)
+    import_implementations(vsc.mympirun.rm.sched)
 
-    setmpi = getattr(mo.options, 'setmpi') if getattr(mo.options, 'setmpi') else sys.argv[0]
-    _logger.debug("mympirun.py - setmpi: %s", setmpi)
+    setmpi_index = sys.argv.index("-M") if "-M" in sys.argv else 0
+    setmpi = sys.argv[setmpi_index+1] if setmpi_index else sys.argv[0]
+    _logger.debug("mympirun.py - setmpi: %s" % setmpi)
 
     scriptname, mpi, found_mpi = vsc.mympirun.mpi.mpi.whatMPI(setmpi)
     _logger.debug("mympirun.py - whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" %
                  (scriptname, mpi, found_mpi))
 
     ismpirun = scriptname == 'mpirun'
-    mo.mpirunmode = ismpirun
+
+    mo = MympirunOption(ismpirun=ismpirun)
 
     if mo.args is None or len(mo.args) == 0:
         mo.parser.print_shorthelp()
@@ -130,33 +131,27 @@ def get_mpi_and_sched_and_options():
     return mpi, sched, mo
 
 
-def get_implementations(module):
+def import_implementations(module):
     """searches and imports python files in the some folder as a module
 
     Arguments:
         module      --  the module
-
-    Raises:
-        Exception   --  If the function could not resolve the module hierarchy
     """
 
-    _logger.debug("mympirun.py - get_implementations()")
+    _logger.debug("mympirun.py - import_implementations()")
 
-    # get absolute path of the mpi folder
-    path = os.path.dirname(module.__file__)
+    # get the paths of all the python files in the module folder
+    modulepaths = glob.glob(os.path.dirname(module.__file__) + "/*.py")
 
-    # get the paths of all the python files in the mpi folder
-    modulepaths = glob.glob(path + "/*.py")
-
-    # parse the folder structure to get the module hierarchy
-    modulehierarchy = ".".join(module.__name__.split('.')[:-1])
+    # parse the module namespace
+    namespace = ".".join(module.__name__.split('.')[:-1])
 
     # transform the paths to module names while discarding __init__.py
-    modulenames = [modulehierarchy + "." + os.path.basename(os.path.splitext(f)[0])
-                   for f in modulepaths if os.path.isfile(f)
-                   and "__init__" not in f]
+    modulenames = [namespace + "." + os.path.basename(os.path.splitext(f)[0])
+                   for f in modulepaths if os.path.isfile(f) and
+                   "__init__" not in f]
 
-    _logger.debug("mympirun.py - remaining path: %s, hierarchy: %s", path, modulehierarchy)
+    _logger.debug("mympirun.py - remaining path: %s, namespace: %s", path, namespace)
 
     # import the modules
     modules = map(__import__, modulenames)
