@@ -65,16 +65,16 @@ def get_mpi_and_sched_and_options():
     sched           --
     mo              --
     """
-    _logger.info("mympirun.py - get_mpi_and_sched_and_options()")
+    _logger.debug("mympirun.py - get_mpi_and_sched_and_options()")
 
     mo = MympirunOption()
 
     setmpi = getattr(mo.options, 'setmpi') if getattr(mo.options, 'setmpi') else sys.argv[0]
-    _logger.info("mympirun.py - setmpi: %s", setmpi)
+    _logger.debug("mympirun.py - setmpi: %s", setmpi)
 
     get_implementations(inspect.getmodule(whatMPI))
     scriptname, mpi, found_mpi = whatMPI(setmpi)
-    _logger.info("mympirun.py - whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" %
+    _logger.debug("mympirun.py - whatMPI returned scriptname: %s, mpi: %s, found_mpi: %s" %
                  (scriptname, mpi, found_mpi))
 
     ismpirun = scriptname == 'mpirun'
@@ -88,7 +88,7 @@ def get_mpi_and_sched_and_options():
 
     get_implementations(inspect.getmodule(whatSched))
     sched, found_sched = whatSched(getattr(mo.options, 'setsched', None))
-    _logger.info("mympirun.py - whatSched returned sched: %s, found_sched: %s" %
+    _logger.debug("mympirun.py - whatSched returned sched: %s, found_sched: %s" %
                  (sched, found_sched))
 
     found_mpi_names = [x.__name__ for x in found_mpi]
@@ -141,7 +141,7 @@ def get_implementations(module):
         Exception   --  If the function could not resolve the module hierarchy
     """
 
-    _logger.info("mympirun.py - get_supported_sched_implementations()")
+    _logger.debug("mympirun.py - get_supported_sched_implementations()")
 
     # get absolute path of the mpi folder
     path = os.path.join(os.path.dirname(module.__file__))
@@ -163,18 +163,18 @@ def get_implementations(module):
                    for f in modulepaths if os.path.isfile(f)
                    and "__init__" not in f]
 
-    _logger.info("mympirun.py - remaining path: %s, hierarchy: %s", path, modulehierarchy)
+    _logger.debug("mympirun.py - remaining path: %s, hierarchy: %s", path, modulehierarchy)
 
     # import the modules
     modules = map(__import__, modulenames)
-    _logger.info("mympirun.py - imported modules: %s", modulenames)
+    _logger.debug("mympirun.py - imported modules: %s", modulenames)
 
     return
 
 
 def main():
     """Main function"""
-    _logger.info("mympirun.py - main()")
+    _logger.debug("mympirun.py - main()")
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
@@ -183,7 +183,7 @@ def main():
         # # TODO: cleanup, only catch known exceptions
         if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
             _logger.exception("Main failed")
-        _logger.info("mympirun.py - Main failed; Trace: \n %s", traceback.format_exc())
+        _logger.debug("mympirun.py - Main failed; Trace: \n %s", traceback.format_exc())
         sys.exit(1)
 
 

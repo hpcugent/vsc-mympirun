@@ -58,7 +58,7 @@ def get_supported_sched_implementations():
     """
 
     _logger = getLogger()
-    _logger.info("sched.py - get_supported_sched_implementations()")
+    _logger.debug("sched.py - get_supported_sched_implementations()")
 
     # get absolute path of the mpi folder
     path = os.path.join(os.path.dirname(__file__))
@@ -80,12 +80,12 @@ def get_supported_sched_implementations():
                    for f in modulepaths if os.path.isfile(f) and
                    "__init__" not in f]
 
-    _logger.info("sched.py - remaining path: %s, hierarchy: %s",
+    _logger.debug("sched.py - remaining path: %s, hierarchy: %s",
                  path, modulehierarchy)
 
     # import the modules
     map(__import__, modulenames)
-    _logger.info("sched.py - imported modules: %s", modulenames)
+    _logger.debug("sched.py - imported modules: %s", modulenames)
 
     return get_subclasses(Sched)
 

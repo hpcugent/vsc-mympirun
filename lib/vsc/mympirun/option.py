@@ -49,7 +49,7 @@ class MympirunOption(GeneralOption):
 
     def __init__(self, ismpirun=False):
         _logger = getLogger()
-        _logger.info("option.py - initializing MympirunOption")
+        _logger.debug("option.py - initializing MympirunOption")
 
         self.mpirunmode = ismpirun
 
@@ -58,7 +58,7 @@ class MympirunOption(GeneralOption):
 
     def make_init(self):
         _logger = getLogger()
-        _logger.info("option.py - initializing options")
+        _logger.debug("option.py - initializing options")
 
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
@@ -154,7 +154,7 @@ class MympirunOption(GeneralOption):
         # for all MPI classes, get the additional options
 
         _logger = getLogger()
-        _logger.info("option.py - addMPIoptions()")
+        _logger.debug("option.py - addMPIoptions()")
 
         for mpi in MPI.__subclasses__():
             if not mpi.RUNTIMEOPTION is None:
@@ -173,7 +173,7 @@ class MympirunOption(GeneralOption):
         """
 
         _logger = getLogger()
-        _logger.info("option.py - parseoptions()")
+        _logger.debug("option.py - parseoptions()")
 
 
         if options_list is None:
@@ -199,7 +199,7 @@ class MympirunOption(GeneralOption):
         """Some additional processing"""
 
         _logger = getLogger()
-        _logger.info("option.py - postprocess()")
+        _logger.debug("option.py - postprocess()")
 
         if self.options.debugmpi:
             # set some

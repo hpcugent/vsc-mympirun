@@ -73,7 +73,7 @@ def whatMPI(name):
     """
 
     _logger = getLogger()
-    _logger.info("mpi.py - whatMPI(%s)", name)
+    _logger.debug("mpi.py - whatMPI(%s)", name)
 
     scriptname = os.path.basename(os.path.abspath(name))
     supp_mpi_impl = get_subclasses(MPI)  # support MPI implementations
@@ -82,7 +82,7 @@ def whatMPI(name):
     # ompirun for OpenMPI or mhmpirun for mpich)
     for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname):
-            _logger.info("mpi.py - %s was used to call mympirun", scriptname)
+            _logger.debug("mpi.py - %s was used to call mympirun", scriptname)
             stripfake()  # mandatory before return at this point
             return scriptname, mpi, supp_mpi_impl
 
@@ -121,7 +121,7 @@ def stripfake(path_to_append=None):
     """
 
     _logger = getLogger()
-    _logger.info("mpi.py - PATH before stripfake(): %s", os.environ['PATH'])
+    _logger.debug("mpi.py - PATH before stripfake(): %s", os.environ['PATH'])
 
     # compile a regex that matches the faked mpirun
     reg_fakepath = re.compile(
@@ -146,7 +146,7 @@ def stripfake(path_to_append=None):
 
     os.environ['PATH'] = "%s" % ':'.join(newpath)
 
-    _logger.info("mpi.py - PATH after stripfake(): %s", os.environ['PATH'])
+    _logger.debug("mpi.py - PATH after stripfake(): %s", os.environ['PATH'])
     return newpath
 
 
@@ -162,7 +162,7 @@ def which(names):
     """
 
     _logger = getLogger()
-    _logger.info("mpi.py - which(%s)", names)
+    _logger.debug("mpi.py - which(%s)", names)
 
     if isinstance(names, str):
         names = [names]
@@ -284,14 +284,14 @@ class MPI(object):
         """
 
         _logger = getLogger()
-        _logger.info("mpi.py - _is_mpisrun_for(%s), scriptnames of %s: %s",
+        _logger.debug("mpi.py - _is_mpisrun_for(%s), scriptnames of %s: %s",
                      mpirun_path, cls.__name__, cls._mpirun_version)
 
         # regex matches "cls._mpirun_for/version number"
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
                          ("|".join(cls._mpirun_for), os.sep))
         r = reg.search(mpirun_path)
-        _logger.info("mpi.py - _is_mpisrun_for(), r: %s", r)
+        _logger.debug("mpi.py - _is_mpisrun_for(), r: %s", r)
         if r:
             if cls._mpirun_version is None:
                 return True
@@ -315,7 +315,7 @@ class MPI(object):
         """
 
         _logger = getLogger()
-        _logger.info("mpi.py - _is_mpiscriptname_for(%s), scriptnames of %s: %s",
+        _logger.debug("mpi.py - _is_mpiscriptname_for(%s), scriptnames of %s: %s",
                      scriptname, cls.__name__, cls._mpiscriptname_for)
 
         return scriptname in cls._mpiscriptname_for
