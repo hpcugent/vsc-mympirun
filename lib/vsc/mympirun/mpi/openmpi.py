@@ -35,7 +35,7 @@ class OpenMPI(MPI):
 
     DEVICE_MPIDEVICE_MAP = {'ib':'sm,openib,self', 'det':'sm,tcp,self', 'shm':'sm,self', 'socket':'sm,tcp,self'}
 
-    MPIEXEC_TEMPLATE_GOBAL_OPTION = "--mca %(name)s %(value)s"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "--mca %(name)s %(value)s"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "--mca %(name)s %(value)s"
 
     MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME = "--mca pls_rsh_agent %(rsh)s"

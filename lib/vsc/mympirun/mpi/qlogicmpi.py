@@ -47,7 +47,7 @@ class QLogicMPI(MPI):
                                    1:'-disable-mpi-progress-check',
                                    2:''}
 
-    MPIEXEC_TEMPLATE_GOBAL_OPTION = "export %(name)s='%(value)s'"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "export %(name)s='%(value)s'"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "export %(name)s='%(value)s'"
     MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "export %(name)s='%(value)s'"
 

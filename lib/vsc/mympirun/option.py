@@ -145,10 +145,17 @@ class MympirunOption(GeneralOption):
         descr = ["mympirun options", "General advanced mympirun options"]
 
         prefix = ''
-        self.log.debug("Add mympirun advanced option parser prefix %s descr %s opts %s" % (prefix, descr, opts))
+        self.log.debug(("Add mympirun advanced option parser: "
+                        "options %s, description %s, prefix %s") %
+                        (opts, descr, prefix))
         self.add_group_parser(opts, descr, prefix=prefix)
 
+    def addMPIoptions(self):
         # for all MPI classes, get the additional options
+
+        _logger = getLogger()
+        _logger.info("option.py - addMPIoptions()")
+
         for mpi in MPI.__subclasses__():
             if not mpi.RUNTIMEOPTION is None:
                 opts = mpi.RUNTIMEOPTION['options']

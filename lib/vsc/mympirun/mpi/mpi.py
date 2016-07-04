@@ -216,7 +216,7 @@ class MPI(object):
     MPDBOOT_OPTIONS = []
     MPDBOOT_SET_INTERFACE = True
 
-    MPIEXEC_TEMPLATE_GOBAL_OPTION = "-genv %(name)s %(value)s"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "-genv %(name)s %(value)s"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "-env %(name)s %(value)s"
     MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-x %(name)s"
     MPIEXEC_OPTIONS = []
@@ -979,7 +979,7 @@ class MPI(object):
     def make_mpiexec_hydra_options(self):
         """Hydra specific mpiexec options"""
         self.get_hydra_info()
-        self.mpiexec_options.append("-f %s" % self.mpiexec_node_filename)
+        self.mpiexec_options.append("--hostfile %s" % self.mpiexec_node_filename)
         if self.options.branchcount is not None:
             self.mpiexec_options.append("--branch-count %d" % self.options.branchcount)
 
@@ -1016,7 +1016,7 @@ class MPI(object):
         """Get a dict with hydra info"""
         reg_hydra_info = re.compile(r"^\s+(?P<key>\S[^:\n]*)\s*:(?P<value>.*?)\s*$", re.M)
 
-        cmd = "mpirun -info"
+        cmd = "mpirun -help"
         ec, out = run_simple(cmd)
         if ec > 0:
             self.log.raiseException("get_hydra_info: failed to run cmd %s: %s" % (cmd, out))
@@ -1082,10 +1082,10 @@ class MPI(object):
             if k in self.mpiexec_pass_environment:
                 self.log.debug("mpiexec_get_global_options: found global option %s in mpiexec_pass_environment." % k)
             else:
-                global_options.append(self.MPIEXEC_TEMPLATE_GOBAL_OPTION % {'name': k, "value": v})
+                global_options.append(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION % {'name': k, "value": v})
 
         self.log.debug("mpiexec_get_global_options: template %s return options %s" %
-                       (self.MPIEXEC_TEMPLATE_GOBAL_OPTION, global_options))
+                       (self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, global_options))
         return global_options
 
     def mpiexec_get_local_options(self):

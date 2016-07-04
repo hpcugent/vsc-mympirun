@@ -79,7 +79,7 @@ def get_mpi_and_sched_and_options():
 
     ismpirun = scriptname == 'mpirun'
     mo.mpirunmode = ismpirun
-    mo.parseoptions()
+    mo.addMPIoptions()
 
     if mo.args is None or len(mo.args) == 0:
         mo.parser.print_shorthelp()
@@ -96,12 +96,14 @@ def get_mpi_and_sched_and_options():
 
     if mo.options.showmpi:
         fancylogger.setLogLevelInfo()
-        _logger.info("mympirun.py - Found MPI classes %s" % (", ".join(found_mpi_names)))
+        _logger.info("mympirun.py - Found MPI classes %s" %
+            (", ".join(found_mpi_names)))
         sys.exit(0)
 
     if mo.options.showsched:
         fancylogger.setLogLevelInfo()
-        _logger.info("mympirun.py - Found Sched classes %s" % (", ".join(found_sched_names)))
+        _logger.info("mympirun.py - Found Sched classes %s" %
+            (", ".join(found_sched_names)))
         sys.exit(0)
 
     if mpi is None:
