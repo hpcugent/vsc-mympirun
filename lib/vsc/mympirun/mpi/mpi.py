@@ -60,8 +60,9 @@ def whatMPI(name):
     """Return the path of the selected mpirun and its class
 
     Arguments:
-        name            --  The name of the executable used to run
-                            mympirun (sys.argv[0])
+        name            --  Either the name of the executable used to run
+                            mympirun (sys.argv[0]), or the name of the mpirun
+                            flavor set by the command line option --setmpi
 
     Returns:
         *name           --  The path to the executable used to run mympirun
@@ -82,7 +83,7 @@ def whatMPI(name):
     # ompirun for OpenMPI or mhmpirun for mpich)
     for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname):
-            _logger.debug("mpi.py - %s was used to call mympirun", scriptname)
+            _logger.info("mpi.py - %s was used to call mympirun", scriptname)
             stripfake()  # mandatory before return at this point
             return scriptname, mpi, supp_mpi_impl
 
@@ -102,8 +103,8 @@ def whatMPI(name):
 
     # return found mpirun_path
     _logger.warn("The executable that called mympirun isn't supported"
-                 ", defaulting to %s", mpirun_path)
-    return mpirun_path, None, supp_mpi_impl
+                 ", defaulting to mpirun")
+    return "mpirun", None, supp_mpi_impl
 
 
 def stripfake(path_to_append=None):
