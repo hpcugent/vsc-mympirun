@@ -37,7 +37,9 @@ Expert mode:
 TODO:
     intel tuning code
 
-@author: Stijn De Weirdt, Jens Timmerman (HPC UGent / VSC)
+@author: Stijn De Weirdt
+@author: Jens Timmerman
+@author: Jeroen De Clerck
 """
 
 import glob
@@ -46,41 +48,39 @@ import os
 import sys
 import traceback
 
-import vsc.mympirun.mpi.mpi
+import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.factory import getinstance
-import vsc.mympirun.rm.sched
+import vsc.mympirun.rm.sched as schedm
 from vsc.utils import fancylogger
 
 _logger = fancylogger.getLogger()
 fancylogger.setLogLevelDebug()
 
 def get_mpi_and_sched_and_options():
-    """selects mpi flavor and scheduler based on environment and arguments
-
-    returns:
-    mpi             -- the chosen MPI flavor
-    sched           -- the chosen scheduler
-    mo              -- the MympirunOption class
     """
-    _logger.debug("mympirun.py - get_mpi_and_sched_and_options()")
+    selects mpi flavor and scheduler based on environment and arguments
+
+    @return: A triplet containing the chosen mpi flavor, chosen scheduler and the MympirunOption class.
+    """
 
     # import the various MPI flavours and Schedulers
-    import_implementations(vsc.mympirun.mpi.mpi)
-    import_implementations(vsc.mympirun.rm.sched)
+    import_implementations(mpim)
+    import_implementations(schedm)
+
+    scriptname = os.path.basename(os.path.abspath(sys.argv[0]))
+    ismpirun = scriptname == 'mpirun'
+
+    # init generaloption with the various mpirun cli options
+    mo = MympirunOption(ismpirun=ismpirun)
 
     # see if an mpi flaver was explicitly chosen as an argument
     # if not, just use the mpirun that was called
     # We are using sys.argv because generaloption depends on the the returned
     # scriptname
-    setmpi_index = sys.argv.index("-M") if "-M" in sys.argv else 0
-    setmpi = sys.argv[setmpi_index+1] if setmpi_index else sys.argv[0]
+    setmpi = mo.options.setmpi if mo.options.setmpi else sys.argv[0]
     _logger.debug("mympirun.py - setmpi: %s" % setmpi)
-    scriptname, mpi, found_mpi = vsc.mympirun.mpi.mpi.whatMPI(setmpi)
-
-    # init generaloption with the various mpirun cli options
-    ismpirun = scriptname == 'mpirun'
-    mo = MympirunOption(ismpirun=ismpirun)
+    scriptname, mpi, found_mpi = mpim.whatMPI(setmpi)
 
     if mo.args is None or len(mo.args) == 0:
         mo.parser.print_shorthelp()
@@ -88,9 +88,7 @@ def get_mpi_and_sched_and_options():
         sys.exit(0)
 
     # Select a Scheduler from the available schedulers
-    sched, found_sched = vsc.mympirun.rm.sched.whatSched(getattr(mo.options, 'setsched', None))
-    _logger.debug("mympirun.py - whatSched returned sched: %s, found_sched: %s" %
-                 (sched, found_sched))
+    sched, found_sched = schedm.whatSched(getattr(mo.options, 'setsched', None))
 
     found_mpi_names = [x.__name__ for x in found_mpi]
     found_sched_names = [x.__name__ for x in found_sched]
@@ -132,13 +130,12 @@ def get_mpi_and_sched_and_options():
 
 
 def import_implementations(module):
-    """searches and imports python files in the some folder as a module
+    """
+    searches and imports python files in the some folder as a module
 
-    Arguments:
-        module      --  the module
+    @param module: The module
     """
 
-    _logger.debug("mympirun.py - import_implementations()")
 
     # get the paths of all the python files in the module folder
     modulepaths = glob.glob(os.path.dirname(module.__file__) + "/*.py")
@@ -162,15 +159,11 @@ def import_implementations(module):
 
 def main():
     """Main function"""
-    _logger.debug("mympirun.py - main()")
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
-        sys.exit(0)
     except Exception, e:
-        if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
-            _logger.exception("Main failed")
-        _logger.debug("mympirun.py - Main failed; Trace: \n %s", traceback.format_exc())
+        _logger.exception("mympirun.py - Main failed; Trace: \n %s", traceback.format_exc())
         sys.exit(1)
 
 
