@@ -69,10 +69,10 @@ def get_mpi_and_sched_and_options():
     import_implementations(schedm)
 
     scriptname = os.path.basename(os.path.abspath(sys.argv[0]))
-    ismpirun = scriptname == 'mpirun'
+    isfake = scriptname == 'mpirun'
 
     # init generaloption with the various mpirun cli options
-    mo = MympirunOption(ismpirun=ismpirun)
+    mo = MympirunOption(ismpirun=isfake)
 
     # see if an mpi flaver was explicitly chosen as an argument
     # if not, just use the mpirun that was called
@@ -107,13 +107,13 @@ def get_mpi_and_sched_and_options():
 
     if mpi is None:
         mo.log.raiseException(
-            ("No MPI class found that supports scriptname %s; ismpirun %s). "
+            ("No MPI class found that supports scriptname %s; isfake %s). "
              "Please use mympirun through one of the direct calls or make sure "
              "the mpirun command can be found. Found MPI %s") %
-            (scriptname, ismpirun, ", ".join(found_mpi_names)))
+            (scriptname, isfake, ", ".join(found_mpi_names)))
     else:
-        mo.log.debug("Found MPI class %s (scriptname %s; ismpirun %s)" %
-                     (mpi.__name__, scriptname, ismpirun))
+        mo.log.debug("Found MPI class %s (scriptname %s; isfake %s)" %
+                     (mpi.__name__, scriptname, isfake))
 
     if sched is None:
         mo.log.raiseException(

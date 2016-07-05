@@ -43,10 +43,18 @@ def whatSched(requested):
     """Return the scheduler class"""
 
     found_sched = get_subclasses(Sched)
+
+    # search for a scheduler that matches requested
     for sched in found_sched:
-        # print sched.__name__, requested
         if sched._is_sched_for(requested):
             return sched, found_sched
+
+    # if the requested scheduler isn't found, default to local
+    for sched in found_sched:
+        if sched._is_sched_for("local"):
+            return sched, found_sched
+
+    # if there is no local scheduler, return None
     return None, found_sched
 
 class Sched(object):
