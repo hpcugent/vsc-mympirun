@@ -32,8 +32,9 @@ import stat
 from unittest import TestCase
 
 
+from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.rm.factory import getinstance
-from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.mpi.mpi import MPI, whatMPI, which
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
 
@@ -41,15 +42,34 @@ from vsc.mympirun.option import MympirunOption
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
 
 
+_logger = getLogger()
+
 class TestMPI(TestCase):
     """Test for the mpi class."""
+
+    def test_options(self):
+        """Bad options """
+        m = MympirunOption()
+        m.args = ['echo', 'foo']
+        # should not throw an error
+        try:
+            mpi_instance = getinstance(MPI, Local, m)
+            mpi_instance.main()
+        except Exception:
+            self.fail("mympirun raised an exception")
+
+        optdict = mpi_instance.options
+
+        # why isnt this a dict??
+        _logger.debug("MPI INSTANCE OPTIONS: %s, type %s", optdict, type(optdict))
+
+        #for opt in m.args:
+        #    self.assertFalse(opt in mpi_instance.options)
 
     def test_MPI_local(self):
         """"Test the MPI class with the local scheduler"""
         # options
         m = MympirunOption()
-        m.args = ['echo', 'foo']
-        # should not throw an error
         mpi_instance = getinstance(MPI, Local, m)
         mpi_instance.main()
 
@@ -57,3 +77,20 @@ class TestMPI(TestCase):
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
         self.assertEqual(perms, 0400, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
+
+    def test_whatMPI(self):
+        scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
+        for scriptname in scriptnames:
+            # if the scriptname is an executable located on this machine
+            if which(scriptname):
+                (returned_scriptname, mpi, found) = whatMPI(scriptname)
+                _logger.debug("%s, %s, %s", returned_scriptname, mpi, found)
+                # if an mpi implementation was found
+                if mpi:
+                    self.assertTrue(mpi in found)
+                    self.assertTrue(returned_scriptname == scriptname)
+                else:
+                    self.assertEqual(returned_scriptname, "mpirun")
+
+
+
