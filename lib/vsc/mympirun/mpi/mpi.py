@@ -122,7 +122,7 @@ def stripfake(path_to_append=None):
     """
 
     _logger = getLogger()
-    _logger.debug("mpi.py - PATH before stripfake(): %s", os.environ['PATH'])
+    _logger.debug("mpi.py - PATH before stripfake(): %s, to append: %s", os.environ['PATH'], path_to_append)
 
     # compile a regex that matches the faked mpirun
     reg_fakepath = re.compile(
@@ -139,6 +139,9 @@ def stripfake(path_to_append=None):
     # merge the current $PATH and the path_to_append
     if path_to_append is None:
         path_to_append = []
+    elif isinstance(path_to_append, str):
+        path_to_append = [path_to_append]
+
     envpath = os.environ.get('PATH', '').split(os.pathsep)
     newpath = envpath + [x for x in path_to_append if x not in envpath]
 
