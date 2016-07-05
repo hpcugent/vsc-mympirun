@@ -30,11 +30,12 @@ Tests for the vsc.utils.missing module.
 import os
 import stat
 from unittest import TestCase
-
+from random import choice
+from string import ascii_uppercase
 
 from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.rm.factory import getinstance
-from vsc.mympirun.mpi.mpi import MPI, whatMPI, which
+from vsc.mympirun.mpi.mpi import MPI, whatMPI, stripfake, which
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
 
@@ -44,39 +45,10 @@ os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + 
 
 _logger = getLogger()
 
+
 class TestMPI(TestCase):
+
     """Test for the mpi class."""
-
-    def test_options(self):
-        """Bad options """
-        m = MympirunOption()
-        m.args = ['echo', 'foo']
-        # should not throw an error
-        try:
-            mpi_instance = getinstance(MPI, Local, m)
-            mpi_instance.main()
-        except Exception:
-            self.fail("mympirun raised an exception")
-
-        optdict = mpi_instance.options
-
-        # why isnt this a dict??
-        _logger.debug("MPI INSTANCE OPTIONS: %s, type %s", optdict, type(optdict))
-
-        #for opt in m.args:
-        #    self.assertFalse(opt in mpi_instance.options)
-
-    def test_MPI_local(self):
-        """"Test the MPI class with the local scheduler"""
-        # options
-        m = MympirunOption()
-        mpi_instance = getinstance(MPI, Local, m)
-        mpi_instance.main()
-
-        # check for correct .mpd.conf file
-        mpdconffn = os.path.expanduser('~/.mpd.conf')
-        perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
-        self.assertEqual(perms, 0400, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
 
     def test_whatMPI(self):
         scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
@@ -92,5 +64,67 @@ class TestMPI(TestCase):
                 else:
                     self.assertEqual(returned_scriptname, "mpirun")
 
+    def test_stripfake(self):
 
+        # path_to_append is a string
+        oldpath = os.environ["PATH"]
+        append = ''.join(choice(ascii_uppercase) for i in range(12))
+        _logger.debug("oldpath: %s", oldpath)
 
+        res = stripfake(path_to_append=append)
+        newpath = os.environ["PATH"]
+        self.assertEqual(res, newpath.split(os.pathsep),
+                         msg=("stripfake returned string doesn't correspond to the current $PATH: "
+                              "res = %s and path = %s") % (res, newpath))
+        self.assertTrue(append in newpath,
+                        msg=("old $PATH was %s, new $PATH "
+                             "is %s, path_to_append was %s") % (oldpath, newpath, append))
+
+        # path_to_append is a list
+        append = [append]
+        append.append(''.join(choice(ascii_uppercase) for i in range(12)))
+        append.append(''.join(choice(ascii_uppercase) for i in range(12)))
+
+        res = stripfake(path_to_append=append)
+        newpath = os.environ["PATH"]
+        self.assertEqual(res, newpath.split(os.pathsep),
+                         msg=("stripfake returned string doesn't correspond to the current $PATH: "
+                              "res = %s and path = %s") % (res, newpath))
+        for p in append:
+            self.assertTrue(p in newpath,
+                            msg="old $PATH was %s, new $PATH is %s, path_to_append was %s" %
+                                (oldpath, newpath, p))
+
+    def test_which(self):
+        pass
+
+    def test_options(self):
+        """Bad options"""
+        m = MympirunOption()
+        m.args = ['echo', 'foo']
+        # should not throw an error
+        try:
+            mpi_instance = getinstance(MPI, Local, m)
+            mpi_instance.main()
+        except Exception:
+            self.fail("mympirun raised an exception")
+
+        optdict = mpi_instance.options
+
+        # why isnt this a dict??
+        _logger.debug("MPI INSTANCE OPTIONS: %s, type %s", optdict, type(optdict))
+
+        # for opt in m.args:
+        #    self.assertFalse(opt in mpi_instance.options)
+
+    def test_MPI_local(self):
+        """"Test the MPI class with the local scheduler"""
+        # options
+        m = MympirunOption()
+        mpi_instance = getinstance(MPI, Local, m)
+        mpi_instance.main()
+
+        # check for correct .mpd.conf file
+        mpdconffn = os.path.expanduser('~/.mpd.conf')
+        perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
+        self.assertEqual(perms, 0400, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))

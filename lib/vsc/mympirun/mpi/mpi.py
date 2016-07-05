@@ -59,23 +59,6 @@ _logger = getLogger()
 
 
 def whatMPI(name):
-<<<<<<< 3928d95f9dca8e7f2336556dd998855e8cfabd79
-=======
-    """Return the path of the selected mpirun and its class
-
-    Arguments:
-        name            --  Either the name of the executable used to run
-                            mympirun (sys.argv[0]), or the name of the mpirun
-                            flavor set by the command line option --setmpi
-
-    Returns:
-        *name           --  The path to the executable used to run mympirun
-                            (should be the path to an mpirun implementation)
-        mpi             --  The corresponding python class of the MPI variant
-        supp_mpi_impl   --  The python classes of the supported MPI
-                            implementations (from the various .py files in
-                            mympirun/mpi)
->>>>>>> test whatmpi
     """
     Return the path of the selected mpirun and its class
 
@@ -96,12 +79,7 @@ def whatMPI(name):
     # ompirun for OpenMPI or mhmpirun for mpich)
     for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname):
-<<<<<<< 3928d95f9dca8e7f2336556dd998855e8cfabd79
             _logger.debug("mpi.py - %s was used to call mympirun", scriptname)
-=======
-            _logger.info("mpi.py - %s was used to call mympirun", scriptname)
-            stripfake()  # mandatory before return at this point
->>>>>>> test whatmpi
             return scriptname, mpi, supp_mpi_impl
 
     # get the path of the mpirun executable
