@@ -247,7 +247,6 @@ class MPI(object):
         @return bool: true if $mpirun_path is defined as an mpirun implementation of $cls
         """
 
-
         # regex matches "cls._mpirun_for/version number"
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
                          ("|".join(cls._mpirun_for), os.sep))
@@ -282,14 +281,6 @@ class MPI(object):
     def _has_hydra(self):
         """Has HYDRA or not"""
         return self.HYDRA
-
-    def cleanup(self):
-        # remove mympirundir
-        try:
-            shutil.rmtree(self.mympirundir)
-            self.log.debug("cleanup: removed mympirundir %s" % self.mympirundir)
-        except:
-            self.log.raiseException("cleanup: cleaning up mympirundir %s failed" % (self.mympirundir))
 
     ### main ###
     def main(self):
@@ -1007,3 +998,11 @@ class MPI(object):
                 return run_async_to_stdout(cmd)
 
         return [(main_runfunc, self.mpirun_cmd)]
+
+    def cleanup(self):
+        # remove mympirundir
+        try:
+            shutil.rmtree(self.mympirundir)
+            self.log.debug("cleanup: removed mympirundir %s" % self.mympirundir)
+        except:
+            self.log.raiseException("cleanup: cleaning up mympirundir %s failed" % (self.mympirundir))
