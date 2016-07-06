@@ -44,7 +44,6 @@ import subprocess
 import string
 import time
 
-from IPy import IP
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
 from vsc.utils.run import (run_simple, run_simple_noworries,

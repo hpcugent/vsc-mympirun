@@ -25,11 +25,14 @@
 """
 Intel MPI specific class
 """
+import os
+import re
 
 from distutils.version import LooseVersion
-from vsc.mympirun.mpi.mpi import MPI, which
-import os, re
 import socket
+import tempfile
+
+from vsc.mympirun.mpi.mpi import MPI, which
 
 class IntelMPI(MPI):
     """TODO: support for tuning
@@ -127,9 +130,11 @@ class IntelMPI(MPI):
         """Set mpiexec global options"""
         super(IntelMPI, self).mpiexec_set_global_options()
 
+        tempvars = ["TMP", "TMPDIR", "TEMP"]
+
         # this one also needs to be set at runtime
-        self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = "/tmp"
-        os.environ['I_MPI_MPD_TMPDIR'] = "/tmp"
+        self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
+        os.environ['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
 
         if self.options.debuglvl > 0:
             self.mpiexec_global_options['I_MPI_DEBUG'] = "+%s" % self.options.debuglvl
@@ -190,7 +195,7 @@ class IntelMPI(MPI):
 
     def mpirun_prepare_execution(self):
         """Small change"""
-        # intel mpi mpirun strips the --file otion for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
+        # intel mpi mpirun strips the --file option for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
         # - we don't want that
         os.environ['PBS_ENVIRONMENT'] = 'PBS_BATCH_MPI'
 

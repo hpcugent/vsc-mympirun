@@ -25,10 +25,10 @@
 """
 Local scheduler : no scheduler, act on single node
 """
+import random
+import time
 
 from vsc.mympirun.rm.sched import Sched
-import time
-import random
 
 class Local(Sched):
     """

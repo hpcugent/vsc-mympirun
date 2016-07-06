@@ -28,14 +28,15 @@ Main sched class
 
 
 import os
-import random
 import re
-import time
-import glob
 
-from vsc.utils.fancylogger import getLogger
+import glob
+import random
+import time
+
 from vsc.mympirun.mpi.mpi import get_subclasses
 from vsc.utils.affinity import sched_getaffinity
+from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import nub
 
 

@@ -42,11 +42,12 @@ TODO:
 @author: Jeroen De Clerck
 """
 
-import glob
-import inspect
 import os
 import sys
 import traceback
+
+import glob
+import inspect
 
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.option import MympirunOption
