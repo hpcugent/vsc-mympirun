@@ -100,7 +100,7 @@ def whatMPI(name):
     return mpirun_path, None, supp_mpi_impl
 
 
-def stripfake(path_to_append=None):
+def stripfake():
     """
     Removes the fake wrapper path from $PATH (assumes (VSC-tools|mympirun)/1.0.0/bin/fake)
 
@@ -123,19 +123,13 @@ def stripfake(path_to_append=None):
                            }
                            ]))
 
-    # merge the current $PATH and the path_to_append
-    if path_to_append is None:
-        path_to_append = []
-    envpath = os.environ.get('PATH', '').split(os.pathsep)
-    newpath = envpath + [x for x in path_to_append if x not in envpath]
+    oldpath = os.environ.get('PATH', '').split(os.pathsep)
 
     # remove all $PATH elements that match the fakepath regex
-    newpath = [x for x in newpath if not reg_fakepath.match(x)]
-
-    os.environ['PATH'] = ':'.join(newpath)
+    os.environ['PATH'] = os.pathsep.join([x for x in oldpath if not reg_fakepath.match(x)])
 
     _logger.debug("mpi.py - PATH after stripfake(): %s", os.environ['PATH'])
-    return newpath
+    return
 
 
 def which(cmd):
