@@ -332,51 +332,6 @@ class MPI(object):
 
         self.set_pinning()
 
-    def get_pass_variables(self):
-        """Get the list of variable names to pass"""
-        vars_to_pass = nub([v for v in self.PASS_VARIABLES_BASE if v in os.environ])
-
-        for env_prefix in self.PASS_VARIABLES_CLASS_PREFIX + self.PASS_VARIABLES_BASE_PREFIX + self.options.variablesprefix:
-            for env_var in os.environ.keys():
-                # exact match or starts with <prefix>_
-                if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and not env_var in vars_to_pass:
-                    vars_to_pass.append(env_var)
-
-        return vars_to_pass
-
-    def get_localhosts(self):
-        """
-        Get the localhost interfaces from the uniquenodes list
-        -- if hostname is different from the name in the nodelist
-        """
-        iface_prefix = ['eth', 'em', 'ib', 'wlan']
-        reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
-
-        res = []
-        for idx, hn in enumerate(self.uniquenodes):
-            ip = socket.gethostbyname(hn)
-            cmd = "/sbin/ip -4 -o addr show to %s/32" % ip  # TODO ipv6
-            ec, out = run_simple(cmd)
-            if ec == 0:
-                r = reg_iface.search(out)
-                if r:
-                    iface = r.group(1)
-                    self.log.debug("get_localhost idx %s: localhost interface %s found for %s (ip: %s)" %
-                                   (idx, iface, hn, ip))
-
-                    res.append((hn, iface))
-                else:
-                    # not a big issue, probably not
-                    self.log.debug(("get_localhost idx %s: no interface match for "
-                                    "prefixes %s out %s") % (idx, iface_prefix, out))
-            else:
-                self.log.error("get_localhost idx %s: cmd %s failed with output %s" % (idx, cmd, out))
-
-        if len(res) == 0:
-            self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s" %
-                                    (self.uniquenodes))
-        return res
-
     def check_usable_cpus(self):
         """
         Check and act on fact of non-standard cpus (eg due to cpusets)
@@ -407,6 +362,39 @@ class MPI(object):
         os.environ['OMP_NUM_THREADS'] = str(t)
 
         setattr(self.options, 'ompthreads', t)
+
+    def set_netmask(self):
+        if self.netmasktype is None:
+            self.set_device()
+
+        device_ip_reg_map = {'eth': "ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
+                             'ib': "infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
+                             }
+        if not self.netmasktype in device_ip_reg_map:
+            self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" %
+                                    (self.netmasktype, device_ip_reg_map))
+
+        cmd = "/sbin/ip addr show"
+        ec, out = run_simple(cmd)
+        if ec > 0:
+            self.log.raiseException("set_netmask: failed to run cmd %s: %s" % (cmd, out))
+
+        reg = re.compile(r"" + device_ip_reg_map[self.netmasktype])
+        if not reg.search(out):
+            self.log.raiseException("set_netmask: can't get netmask for %s: no matches found (reg %s out %s)" %
+                                    (self.netmasktype, device_ip_reg_map[self.netmasktype], out))
+
+        res = []
+        for ipaddr_mask in reg.finditer(out):
+            ip = IP(ipaddr_mask.group(1), make_net=True)
+            network_netmask = "%s/%s" % (ip.net(), ip.netmask())
+            res.append(network_netmask)
+            self.log.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s" %
+                           (ipaddr_mask.group(1), network_netmask))
+
+        self.log.debug("set_netmask: return complete netmask %s" % res)
+        if len(res) > 0:
+            self.netmask = os.pathsep.join(res)
 
     def set_device(self, force=False):
         if self.device is not None and not force:
@@ -449,61 +437,6 @@ class MPI(object):
         self.log.debug("set_device: set netmasktype %s for device %s (founddev %s)" %
                        (self.netmasktype, self.device, founddev))
 
-    def set_netmask(self):
-        if self.netmasktype is None:
-            self.set_device()
-
-        device_ip_reg_map = {'eth': "ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
-                             'ib': "infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
-                             }
-        if not self.netmasktype in device_ip_reg_map:
-            self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" %
-                                    (self.netmasktype, device_ip_reg_map))
-
-        cmd = "/sbin/ip addr show"
-        ec, out = run_simple(cmd)
-        if ec > 0:
-            self.log.raiseException("set_netmask: failed to run cmd %s: %s" % (cmd, out))
-
-        reg = re.compile(r"" + device_ip_reg_map[self.netmasktype])
-        if not reg.search(out):
-            self.log.raiseException("set_netmask: can't get netmask for %s: no matches found (reg %s out %s)" %
-                                    (self.netmasktype, device_ip_reg_map[self.netmasktype], out))
-
-        res = []
-        for ipaddr_mask in reg.finditer(out):
-            ip = IP(ipaddr_mask.group(1), make_net=True)
-            network_netmask = "%s/%s" % (ip.net(), ip.netmask())
-            res.append(network_netmask)
-            self.log.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s" %
-                           (ipaddr_mask.group(1), network_netmask))
-
-        self.log.debug("set_netmask: return complete netmask %s" % res)
-        if len(res) > 0:
-            self.netmask = os.pathsep.join(res)
-
-    def make_mympirundir(self):
-        basepath = getattr(self.options, 'basepath', None)
-        if basepath is None:
-            basepath = os.environ['HOME']
-        if not os.path.exists(basepath):
-            self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
-
-        self.mympirunbasedir = os.path.join(basepath, '.mympirun')
-        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.id, time.strftime("%Y%m%d_%H%M%S")))
-        if not os.path.exists(destdir):
-            try:
-                os.makedirs(destdir)
-            except:
-                self.log.raiseException('make_mympirun_dir: failed to make job dir %s' % (destdir))
-
-        self.log.debug("make_mympirun_dir: tmp mympirundir %s" % destdir)
-        self.mympirundir = destdir
-
-    def get_universe_ncpus(self):
-        """Return ppn for universe"""
-        return self.mpitotalppn
-
     def make_node_file(self):
         """Make the correct node list file"""
         self.make_mympirundir()
@@ -537,10 +470,29 @@ class MPI(object):
             self.log.raiseException('make_node_file: failed to write nodefile %s mpbboot nodefile %s' %
                                     (nodefn, mpdfn))
 
-    ### BEGIN pinning ###
-    def _pin_flavour(self, mp=None):
-        return mp
+    def get_universe_ncpus(self):
+        """Return ppn for universe"""
+        return self.mpitotalppn
 
+    def make_mympirundir(self):
+        basepath = getattr(self.options, 'basepath', None)
+        if basepath is None:
+            basepath = os.environ['HOME']
+        if not os.path.exists(basepath):
+            self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
+
+        self.mympirunbasedir = os.path.join(basepath, '.mympirun')
+        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.id, time.strftime("%Y%m%d_%H%M%S")))
+        if not os.path.exists(destdir):
+            try:
+                os.makedirs(destdir)
+            except:
+                self.log.raiseException('make_mympirun_dir: failed to make job dir %s' % (destdir))
+
+        self.log.debug("make_mympirun_dir: tmp mympirundir %s" % destdir)
+        self.mympirundir = destdir
+
+    ### BEGIN pinning ###
     def set_pinning(self, mp=None):
         if not hasattr(self.options, 'pinmpi'):
             setattr(self.options, 'pinmpi', None)
@@ -566,21 +518,8 @@ class MPI(object):
         else:
             self.log.debug("set_pinning: pinmpi %s" % self.options.pinmpi)
 
-    def get_pinning_override_variable(self):
-        """
-        Key element is that one needs to know the rank or something similar of each process
-        - preferably in environment
-        -- eg QLogic PSC_MPI_NODE_RANK: this instance is the nth local rank.
-        - alternative is small c mpi program with bash wrapper
-
-        -- see also likwid-mpirun for alternative example
-        --- mentions similar OMPI_COMM_WORLD_RANK for OpenMPI and PMI_RANK for IntelMPI
-        ---- local_rank is remainder of myrank diveded by number of nodes?
-
-        This is a bash expression.
-        - eg $((x/y)) is also fine
-        """
-        self.log.raiseException("get_pinning_override_variable: not implemented.")
+    def _pin_flavour(self, mp=None):
+        return mp
 
     def pinning_override(self):
         """
@@ -712,6 +651,22 @@ class MPI(object):
 
         return wrapperpath
 
+    def get_pinning_override_variable(self):
+        """
+        Key element is that one needs to know the rank or something similar of each process
+        - preferably in environment
+        -- eg QLogic PSC_MPI_NODE_RANK: this instance is the nth local rank.
+        - alternative is small c mpi program with bash wrapper
+
+        -- see also likwid-mpirun for alternative example
+        --- mentions similar OMPI_COMM_WORLD_RANK for OpenMPI and PMI_RANK for IntelMPI
+        ---- local_rank is remainder of myrank diveded by number of nodes?
+
+        This is a bash expression.
+        - eg $((x/y)) is also fine
+        """
+        self.log.raiseException("get_pinning_override_variable: not implemented.")
+
     ### BEGIN mpdboot ###
     def make_mpdboot(self):
         """Make the mpdboot configuration"""
@@ -733,6 +688,57 @@ class MPI(object):
         self.make_mpdboot_options()
 
         self.log.debug("make_mpdboot set options %s" % self.mpdboot_options)
+
+    def mpdboot_set_localhost_interface(self):
+        """
+        Set the localhost mpdboot interface
+        """
+        localhosts = self.get_localhosts()
+        if len(localhosts) > 0:
+            if len(localhosts) > 1:
+                self.log.warning(("set_mpd_localhost_interface: more then one match "
+                                  "for localhost from unique nodes found %s, using 1st.") %
+                                 localhosts)
+            hn, iface = localhosts[0]  # take the first one
+            self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s" %
+                           (iface, hn))
+            self.mpdboot_localhost_interface = (hn, iface)
+        else:
+            self.log.raiseException("set_mpd_localhost_interface: can't find mpd localhost from uniq nodes %s" %
+                                    (self.uniquenodes))
+
+    def get_localhosts(self):
+        """
+        Get the localhost interfaces from the uniquenodes list
+        -- if hostname is different from the name in the nodelist
+        """
+        iface_prefix = ['eth', 'em', 'ib', 'wlan']
+        reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
+
+        res = []
+        for idx, hn in enumerate(self.uniquenodes):
+            ip = socket.gethostbyname(hn)
+            cmd = "/sbin/ip -4 -o addr show to %s/32" % ip  # TODO ipv6
+            ec, out = run_simple(cmd)
+            if ec == 0:
+                r = reg_iface.search(out)
+                if r:
+                    iface = r.group(1)
+                    self.log.debug("get_localhost idx %s: localhost interface %s found for %s (ip: %s)" %
+                                   (idx, iface, hn, ip))
+
+                    res.append((hn, iface))
+                else:
+                    # not a big issue, probably not
+                    self.log.debug(("get_localhost idx %s: no interface match for "
+                                    "prefixes %s out %s") % (idx, iface_prefix, out))
+            else:
+                self.log.error("get_localhost idx %s: cmd %s failed with output %s" % (idx, cmd, out))
+
+        if len(res) == 0:
+            self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s" %
+                                    (self.uniquenodes))
+        return res
 
     def make_mpdboot_options(self):
         """Make the mpdboot options. Customise this method."""
@@ -768,25 +774,36 @@ class MPI(object):
         if not self.has_hydra:
             self.mpdboot_options.append(self.MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME % {'rsh': self.get_rsh()})
 
-    def mpdboot_set_localhost_interface(self):
-        """
-        Set the localhost mpdboot interface
-        """
-        localhosts = self.get_localhosts()
-        if len(localhosts) > 0:
-            if len(localhosts) > 1:
-                self.log.warning(("set_mpd_localhost_interface: more then one match "
-                                  "for localhost from unique nodes found %s, using 1st.") %
-                                 localhosts)
-            hn, iface = localhosts[0]  # take the first one
-            self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s" %
-                           (iface, hn))
-            self.mpdboot_localhost_interface = (hn, iface)
-        else:
-            self.log.raiseException("set_mpd_localhost_interface: can't find mpd localhost from uniq nodes %s" %
-                                    (self.uniquenodes))
-
     ### BEGIN mpiexec ###
+    def mpiexec_set_global_options(self):
+        """Set mpiexec global options"""
+        self.mpiexec_global_options['MKL_NUM_THREADS'] = '1'
+
+        if not self.options.noenvmodules:
+            for env_var in self.GLOBAL_VARIABLES_ENVIRONMENT_MODULES:
+                if env_var in os.environ and not env_var in self.mpiexec_global_options:
+                    self.mpiexec_global_options[env_var] = os.environ[env_var]
+
+    def mpiexec_set_local_options(self):
+        """Set mpiexec local options"""
+
+    def mpiexec_set_local_pass_variable_options(self):
+        """Set mpiexec pass variables"""
+        for var in self.get_pass_variables():
+            self.mpiexec_pass_environment.append(var)
+
+    def get_pass_variables(self):
+        """Get the list of variable names to pass"""
+        vars_to_pass = nub([v for v in self.PASS_VARIABLES_BASE if v in os.environ])
+
+        for env_prefix in self.PASS_VARIABLES_CLASS_PREFIX + self.PASS_VARIABLES_BASE_PREFIX + self.options.variablesprefix:
+            for env_var in os.environ.keys():
+                # exact match or starts with <prefix>_
+                if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and not env_var in vars_to_pass:
+                    vars_to_pass.append(env_var)
+
+        return vars_to_pass
+
     def make_mpiexec(self):
         """Make the mpiexec configuration"""
         self.make_mpiexec_options()
@@ -895,23 +912,6 @@ class MPI(object):
                 self.hydra_info[newkey] = matches[0]
 
         self.log.debug("get_hydra_info: filtered info %s" % self.hydra_info)
-
-    def mpiexec_set_global_options(self):
-        """Set mpiexec global options"""
-        self.mpiexec_global_options['MKL_NUM_THREADS'] = '1'
-
-        if not self.options.noenvmodules:
-            for env_var in self.GLOBAL_VARIABLES_ENVIRONMENT_MODULES:
-                if env_var in os.environ and not env_var in self.mpiexec_global_options:
-                    self.mpiexec_global_options[env_var] = os.environ[env_var]
-
-    def mpiexec_set_local_options(self):
-        """Set mpiexec local options"""
-
-    def mpiexec_set_local_pass_variable_options(self):
-        """Set mpiexec pass variables"""
-        for var in self.get_pass_variables():
-            self.mpiexec_pass_environment.append(var)
 
     def mpiexec_get_global_options(self):
         """Create the global options to pass through mpiexec
