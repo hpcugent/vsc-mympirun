@@ -324,39 +324,44 @@ class MPI(object):
         self.set_pinning()
 
     def check_usable_cpus(self):
-        """
-        Check and act on fact of non-standard cpus (eg due to cpusets)
-        - default: do nothing more then log
-        """
+        """Check and log if non-standard cpus (eg due to cpusets)"""
         if not self.foundppn == len(self.cpus):
             self.log.info(("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, "
                            "usable cpus %s") % (self.ppn, self.foundppn, len(self.cpus)))
 
     def check_limit(self):
-        soft, hard = resource.getrlimit(resource.RLIMIT_STACK)
-        # unit is kB
+        """check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error"""
+        soft, hard = resource.getrlimit(resource.RLIMIT_STACK)  # in bytes
         if soft > -1 and soft < 1024 * 1024:
             # non-fatal
             self.log.error("Stack size %s%s too low? Increase with ulimit -s unlimited" % (soft, 'kB'))
 
     def set_omp_threads(self):
+        """sets ompthreads to the amount of threads every MPI process should use.
+
+        Will default to 1 if hybrid is disabled
+        """
         if 'OMP_NUM_THREADS' in os.environ:
-            t = os.environ['OMP_NUM_THREADS']
+            threads = os.environ['OMP_NUM_THREADS']
         else:
             if self.options.hybrid is None or self.options.hybrid == 0:
-                t = 1
+                threads = 1
             else:
-                t = max(self.ppn // self.options.hybrid, 1)
+                threads = max(self.ppn // self.options.hybrid, 1)
 
-        self.log.debug("Set OMP_NUM_THREADS to %s" % t)
+        self.log.debug("Set OMP_NUM_THREADS to %s" % threads)
 
-        os.environ['OMP_NUM_THREADS'] = str(t)
+        os.environ['OMP_NUM_THREADS'] = str(threads)
 
-        setattr(self.options, 'ompthreads', t)
+        setattr(self.options, 'ompthreads', threads)
 
     def set_netmask(self):
+        """set self.netmask to a list containing (ip address/netmask)
+
+        based on the computers IP address (from ip addr show) and the selected netmasktype from select_device
+        """
         if self.netmasktype is None:
-            self.set_device()
+            self.select_device()
 
         device_ip_reg_map = {'eth': "ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
                              'ib': "infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
@@ -387,30 +392,27 @@ class MPI(object):
         if len(res) > 0:
             self.netmask = os.pathsep.join(res)
 
-    def set_device(self, force=False):
+    def select_device(self, force=False):
+        """select a device (such as infiniband), either with command line arguments or the best available
+        see DEVICE ORDER for order of preference
+        """
         if self.device is not None and not force:
-            self.log.debug("set_device: device already set: %s" % self.device)
+            self.log.debug("select_device: device already set: %s" % self.device)
             return
 
         founddev = None
         if getattr(self.options, 'rdma', None):
             founddev = 'ib'
-            self.device = 'rdma'  # force it
-            path = self.DEVICE_LOCATION_MAP[founddev]
-            if path is None or os.path.exists(path):
-                self.log.warning("Forcing device %s (founddevice %s), but path %s not found." %
-                                 (self.device, founddev, path))
+            check_device_exists(founddev)
+
         elif getattr(self.options, 'socket', None):
             founddev = 'socket'
-            self.device = self.DEVICE_MPIDEVICE_MAP[founddev]
-            path = self.DEVICE_LOCATION_MAP[founddev]
-            if path is None or os.path.exists(path):
-                self.log.warning("Forcing device %s (founddevice %s), but path %s not found." %
-                                 (self.device, founddev, path))
+            check_device_exists(founddev)
+
         else:
             for dev in self.DEVICE_ORDER:
                 if dev in ('shm',):
-                    # only for single node
+                    # only use shm if a single node is used
                     if self.nruniquenodes > 1:
                         continue
 
@@ -418,15 +420,23 @@ class MPI(object):
                 if path is None or os.path.exists(path):
                     founddev = dev
                     self.device = self.DEVICE_MPIDEVICE_MAP[dev]
-                    self.log.debug("set_device: found path %s for device %s" % (path, self.device))
+                    self.log.debug("select_device: found path %s for device %s" % (path, self.device))
                     break
 
         if self.device is None:
-            self.log.raiseException("set_device: failed to set device.")
+            self.log.raiseException("select_device: failed to set device.")
 
         self.netmasktype = self.NETMASK_TYPE_MAP[founddev]
-        self.log.debug("set_device: set netmasktype %s for device %s (founddev %s)" %
+        self.log.debug("select_device: set netmasktype %s for device %s (founddev %s)" %
                        (self.netmasktype, self.device, founddev))
+
+    def set_device(founddev):
+        """set self.device to founddev, but doublecheck if the path to this device actually exists """
+        self.device = self.DEVICE_MPIDEVICE_MAP[founddev]
+        path = self.DEVICE_LOCATION_MAP[founddev]
+        if path is None or os.path.exists(path):
+            self.log.warning("Forcing device %s (founddevice %s), but path %s not found." %
+                             (self.device, founddev, path))
 
     def make_node_file(self):
         """Make the correct node list file"""
