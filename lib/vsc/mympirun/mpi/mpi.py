@@ -72,16 +72,16 @@ def whatMPI(name):
     scriptname = os.path.basename(os.path.abspath(name))
     supp_mpi_impl = get_subclasses(MPI)  # support MPI implementations
 
+    stripfake()
+
     # check if mympirun was called by a known mpirun alias (like
     # ompirun for OpenMPI or mhmpirun for mpich)
     for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname):
             _logger.debug("mpi.py - %s was used to call mympirun", scriptname)
-            stripfake()  # mandatory before return at this point
             return scriptname, mpi, supp_mpi_impl
 
     # get the path of the mpirun executable
-    # stripfake() is called in which
     mpirun_path = which(['mpirun'])
     if mpirun_path is None:
         # no MPI implementation installed
