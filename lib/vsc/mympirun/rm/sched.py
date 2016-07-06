@@ -142,24 +142,8 @@ class Sched(object):
         return False
 
     # other methods
-    def get_unique_nodes(self, nodes=None):
-        """Set unique nodes from self.nodes"""
-        if nodes is None:
-            nodes = self.nodes
-
-        # don't use set(), preserve order!
-        self.uniquenodes = nub(nodes)
-        self.nruniquenodes = len(self.uniquenodes)
-
-        self.log.debug("get_unique_nodes: %s uniquenodes: %s from %s" %
-                       (self.nruniquenodes, self.uniquenodes, nodes))
-
-    def get_node_list(self):
-        """get list of nodes (one node per requested processor/core)"""
-        self.log.raiseException("get_node_list not implemented")
-
     def get_id(self):
-        """get unique id"""
+        """get a unique id for this scheduler"""
         if self.SCHED_ENVIRON_ID is not None:
             self.id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
@@ -178,24 +162,9 @@ class Sched(object):
                         "get_id: failed to get id from environment variable %s"
                          % self.SCHED_ENVIRON_ID)
 
-    def set_ppn(self):
-        """Determine the ppn from nodes and unique nodes"""
-        if self.nrnodes is None:
-            self.get_node_list()
-        if self.nruniquenodes is None:
-            self.get_unique_nodes()
-
-        self.ppn = self.nrnodes // self.nruniquenodes
-        # set default
-        self.totalppn = self.ppn
-
-        self.log.debug("Set ppn to %s (totalppn %s)" %
-                       (self.ppn, self.totalppn))
-
     def _cores_on_this_node(self):
-        """Determine the number of available cores on this node
-        based on /proc/cpuinfo
-        """
+        """Determine the number of available cores on this node, based on /proc/cpuinfo"""
+
         fn = '/proc/cpuinfo'
         regcores = re.compile(r"^processor\s*:\s*\d+\s*$", re.M)
 
@@ -205,7 +174,7 @@ class Sched(object):
 
     def which_cpus(self):
         """
-        Determine which cpus can be used
+        Determine which cpus on the node can be used
 
         are we running in a cpuset?
         - and how big is it (nr of procs compared to local number of cores)
@@ -225,17 +194,35 @@ class Sched(object):
 
         self.log.debug("which_cpus: using cpus %s" % (self.cpus))
 
-    def is_large(self):
-        """Determine if this is a large job or not"""
+    def get_node_list(self):
+        """get a list with the node of every requested processor/core"""
+        self.log.raiseException("get_node_list not implemented")
+
+    def get_unique_nodes(self, nodes=None):
+        """Get a list of unique nodes from self.nodes"""
+        if nodes is None:
+            nodes = self.nodes
+
+        # don't use set(), preserve order!
+        self.uniquenodes = nub(nodes)
+        self.nruniquenodes = len(self.uniquenodes)
+
+        self.log.debug("get_unique_nodes: %s uniquenodes: %s from %s" %
+                       (self.nruniquenodes, self.uniquenodes, nodes))
+
+    def set_ppn(self):
+        """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
         if self.nrnodes is None:
             self.get_node_list()
-        if self.foundppn is None:
-            self.which_cpus()
+        if self.nruniquenodes is None:
+            self.get_unique_nodes()
 
-        res = ((self.nrnodes > self.RSH_LARGE_LIMIT) and
-               (self.ppn == self.foundppn))
-        self.log.debug("is_large returns %s" % res)
-        return res
+        self.ppn = self.nrnodes // self.nruniquenodes
+        # set default
+        self.totalppn = self.ppn
+
+        self.log.debug("Set ppn to %s (totalppn %s)" %
+                       (self.ppn, self.totalppn))
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -260,6 +247,18 @@ class Sched(object):
 
         self.log.debug("get_rsh returns %s" % rsh)
         return rsh
+
+    def is_large(self):
+        """Determine if this is a large job or not"""
+        if self.nrnodes is None:
+            self.get_node_list()
+        if self.foundppn is None:
+            self.which_cpus()
+
+        res = ((self.nrnodes > self.RSH_LARGE_LIMIT) and
+               (self.ppn == self.foundppn))
+        self.log.debug("is_large returns %s" % res)
+        return res
 
     def make_node_list(self):
         """Make a modified list of nodes based on requested options"""
