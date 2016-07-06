@@ -44,14 +44,16 @@ def whatSched(requested):
 
     found_sched = get_subclasses(Sched)
 
+    # if there is no requested scheduler set or if the script is not in a job
+    # environment, default to local
+    if "PBS_JOBID" not in os.environ or requested is None:
+        for sched in found_sched:
+            if sched._is_sched_for("local"):
+                return sched, found_sched
+
     # search for a scheduler that matches requested
     for sched in found_sched:
         if sched._is_sched_for(requested):
-            return sched, found_sched
-
-    # if the requested scheduler isn't found, default to local
-    for sched in found_sched:
-        if sched._is_sched_for("local"):
             return sched, found_sched
 
     # if there is no local scheduler, return None
