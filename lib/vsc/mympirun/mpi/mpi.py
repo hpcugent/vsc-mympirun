@@ -326,10 +326,6 @@ class MPI(object):
 
         self.set_omp_threads()
 
-        # ipath can force process pinning
-        self.qlogic_ipath()
-        self.scalemp_vsmp()
-
         self.set_netmask()
 
         self.make_node_file()
@@ -411,118 +407,6 @@ class MPI(object):
         os.environ['OMP_NUM_THREADS'] = str(t)
 
         setattr(self.options, 'ompthreads', t)
-
-    def qlogic_ipath(self):
-        """See if a qlogic device is available to set PSM parameters
-            - at least one port in /ipathfs
-        """
-        if self.options.qlogic_ipath is False:
-            self.log.debug("Skip the ipath checks")
-            return
-
-        ipathpaths = ["/dev/ipath", "/ipathfs/0", "/dev/ipath0"]
-        ipathpath = None
-        for ipp in ipathpaths:
-            if os.path.exists(ipp):
-                ipathpath = ipp
-                break
-
-        if ipathpath:
-            # how many contexts?
-            contxts = 0
-            sharedcontexts = True
-            sysib = "/sys/class/infiniband"
-            hcas = 0
-            if os.path.isdir(sysib):
-                for qibdir in os.listdir(sysib):
-                    fn = os.path.join(sysib, qibdir, 'nctxts')
-                    if qibdir.startswith('qib') and os.path.exists(fn):
-                        contxts += int(open(fn).read())
-                        hcas += 1
-            if contxts <= self.ppn:
-                # enough HW contexts not to share (assuming this is the only job on the node)
-                sharedcontexts = False
-
-            self.log.debug("Found %s HCAs with %s contexts for %s ppn: detected shared context %s" %
-                           (hcas, contxts, self.ppn, sharedcontexts))
-            self.mpiexec_global_options['PSM_SHAREDCONTEXTS'] = '%d' % sharedcontexts
-            if self.options.debuglvl > 0:
-                self.mpiexec_global_options['PSM_TRACEMASK'] = '0x101'
-
-            # not processed, so None by default. if so, PSM takes over
-            # IPATH_NO_CPUAFFINITY means: Prevent PSM from setting affinity?
-            if self.options.pinmpi:
-                self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '1'
-            else:
-                # Don't set the variable. The existince, not the value is checked.
-                # (Although traceback reports it properly, the actual process of setting it just checks the existence)
-                # self.mpiexec_global_options['IPATH_NO_CPUAFFINITY'] = '0'
-                self.options.pinmpi = False
-
-            self.log.debug("qlogic_ipath: ipath found %s" % ipathpath)
-            self.options.qlogic_ipath = True
-        else:
-            if self.options.qlogic_ipath:
-                self.log.debug("qlogic_ipath: forced ipath, but ipath path not found from paths %s" % ipathpaths)
-            else:
-                self.log.debug("qlogic_ipath: ipath path not found from paths %s" % ipathpaths)
-                self.options.qlogic_ipath = False
-
-    def scalemp_vsmp(self):
-        """See if the node is using ScaleMP vSMP to set various parameters
-            Detect vSMP presence + set additional default variables
-            - vsmpctl --features works
-            -- newer releases it is vsmpctl --status
-        """
-        setattr(self.options, 'scalemp_vsmp', None)
-
-        vsmpctl = "vsmpctl --status"
-        ec, out = run_simple_noworries(vsmpctl)
-        if ec > 0:
-            self.log.debug("scalemp_vsmp: vSMP not found (cmd %s ec %s output %s)" % (vsmpctl, ec, out))
-            return
-
-        """
-        add /opt/ScaleMP/libvsmpclib/0.1/lib64/libvsmpclib.so to LD_PRELOAD
-         - LD_PRELOAD is space separated
-        """
-        preload_lib = '/opt/ScaleMP/libvsmpclib/0.1/lib64/libvsmpclib.so'
-        if os.path.exists(preload_lib):
-            # space separated list
-            os.environ['LD_PRELOAD'] = " ".join([preload_lib] + os.environ.get('LD_PRELOAD', '').split(" "))
-
-        if self.options.pinmpi:
-            # enable pinning
-            if not 'VSMP_PLACEMENT' in os.environ:
-                # option: non, spread, nodes^x^y, packed
-                if not self.foundppn == len(self.cpus):
-                    self.log.debug(("scalemp_vsmp: non-standard cpus found: requested ppn %s, found ppn %s, "
-                                    "usable cpus %s") % (self.ppn, self.foundppn, len(self.cpus)))
-                    placement = []
-                    for x in self.cpus:
-                        ind = len(placement)
-                        placement.append("%s:%s" % (ind, x))
-                    os.environ['VSMP_PLACEMENT'] = ",".join(placement)
-
-                else:
-                    os.environ['VSMP_PLACEMENT'] = 'SPREAD'
-
-            self.log.debug("scalemp_vsmp: vSMP VSMP_PLACEMENT set to %s" % os.environ['VSMP_PLACEMENT'])
-
-            if not 'VSMP_MEM_PIN' in os.environ:
-                os.environ['VSMP_MEM_PIN'] = 'YES'
-            self.log.debug("scalemp_vsmp: vSMP VSMP_MEM_PIN set to %s" % os.environ['VSMP_MEM_PIN'])
-            # add /opt/ScaleMP/numabind/bin to PATH
-            numabindpath = '/opt/ScaleMP/numabind/bin'
-            if os.path.exists(numabindpath):
-                os.environ['PATH'] = os.pathsep.join([numabindpath] + os.environ.get('PATH', '').split(":"))
-
-        if self.options.debuglvl > 0:
-            os.environ['VSMP_VERBOSE'] = 1
-
-        self.log.debug("scalemp_vsmp: vSMP found %s with status" % out)
-
-        self.options.scalemp_vsmp = True
 
     def set_device(self, force=False):
         if self.device is not None and not force:
