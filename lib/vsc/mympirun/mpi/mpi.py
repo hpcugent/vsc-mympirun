@@ -138,29 +138,19 @@ def stripfake(path_to_append=None):
     return newpath
 
 
-def which(names):
+def which(cmd):
+    """Return (first) path in $PATH for specified command, or None if command is not found.
+
+    taken from easybuild/tools/filetools.py, 6/7/2016
     """
-    Find path to executable, similar to /usr/bin/which.
-
-    @param names: one or more commands
-
-    @return path: first path that is the location of an element in $names
-    """
-
-    _logger.debug("mpi.py - which(%s)", names)
-
-    if isinstance(names, str):
-        names = [names]
-    linuxdefaultpath = ['/usr/local/bin', '/usr/bin',
-                        '/usr/sbin', '/bin', '/sbin']
-    newpath = stripfake(path_to_append=linuxdefaultpath)
-
-    # iterate over all combinations of $PATH[i]/$names[j]
-    # return if the combination exists and is a file
-    for seekName in names:
-        for path in [os.path.join(p, seekName) for p in newpath]:
-            if os.path.isfile(path):
-                return path
+    paths = os.environ.get('PATH', '').split(os.pathsep)
+    for path in paths:
+        cmd_path = os.path.join(path, cmd)
+        # only accept path is command is there, and both readable and executable
+        if os.access(cmd_path, os.R_OK | os.X_OK):
+            _logger.info("Command %s found at %s" % (cmd, cmd_path))
+            return cmd_path
+    _logger.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)" % (cmd, paths))
     return None
 
 
