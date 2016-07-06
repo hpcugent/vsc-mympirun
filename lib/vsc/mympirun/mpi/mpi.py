@@ -102,11 +102,8 @@ def whatMPI(name):
 
 def stripfake():
     """
-    Removes the fake wrapper path from $PATH (assumes (VSC-tools|mympirun)/1.0.0/bin/fake)
-
-    @param path_to_append: a list of paths that needs to be added to $PATH
-
-    @return newpath: a list of the directories in the new $PATH (without the fake mpirun, with path_to_append appended)
+    If the user loaded the vsc-mympirun module but called mpirun, some $PATH trickery catches the attempt.
+    This function removes the fake path trickery from $PATH (assumes (VSC-tools|mympirun)/1.0.0/bin/fake)
     """
 
     _logger.debug("mpi.py - PATH before stripfake(): %s", os.environ['PATH'])
