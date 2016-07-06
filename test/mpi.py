@@ -35,7 +35,7 @@ from string import ascii_uppercase
 
 from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.rm.factory import getinstance
-from vsc.mympirun.mpi.mpi import MPI, whatMPI, stripfake, which
+import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
 
@@ -54,8 +54,8 @@ class TestMPI(TestCase):
         scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
         for scriptname in scriptnames:
             # if the scriptname is an executable located on this machine
-            if which(scriptname):
-                (returned_scriptname, mpi, found) = whatMPI(scriptname)
+            if mpim.which(scriptname):
+                (returned_scriptname, mpi, found) = mpim.whatMPI(scriptname)
                 _logger.debug("%s, %s, %s", returned_scriptname, mpi, found)
                 # if an mpi implementation was found
                 if mpi:
@@ -71,7 +71,7 @@ class TestMPI(TestCase):
         append = ''.join(choice(ascii_uppercase) for i in range(12))
         _logger.debug("oldpath: %s", oldpath)
 
-        res = stripfake(path_to_append=append)
+        res = mpim.stripfake(path_to_append=append)
         newpath = os.environ["PATH"]
         self.assertEqual(res, newpath.split(os.pathsep),
                          msg=("stripfake returned string doesn't correspond to the current $PATH: "
@@ -80,12 +80,14 @@ class TestMPI(TestCase):
                         msg=("old $PATH was %s, new $PATH "
                              "is %s, path_to_append was %s") % (oldpath, newpath, append))
 
+        self.assertFalse(("bin/%s" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath)
+
         # path_to_append is a list
         append = [append]
         append.append(''.join(choice(ascii_uppercase) for i in range(12)))
         append.append(''.join(choice(ascii_uppercase) for i in range(12)))
 
-        res = stripfake(path_to_append=append)
+        res = mpim.stripfake(path_to_append=append)
         newpath = os.environ["PATH"]
         self.assertEqual(res, newpath.split(os.pathsep),
                          msg=("stripfake returned string doesn't correspond to the current $PATH: "
@@ -94,6 +96,8 @@ class TestMPI(TestCase):
             self.assertTrue(p in newpath,
                             msg="old $PATH was %s, new $PATH is %s, path_to_append was %s" %
                                 (oldpath, newpath, p))
+
+        self.assertFalse(("bin/%s" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath)
 
     def test_which(self):
         pass
@@ -104,7 +108,7 @@ class TestMPI(TestCase):
         m.args = ['echo', 'foo']
         # should not throw an error
         try:
-            mpi_instance = getinstance(MPI, Local, m)
+            mpi_instance = getinstance(mpim.MPI, Local, m)
             mpi_instance.main()
         except Exception:
             self.fail("mympirun raised an exception")
@@ -121,7 +125,7 @@ class TestMPI(TestCase):
         """"Test the MPI class with the local scheduler"""
         # options
         m = MympirunOption()
-        mpi_instance = getinstance(MPI, Local, m)
+        mpi_instance = getinstance(mpim.MPI, Local, m)
         mpi_instance.main()
 
         # check for correct .mpd.conf file
