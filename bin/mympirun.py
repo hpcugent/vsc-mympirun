@@ -31,9 +31,6 @@ v2 python rewrite 19/03/2010
 v3 refactored python 28/08/2012
 v4 cleanup 5/11/2013
 
-Expert mode:
-    export MYMPIRUN_MAIN_EXCEPTION=1 to show all exceptions
-
 TODO:
     intel tuning code
 
@@ -42,12 +39,11 @@ TODO:
 @author: Jeroen De Clerck
 """
 
+import glob
+import inspect
 import os
 import sys
 import traceback
-
-import glob
-import inspect
 
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.option import MympirunOption

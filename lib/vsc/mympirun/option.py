@@ -27,9 +27,9 @@ Optionparser for mympirun
 """
 
 import sys
+
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
-from vsc.utils.fancylogger import getLogger
 
 # introduce usage / -u option. (original has -h for --hybrid)
 # TODO: generate real message with possible alias + mention all supported versions
@@ -48,8 +48,6 @@ class MympirunOption(GeneralOption):
     INTERSPERSED = False  # Stop parsing cmdline, all others opts are opts for the exe
 
     def __init__(self, ismpirun=False):
-        _logger = getLogger()
-
         self.mpirunmode = ismpirun
 
         # super(MympirunOption, self).__init__()
@@ -147,8 +145,6 @@ class MympirunOption(GeneralOption):
                         (opts, descr, prefix))
         self.add_group_parser(opts, descr, prefix=prefix)
 
-        self.log.debug("option.py - found MPI %s" % MPI.__subclasses__())
-
         # for all MPI classes, get the additional options
         for mpi in MPI.__subclasses__():
             if not mpi.RUNTIMEOPTION is None:
@@ -171,9 +167,10 @@ class MympirunOption(GeneralOption):
 
         newopts = options_list[:]  # copy
         if self.mpirunmode:
-            optsToRemove = {'-np': 1,
-                            '-machinefile': 1
-                            }
+            optsToRemove = {
+                '-np': 1,
+                '-machinefile': 1
+            }
 
             for opt in optsToRemove.keys():
                 try:

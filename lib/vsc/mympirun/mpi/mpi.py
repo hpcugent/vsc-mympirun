@@ -29,20 +29,20 @@ Base MPI class, all actual classes should inherit from this one
 @author: Jeroen De Clerck
 """
 
+import inspect
 import os
 import random
 import re
-import stat
-import sys
-
-import inspect
-from IPy import IP
 import resource
 import shutil
 import socket
-import subprocess
+import stat
 import string
+import subprocess
+import sys
 import time
+
+from IPy import IP
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
@@ -132,7 +132,7 @@ def stripfake(path_to_append=None):
     # remove all $PATH elements that match the fakepath regex
     newpath = [x for x in newpath if not reg_fakepath.match(x)]
 
-    os.environ['PATH'] = "%s" % ':'.join(newpath)
+    os.environ['PATH'] = ':'.join(newpath)
 
     _logger.debug("mpi.py - PATH after stripfake(): %s", os.environ['PATH'])
     return newpath
@@ -270,15 +270,15 @@ class MPI(object):
         # regex matches "cls._mpirun_for/version number"
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
                          ("|".join(cls._mpirun_for), os.sep))
-        r = reg.search(mpirun_path)
-        _logger.debug("_is_mpisrun_for(), r: %s", r)
+        reg_match = reg.search(mpirun_path)
+        _logger.debug("_is_mpisrun_for(), reg_match: %s", reg_match)
 
-        if r:
+        if reg_match:
             if cls._mpirun_version is None:
                 return True
             else:
-                # do version check (r.group(1) is the version number)
-                return cls._mpirun_version(r.group(1))
+                # do version check (reg_match.group(1) is the version number)
+                return cls._mpirun_version(reg_match.group(1))
         else:
             return False
 
@@ -427,7 +427,7 @@ class MPI(object):
 
         self.log.debug("Set OMP_NUM_THREADS to %s" % t)
 
-        os.environ['OMP_NUM_THREADS'] = "%s" % t
+        os.environ['OMP_NUM_THREADS'] = str(t)
 
         setattr(self.options, 'ompthreads', t)
 
@@ -508,7 +508,7 @@ class MPI(object):
         preload_lib = '/opt/ScaleMP/libvsmpclib/0.1/lib64/libvsmpclib.so'
         if os.path.exists(preload_lib):
             # space separated list
-            os.environ['LD_PRELOAD'] = "%s" % " ".join([preload_lib] + os.environ.get('LD_PRELOAD', '').split(" "))
+            os.environ['LD_PRELOAD'] = " ".join([preload_lib] + os.environ.get('LD_PRELOAD', '').split(" "))
 
         if self.options.pinmpi:
             # enable pinning
@@ -521,23 +521,23 @@ class MPI(object):
                     for x in self.cpus:
                         ind = len(placement)
                         placement.append("%s:%s" % (ind, x))
-                    os.environ['VSMP_PLACEMENT'] = "%s" % ",".join(placement)
+                    os.environ['VSMP_PLACEMENT'] = ",".join(placement)
 
                 else:
-                    os.environ['VSMP_PLACEMENT'] = "%s" % 'SPREAD'
+                    os.environ['VSMP_PLACEMENT'] = 'SPREAD'
 
             self.log.debug("scalemp_vsmp: vSMP VSMP_PLACEMENT set to %s" % os.environ['VSMP_PLACEMENT'])
 
             if not 'VSMP_MEM_PIN' in os.environ:
-                os.environ['VSMP_MEM_PIN'] = "%s" % 'YES'
+                os.environ['VSMP_MEM_PIN'] = 'YES'
             self.log.debug("scalemp_vsmp: vSMP VSMP_MEM_PIN set to %s" % os.environ['VSMP_MEM_PIN'])
             # add /opt/ScaleMP/numabind/bin to PATH
             numabindpath = '/opt/ScaleMP/numabind/bin'
             if os.path.exists(numabindpath):
-                os.environ['PATH'] = "%s" % ":".join([numabindpath] + os.environ.get('PATH', '').split(":"))
+                os.environ['PATH'] = os.pathsep.join([numabindpath] + os.environ.get('PATH', '').split(":"))
 
         if self.options.debuglvl > 0:
-            os.environ['VSMP_VERBOSE'] = "%s" % 1
+            os.environ['VSMP_VERBOSE'] = 1
 
         self.log.debug("scalemp_vsmp: vSMP found %s with status" % out)
 
@@ -615,7 +615,7 @@ class MPI(object):
 
         self.log.debug("set_netmask: return complete netmask %s" % res)
         if len(res) > 0:
-            self.netmask = ":".join(res)
+            self.netmask = os.pathsep.join(res)
 
     def make_mympirundir(self):
         basepath = getattr(self.options, 'basepath', None)
@@ -650,7 +650,7 @@ class MPI(object):
 
         mpdboottxt = ""
         for n in self.uniquenodes:
-            txt = "%s" % n
+            txt = n
             if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
                     txt += ":%s" % self.get_universe_ncpus()
@@ -803,21 +803,21 @@ class MPI(object):
                 map_func = lambda x: "%s-%s" % (x * corespp, (x + 1) * corespp - 1)
             else:
                 # consecutive cores
-                map_func = lambda x: "%s" % x
+                map_func = lambda x: x
         elif override_type in ('cycle',):
             # eg double with GAMESS
             if multi:
                 # what is this?
                 self.log.raiseException("pinning_override: cycle type with multiple cores?")
             else:
-                map_func = lambda x: "%s" % (x % self.foundppn)
+                map_func = lambda x: (x % self.foundppn)
         elif override_type in ('spread',):
             if multi:
                 # spread domains
                 map_func = lambda x: "%s-%s" % (x * corespp, (x + 1) * corespp - 1)
             else:
                 # spread cores
-                map_func = lambda x: "%s" % (x * corespp)
+                map_func = lambda x: (x * corespp)
 
         else:
             self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %

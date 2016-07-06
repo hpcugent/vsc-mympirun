@@ -27,12 +27,11 @@ Main sched class
 """
 
 
-import os
-import re
-
 import glob
-import random
+import os
 import time
+import random
+import re
 
 from vsc.mympirun.mpi.mpi import get_subclasses
 from vsc.utils.affinity import sched_getaffinity
