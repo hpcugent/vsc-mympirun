@@ -403,11 +403,11 @@ class MPI(object):
         founddev = None
         if getattr(self.options, 'rdma', None):
             founddev = 'ib'
-            set_device(founddev)
+            self.set_device(founddev)
 
         elif getattr(self.options, 'socket', None):
             founddev = 'socket'
-            set_device(founddev)
+            self.set_device(founddev)
 
         else:
             for dev in self.DEVICE_ORDER:
