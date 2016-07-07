@@ -96,7 +96,7 @@ class Sched(object):
 
         self.mpinodes = None
         self.mpinrnodes = None
-        self.mpitotalppn = None
+        self.mpiprocesspernode = None
 
         self.id = None
 
@@ -261,7 +261,11 @@ class Sched(object):
         return res
 
     def make_node_list(self):
-        """Make a modified list of nodes based on requested options"""
+        """Make a list of nodes that MPI should use
+
+        Calculates the amount of mpi processes based on the processors per node and options like double and hybrid
+        Will also make a list with nodes, where each entry is supposed to run an mpi process
+        """
         if self.nodes is None:
             self.get_node_list()
         if self.totalppn is None or self.ppn is None:
@@ -286,19 +290,19 @@ class Sched(object):
 
         res = []
         if double:
-            self.mpitotalppn = self.ppn * multi
+            self.mpiprocesspernode = self.ppn * multi
             res = self.nodes * multi
         elif hybrid:
             # return multi unique nodes
-            # mpitotalppn = 1 per node * multi
-            self.mpitotalppn = multi
+            # mpiprocesspernode = 1 per node * multi
+            self.mpiprocesspernode = multi
             for n in self.uniquenodes:
                 res.extend([n] * multi)
         else:
             # default mode
-            self.mpitotalppn = self.ppn * multi
+            self.mpiprocesspernode = self.ppn * multi
             for n in self.uniquenodes:
-                res.extend([n] * self.mpitotalppn)
+                res.extend([n] * self.mpiprocesspernode)
 
         # reorder
         ordermode = getattr(self.options, 'order', None)
@@ -324,8 +328,8 @@ class Sched(object):
             self.log.raiseExcepetion("make_node_list unknown ordermode %s" %
                                      ordermode)
 
-        self.log.debug("make_node_list: ordered node list %s (mpitotalppn %s)"
-                       % (res, self.mpitotalppn))
+        self.log.debug("make_node_list: ordered node list %s (mpiprocesspernode %s)"
+                       % (res, self.mpiprocesspernode))
 
         self.mpinodes = res
         self.nrmpinodes = len(res)
