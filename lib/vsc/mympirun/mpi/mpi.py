@@ -403,11 +403,11 @@ class MPI(object):
         founddev = None
         if getattr(self.options, 'rdma', None):
             founddev = 'ib'
-            check_device_exists(founddev)
+            set_device(founddev)
 
         elif getattr(self.options, 'socket', None):
             founddev = 'socket'
-            check_device_exists(founddev)
+            set_device(founddev)
 
         else:
             for dev in self.DEVICE_ORDER:
@@ -430,7 +430,7 @@ class MPI(object):
         self.log.debug("select_device: set netmasktype %s for device %s (founddev %s)" %
                        (self.netmasktype, self.device, founddev))
 
-    def set_device(founddev):
+    def set_device(self, founddev):
         """set self.device to founddev, but doublecheck if the path to this device actually exists """
         self.device = self.DEVICE_MPIDEVICE_MAP[founddev]
         path = self.DEVICE_LOCATION_MAP[founddev]
@@ -476,6 +476,7 @@ class MPI(object):
         return self.mpitotalppn
 
     def make_mympirundir(self):
+        """make a dir called .mympirun_id_timestamp in either the given basepath or $HOME for easy cleanup"""
         basepath = getattr(self.options, 'basepath', None)
         if basepath is None:
             basepath = os.environ['HOME']
