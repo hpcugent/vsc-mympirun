@@ -294,7 +294,7 @@ class MPI(object):
         self.mpiexec_set_local_options()
         self.mpiexec_set_local_pass_variable_options()
 
-        self.make_mpiexec()
+        self.set_mpiexec_options()
 
         self.make_mpirun()
 
@@ -535,9 +535,12 @@ class MPI(object):
 
     ### BEGIN mpdboot ###
     def make_mpdboot(self):
-        """Make the mpdboot configuration"""
+        """Make the mpdboot configuration
+
+        Read a password from ~/.mpd.conf (if this does not exist, create it.)
+
+        """
         # check .mpd.conf existence
-        # TODO: use expanduser, create file if non exists.
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         if not os.path.exists(mpdconffn):
             self.log.warning(("make_mpdboot: mpd.conf file not found at %s. Creating this file "
@@ -556,46 +559,44 @@ class MPI(object):
         self.log.debug("make_mpdboot set options %s" % self.mpdboot_options)
 
     def mpdboot_set_localhost_interface(self):
-        """
-        Set the localhost mpdboot interface
-        """
+        """Sets mpdboot_localhost_interface to the first result of get_localhosts()"""
         localhosts = self.get_localhosts()
-        if len(localhosts) > 0:
-            if len(localhosts) > 1:
-                self.log.warning(("set_mpd_localhost_interface: more then one match "
-                                  "for localhost from unique nodes found %s, using 1st.") %
-                                 localhosts)
-            hn, iface = localhosts[0]  # take the first one
-            self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s" %
-                           (iface, hn))
-            self.mpdboot_localhost_interface = (hn, iface)
-        else:
-            self.log.raiseException("set_mpd_localhost_interface: can't find mpd localhost from uniq nodes %s" %
-                                    (self.uniquenodes))
+        if len(localhosts) > 1:
+            self.log.warning(("set_mpd_localhost_interface: more then one match "
+                              "for localhost from unique nodes found %s, using 1st.") %
+                             localhosts)
+        nodename, iface = localhosts[0]  # take the first one
+        self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s" %
+                       (iface, nodename))
+        self.mpdboot_localhost_interface = (nodename, iface)
 
     def get_localhosts(self):
         """
-        Get the localhost interfaces from the uniquenodes list
-        -- if hostname is different from the name in the nodelist
+        Get the localhost interfaces, based on the hostnames from the nodes in self.uniquenodes
+
+        Raises Exception if no no localhost interface was found
+
+        @return res: the list of interfaces that correspond to the list of uniquenodes
         """
         iface_prefix = ['eth', 'em', 'ib', 'wlan']
         reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
 
+        # iterate over uniquenodes and get their interfaces
+        # add the found interface to res if it matches reg_iface
         res = []
-        for idx, hn in enumerate(self.uniquenodes):
-            ip = socket.gethostbyname(hn)
-            cmd = "/sbin/ip -4 -o addr show to %s/32" % ip  # TODO ipv6
+        for idx, nodename in enumerate(self.uniquenodes):
+            ip = socket.gethostbyname(nodename)
+            cmd = "/sbin/ip -4 -o addr show to %s/32" % ip
             ec, out = run_simple(cmd)
             if ec == 0:
                 r = reg_iface.search(out)
                 if r:
                     iface = r.group(1)
                     self.log.debug("get_localhost idx %s: localhost interface %s found for %s (ip: %s)" %
-                                   (idx, iface, hn, ip))
+                                   (idx, iface, nodename, ip))
 
-                    res.append((hn, iface))
+                    res.append((nodename, iface))
                 else:
-                    # not a big issue, probably not
                     self.log.debug(("get_localhost idx %s: no interface match for "
                                     "prefixes %s out %s") % (idx, iface_prefix, out))
             else:
@@ -607,14 +608,14 @@ class MPI(object):
         return res
 
     def make_mpdboot_options(self):
-        """Make the mpdboot options. Customise this method."""
-        # the mpdboot options
+        """Add various options to mpdboot_options"""
+
         self.mpdboot_options = self.MPDBOOT_OPTIONS[:]
 
-        # uniq hosts with ifhn for mpdboot start
+        # add the mpd nodefile to mpdboot options
         self.mpdboot_options.append("--file=%s" % self.mpdboot_node_filename)
 
-        # mpdboot ifhn
+        # add the interface to mpdboot options
         if self.MPDBOOT_SET_INTERFACE:
             if self.has_hydra:
                 iface = "-iface %s" % self.mpdboot_localhost_interface[1]
@@ -625,14 +626,15 @@ class MPI(object):
         else:
             self.log.debug('No mpdboot interface option')
 
+        # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0:
             self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus())
 
-        # number of mpi
+        # if mpich, add the number of unique nodes as mpdboot_totalnum
         if self.mpdboot_totalnum:
             self.mpdboot_options.append("--totalnum=%s" % self.mpdboot_totalnum)
 
-        # verbosity
+        # set verbosity
         if self.options.mpdbootverbose:
             self.mpdboot_options.append("--verbose")
 
@@ -642,7 +644,10 @@ class MPI(object):
 
     ### BEGIN mpiexec ###
     def mpiexec_set_global_options(self):
-        """Set mpiexec global options"""
+        """Set mpiexec global options
+
+        unless explicitly asked not to, will add all environment variables to mpiexec_global_options
+        """
         self.mpiexec_global_options['MKL_NUM_THREADS'] = '1'
 
         if not self.options.noenvmodules:
@@ -654,30 +659,23 @@ class MPI(object):
         """Set mpiexec local options"""
 
     def mpiexec_set_local_pass_variable_options(self):
-        """Set mpiexec pass variables"""
-        for var in self.get_pass_variables():
-            self.mpiexec_pass_environment.append(var)
+        """Set mpiexec pass variables
 
-    def get_pass_variables(self):
-        """Get the list of variable names to pass"""
+        gets the union of PASS_VARIABLES_BASE and the environment variables that start with a given prefix
+        """
+
+        # get all unique variables that are both in os.environ and in PASS_VARIABLES_BASE
         vars_to_pass = nub([v for v in self.PASS_VARIABLES_BASE if v in os.environ])
 
         for env_prefix in self.PASS_VARIABLES_CLASS_PREFIX + self.PASS_VARIABLES_BASE_PREFIX + self.options.variablesprefix:
             for env_var in os.environ.keys():
-                # exact match or starts with <prefix>_
-                if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and not env_var in vars_to_pass:
-                    vars_to_pass.append(env_var)
+                # add all environment variable keys that start with <prefix> or <prefix>_ to mpiexec_pass_environment
+                # but only if they aren't already in vars_to_pass
+                if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and env_var not in vars_to_pass:
+                    self.mpiexec_pass_environment.append(env_var)
 
-        return vars_to_pass
-
-    def make_mpiexec(self):
-        """Make the mpiexec configuration"""
-        self.make_mpiexec_options()
-
-        self.log.debug("make_mpiexec set options %s" % self.mpiexec_options)
-
-    def make_mpiexec_options(self):
-        """The mpiexec options"""
+    def set_mpiexec_options(self):
+        """Add various options to mpiexec_options"""
         self.mpiexec_options = self.MPIEXEC_OPTIONS[:]
 
         if self.has_hydra:
@@ -781,14 +779,21 @@ class MPI(object):
 
     def mpiexec_get_global_options(self):
         """Create the global options to pass through mpiexec
-            allow overwriting through environment
+
+        iterates over mpiexec_global_options, and picks the options that aren't already in mpiexec_pass_environment
+        this way the options that are set with environment variables get a higher priority
+
+        @returns global_options: the final list of options, including the correct command line argument for the mpi flavor
         """
         global_options = []
 
         for k, v in self.mpiexec_global_options.items():
             if k in self.mpiexec_pass_environment:
+                # environment variable is already set
                 self.log.debug("mpiexec_get_global_options: found global option %s in mpiexec_pass_environment." % k)
             else:
+                # insert the keyvalue pair into the correct command line argument
+                # the command for setting the environment variable depends on the mpi flavor
                 global_options.append(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION % {'name': k, "value": v})
 
         self.log.debug("mpiexec_get_global_options: template %s return options %s" %
@@ -797,11 +802,16 @@ class MPI(object):
 
     def mpiexec_get_local_options(self):
         """Create the local options to pass through mpiexec
-            allow overwriting through environment
+
+        iterates over mpiexec_local_options, and picks the options that aren't already in mpiexec_pass_environment
+        this way the options that are set with environment variables get a higher priority
+
+        @returns local_options: the final list of options, including the correct command line argument for the mpi flavor
         """
         local_options = []
         for k, v in self.mpiexec_local_options.items():
             if k in self.mpiexec_pass_environment:
+                # environment variable is already set
                 self.log.debug("mpiexec_get_local_options: found local option %s in mpiexec_pass_environment." % k)
             else:
                 local_options.append(self.MPIEXEC_TEMPLATE_LOCAL_OPTION % {'name': k, "value": v})
@@ -811,8 +821,8 @@ class MPI(object):
         return local_options
 
     def mpiexec_get_local_pass_variable_options(self):
-        """Create the local options to pass environment vaiables through mpiexec
-        """
+        """Create the local options to pass environment vaiables through mpiexec"""
+
         self.log.debug("mpiexec_get_local_pass_variable_options: variables (and current value) to pass: %s" %
                        ([[x, os.environ[x]] for x in self.mpiexec_pass_environment]))
 
