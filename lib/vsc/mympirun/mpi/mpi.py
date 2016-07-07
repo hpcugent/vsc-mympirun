@@ -821,7 +821,11 @@ class MPI(object):
         return local_options
 
     def mpiexec_get_local_pass_variable_options(self):
-        """Create the local options to pass environment vaiables through mpiexec"""
+        """Create the local pass environment variables to pass through mpiexec
+
+        parses mpiexec_pass_environment and so that the chosen mpi flavor
+        can understand it when it is passed to the command line argument
+        """
 
         self.log.debug("mpiexec_get_local_pass_variable_options: variables (and current value) to pass: %s" %
                        ([[x, os.environ[x]] for x in self.mpiexec_pass_environment]))
@@ -846,8 +850,8 @@ class MPI(object):
 
         self._make_final_mpirun_cmd()
         if self.options.mpirunoptions is not None:
-            self.log.debug("make_mpirun: added user provided options %s" % self.options.mpirunoptions)
             self.mpirun_cmd.append(self.options.mpirunoptions)
+            self.log.debug("make_mpirun: added user provided options %s" % self.options.mpirunoptions)
 
         if self.pinning_override_type is not None:
             p_o = self.pinning_override()
@@ -865,7 +869,8 @@ class MPI(object):
 
     def _make_final_mpirun_cmd(self):
         """Create the acual mpirun command
-            add it to self.mpirun_cmd
+
+        append the mpdboot and mpiexec options to the command
         """
         self.mpirun_cmd += self.mpdboot_options
         self.mpirun_cmd += self.mpiexec_options
@@ -876,12 +881,10 @@ class MPI(object):
         - using taskset or numactl?
         - start the real executable with correct pinning
 
-        There are self.mpiprocesspernode number of processes to start
-         on self.nruniquenodes * self.ppn requested slots
-        Each node has to accept self.mpiprocesspernode/self.ppn processes
-         over self.ppn nmber of cpu slots
+        There are self.mpiprocesspernode number of processes to start on (self.nruniquenodes * self.ppn) requested slots
+        Each node has to accept self.mpiprocesspernode/self.ppn processes over self.ppn number of cpu slots
 
-        Do we assume heterogenous nodes (ie same cpu layuout as current node?)
+        Do we assume heterogenous nodes (ie same cpu layout as current node?)
         - yes
         -- reality NO: different cpusets!
 
@@ -899,9 +902,7 @@ class MPI(object):
         - some mpirun are binary, others are bash
         -- no clean way to pass the variable
         --- a simple bash script also resolves the csh problem?
-        """
 
-        """
         Simple shell check. This is the login shell of the current user
         - not necessarily the current shell
         -- but it is when multinode is used i think (eg startup with ssh)
@@ -930,24 +931,21 @@ class MPI(object):
             multithread = False
         self.log.debug("pinning_override: type %s multithread %s" % (override_type, multithread))
 
-        """
-        The whole method is very primitive
-        - assume cpu layout on OS is correct wrt numbering
-
-        What about pinned threads of threaded apps?
-        - eg use likwid to pin those threads too.
-        """
+        # The whole method is very primitive
+        # - assume cpu layout on OS has correct numbering
+        # What about pinned threads of threaded apps?
+        # - eg use likwid to pin those threads too
 
         # cores per process
         corespp = self.foundppn // self.mpiprocesspernode
         corespp_rest = self.foundppn % self.mpiprocesspernode
         if (corespp < 1) or (self.mpiprocesspernode == self.foundppn):
             multi = False
-            self.log.debug(("pinning_override: exactly one or more processes %s then cores %s. "
-                            "No multithreading.") % (self.mpiprocesspernode, self.foundppn))
+            self.log.debug(("pinning_override: exactly one or more than one process for each core: mpi processes: %s "
+                            "ppn: %s. Multithreading is disabled.") % (self.mpiprocesspernode, self.foundppn))
         if corespp_rest > 0:
-            self.log.debug(("pinning_override: total number of mpiprocesses %s no exact multiple of "
-                            "number of procs %s. Ignoring rest.") % (self.mpiprocesspernode, self.foundppn))
+            self.log.debug(("pinning_override: number of mpiprocesses (%s) is not an exact multiple of "
+                            "number of procs (%s). Ignoring rest.") % (self.mpiprocesspernode, self.foundppn))
 
         map_func = None
         if override_type in ('packed', 'compact',):
@@ -960,8 +958,8 @@ class MPI(object):
         elif override_type in ('cycle',):
             # eg double with GAMESS
             if multi:
-                # what is this?
-                self.log.raiseException("pinning_override: cycle type with multiple cores?")
+                self.log.raiseException(
+                    "pinning_override: trying to set pin type to 'cycle' with multithreading enabled: not supported")
             else:
                 map_func = lambda x: (x % self.foundppn)
         elif override_type in ('spread',):
@@ -971,7 +969,6 @@ class MPI(object):
             else:
                 # spread cores
                 map_func = lambda x: (x * corespp)
-
         else:
             self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
                                     self.pinning_override_type)
@@ -980,9 +977,9 @@ class MPI(object):
 
         wrappertxt += "%s=(%s)\n" % (rankmapname, ' '.join(rankmap))
 
-        pinning_exe = which(self.PINNING_OVERRIDE_METHOD)
+        pinning_exe = which(self.PINNING_OVERRIDE_METHOD)  # default numactl
         if not pinning_exe:
-            self.log.raiseException("pinning_override: can't find execuatble %s" % self.PINNING_OVERRIDE_METHOD)
+            self.log.raiseException("pinning_override: can't find executable %s" % self.PINNING_OVERRIDE_METHOD)
 
         if self.PINNING_OVERRIDE_METHOD in ('numactl',):
             pinning_exe += ' --physcpubind="${%s[$%s]}"' % (rankmapname, rankname)
@@ -1031,7 +1028,7 @@ class MPI(object):
         return [(main_runfunc, self.mpirun_cmd)]
 
     def cleanup(self):
-        # remove mympirundir
+        """remove temporary directory (mympirundir)"""
         try:
             shutil.rmtree(self.mympirundir)
             self.log.debug("cleanup: removed mympirundir %s" % self.mympirundir)
