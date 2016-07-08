@@ -301,7 +301,7 @@ class MPI(object):
         # actual execution
         for runfunc, cmd in self.mpirun_prepare_execution():
             self.log.debug("main: going to execute cmd %s" % " ".join(cmd))
-            ec, out = runfunc(cmd)
+            ec, _ = runfunc(cmd)
             if ec > 0:
                 self.cleanup()
                 self.log.raiseException("main: exitcode %s > 0; cmd %s" % (ec, cmd))
@@ -331,7 +331,7 @@ class MPI(object):
 
     def check_limit(self):
         """check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error"""
-        soft, hard = resource.getrlimit(resource.RLIMIT_STACK)  # in bytes
+        soft, _ = resource.getrlimit(resource.RLIMIT_STACK)  # in bytes
         if soft > -1 and soft < 1024 * 1024:
             # non-fatal
             self.log.error("Stack size %s%s too low? Increase with ulimit -s unlimited" % (soft, 'kB'))
@@ -367,7 +367,7 @@ class MPI(object):
         device_ip_reg_map = {'eth': "ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
                              'ib': "infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
                              }
-        if not self.netmasktype in device_ip_reg_map:
+        if self.netmasktype not in device_ip_reg_map:
             self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" %
                                     (self.netmasktype, device_ip_reg_map))
 
@@ -498,7 +498,7 @@ class MPI(object):
         if not os.path.exists(destdir):
             try:
                 os.makedirs(destdir)
-            except:
+            except os.error:
                 self.log.raiseException('make_mympirun_dir: failed to make job dir %s' % (destdir))
 
         self.log.debug("make_mympirun_dir: tmp mympirundir %s" % destdir)
@@ -652,7 +652,7 @@ class MPI(object):
 
         if not self.options.noenvmodules:
             for env_var in self.GLOBAL_VARIABLES_ENVIRONMENT_MODULES:
-                if env_var in os.environ and not env_var in self.mpiexec_global_options:
+                if env_var in os.environ and env_var not in self.mpiexec_global_options:
                     self.mpiexec_global_options[env_var] = os.environ[env_var]
 
     def mpiexec_set_local_options(self):
@@ -990,7 +990,7 @@ class MPI(object):
             open(wrapperpath, 'w').write(wrappertxt)
             os.chmod(wrapperpath, stat.S_IRWXU)
             self.log.debug("pinning_override: wrote wrapper file %s:\n%s" % (wrapperpath, wrappertxt))
-        except:
+        except IOError:
             self.log.raiseException('pinning_override: failed to write wrapper file %s' % (wrapperpath))
 
         self.log.debug("pinning_override: pinning_exe %s to wrapper %s" % (pinning_exe, wrapperpath))
@@ -1032,5 +1032,5 @@ class MPI(object):
         try:
             shutil.rmtree(self.mympirundir)
             self.log.debug("cleanup: removed mympirundir %s" % self.mympirundir)
-        except:
+        except OSError:
             self.log.raiseException("cleanup: cleaning up mympirundir %s failed" % (self.mympirundir))

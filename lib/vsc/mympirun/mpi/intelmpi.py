@@ -130,8 +130,6 @@ class IntelMPI(MPI):
         """Set mpiexec global options"""
         super(IntelMPI, self).mpiexec_set_global_options()
 
-        tempvars = ["TMP", "TMPDIR", "TEMP"]
-
         # this one also needs to be set at runtime
         self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
         os.environ['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
@@ -232,7 +230,7 @@ class IntelHydraMPI(IntelMPI):
 
         if 'I_MPI_DEVICE' in self.mpiexec_global_options:
             del self.mpiexec_global_options['I_MPI_DEVICE']
-        if not 'I_MPI_FABRICS' in self.mpiexec_global_options:
+        if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
         scalable_progress = (self.mpiprocesspernode * self.nruniquenodes) > 64
@@ -242,7 +240,7 @@ class IntelHydraMPI(IntelMPI):
             if self.options.impi_xrc:
                 self.log.warning('Ignoring XRC setting when also requesting UD')
             self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enable_disable(self.options.impi_daplud)
-            if not 'I_MPI_DAPL_UD_PROVIDER' in os.environ:
+            if 'I_MPI_DAPL_UD_PROVIDER' not in os.environ:
                 self.mpiexec_global_options['I_MPI_DAPL_UD_PROVIDER'] = 'ofa-v2-mlx4_0-1u'
         elif self.options.impi_xrc:
             # force it

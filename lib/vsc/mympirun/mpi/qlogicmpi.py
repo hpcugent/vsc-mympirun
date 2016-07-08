@@ -95,7 +95,7 @@ class QLogicMPI(MPI):
             fn = os.path.join(self.mympirundir, 'qlcrcfile')
             file(fn, 'w').write(txt)
             self.log.debug("mpiexec_get_local_pass_variable_options: wrote rcfile %s:\n%s" % (fn, txt))
-        except:
+        except IOError:
             self.log.raiseException('mpiexec_get_local_pass_variable_options: failed to write rcfile %s' % (fn))
 
         variables = "-rcfile %s" % fn

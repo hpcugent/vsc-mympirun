@@ -148,7 +148,7 @@ def import_implementations(module):
     _logger.debug("namespace: %s", namespace)
 
     # import the modules
-    modules = map(__import__, modulenames)
+    map(__import__, modulenames)
     _logger.debug("mympirun.py - imported modules: %s", modulenames)
 
     return
@@ -159,7 +159,7 @@ def main():
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
-    except Exception, e:
+    except Exception:
         _logger.exception("mympirun.py - Main failed; Trace: \n %s", traceback.format_exc())
         sys.exit(1)
 
