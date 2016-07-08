@@ -34,6 +34,7 @@ from random import choice
 from string import ascii_uppercase
 
 from vsc.utils.fancylogger import getLogger
+from vsc.utils.run import run_simple
 from vsc.mympirun.rm.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.rm.local import Local
@@ -41,7 +42,6 @@ from vsc.mympirun.option import MympirunOption
 
 # we wish to use the mpirun we ship
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
-
 
 _logger = getLogger()
 
@@ -65,42 +65,18 @@ class TestMPI(TestCase):
                     self.assertEqual(returned_scriptname, "mpirun")
 
     def test_stripfake(self):
-
-        # path_to_append is a string
-        oldpath = os.environ["PATH"]
-        append = ''.join(choice(ascii_uppercase) for i in range(12))
-        _logger.debug("oldpath: %s", oldpath)
-
-        res = mpim.stripfake(path_to_append=append)
+        """Test if stripfake actually removes the /bin/fake path in $PATH"""
+        _logger.debug("old path: %s", os.environ["PATH"])
+        mpim.stripfake()
         newpath = os.environ["PATH"]
-        self.assertEqual(res, newpath.split(os.pathsep),
-                         msg=("stripfake returned string doesn't correspond to the current $PATH: "
-                              "res = %s and path = %s") % (res, newpath))
-        self.assertTrue(append in newpath,
-                        msg=("old $PATH was %s, new $PATH "
-                             "is %s, path_to_append was %s") % (oldpath, newpath, append))
-
-        self.assertFalse(("bin/%s" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath)
-
-        # path_to_append is a list
-        append = [append]
-        append.append(''.join(choice(ascii_uppercase) for i in range(12)))
-        append.append(''.join(choice(ascii_uppercase) for i in range(12)))
-
-        res = mpim.stripfake(path_to_append=append)
-        newpath = os.environ["PATH"]
-        self.assertEqual(res, newpath.split(os.pathsep),
-                         msg=("stripfake returned string doesn't correspond to the current $PATH: "
-                              "res = %s and path = %s") % (res, newpath))
-        for p in append:
-            self.assertTrue(p in newpath,
-                            msg="old $PATH was %s, new $PATH is %s, path_to_append was %s" %
-                                (oldpath, newpath, p))
-
         self.assertFalse(("bin/%s" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath)
 
     def test_which(self):
-        pass
+        scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
+        for scriptname in scriptnames:
+            mpimwhich = mpim.which(scriptname) +"\n"
+            ec, unixwhich = run_simple("which " + scriptname)
+            self.assertEqual(mpimwhich, unixwhich)
 
     def test_options(self):
         """Bad options"""
