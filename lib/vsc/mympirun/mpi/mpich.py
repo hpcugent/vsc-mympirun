@@ -73,7 +73,7 @@ class MVAPICH2Hydra(MPI):
 class MVAPICH2(MVAPICH2Hydra):
     """
     MVAPICH2 from 1.6 has new style of starting (wrt 1.4)
-    - it uses the hydra interface and sligthly other mpdboot
+      - it uses the hydra interface and sligthly other mpdboot
     """
     _mpiscriptname_for = ['mmpirun']
     _mpirun_for = ['MVAPICH2']

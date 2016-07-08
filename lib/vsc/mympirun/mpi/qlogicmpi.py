@@ -62,11 +62,10 @@ class QLogicMPI(MPI):
     def get_pinning_override_variable(self):
         """
         QLogic MPI has no real fine control
-        - affinity is packed, no MP opts
-        - one has to calculate the map oneself and then calculate the affinity
-        -- variables
-        --- PSC_MPI_NODE_RANK, PSC_MPI_PPN, PSC_MPI_NP, PSC_MPI_RANK
-        -- then start the real exe with numactl or taskset
+          - affinity is packed, no MP opts
+          - one has to calculate the map oneself and then calculate the affinity
+            - variables: PSC_MPI_NODE_RANK, PSC_MPI_PPN, PSC_MPI_NP, PSC_MPI_RANK
+            - then start the real exe with numactl or taskset
         """
         return 'PSC_MPI_NODE_RANK'
 
@@ -103,9 +102,7 @@ class QLogicMPI(MPI):
         return [variables]
 
     def _make_final_mpirun_cmd(self):
-        """Create the acual mpirun command
-            add it to self.mpirun_cmd
-        """
+        """Create the acual mpirun command and add it to self.mpirun_cmd"""
         # mpirun opts
         if self.options.debuglvl > 0:
             self.mpirun_cmd.append('-V')

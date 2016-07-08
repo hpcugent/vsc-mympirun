@@ -36,8 +36,8 @@ from vsc.mympirun.mpi.mpi import MPI, which
 
 class IntelMPI(MPI):
     """TODO: support for tuning
-        - runtune: generate the tuning files
-        - tuneconf: pass the generated config files
+      - runtune: generate the tuning files
+      - tuneconf: pass the generated config files
     """
 
     _mpiscriptname_for = ['impirun']
@@ -94,7 +94,7 @@ class IntelMPI(MPI):
 
     def make_mpdboot_options(self):
         """Make the mpdboot options.
-            bulletproof customisation
+          - bulletproof customisation
         """
         super(IntelMPI, self).make_mpdboot_options()
 
@@ -108,7 +108,7 @@ class IntelMPI(MPI):
     def check_usable_cpus(self):
         """
         Check and act on fact of non-standard cpus (eg due to cpusets)
-        - default: do nothing more then log
+          - default: do nothing more then log
         """
         if not self.foundppn == len(self.cpus):
             # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
@@ -253,8 +253,7 @@ class IntelLegacy(IntelMPI):
     _mpirun_version = staticmethod(_mpirun_version)
 
     def maketunecmds(self):
-        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for the application
-        """
+        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for the application"""
         self.log.raiseException("Legacy code, information purposes only!")
         ans = []
 

@@ -177,11 +177,11 @@ class Sched(object):
         Determine which cpus on the node can be used
 
         are we running in a cpuset?
-        - and how big is it (nr of procs compared to local number of cores)
+          - and how big is it (nr of procs compared to local number of cores)
 
         stores local core ids in array
         # TODO fix remote cpusets
-        - what with remote ones?
+          - what with remote ones?
         """
         if self.foundppn is None:
             self._cores_on_this_node()

@@ -64,9 +64,10 @@ def whatMPI(name):
 
     @param name: The name of the executable used to run mympirun (sys.argv[0])
 
-    @return *name: The path to the executable used to run mympirun (should be the path to an mpirun implementation)
-    @return mpi: The corresponding python class of the MPI variant
-    @return supp_mpi_impl: The python classes of the supported MPI flavors (from the various .py files in mympirun/mpi)
+    @return: A triplet containing the following variables:
+      - The path to the executable used to run mympirun (should be the path to an mpirun implementation)
+      - The corresponding python class of the MPI variant
+      - The python classes of the supported MPI flavors (from the various .py files in mympirun/mpi)
     """
 
     scriptname = os.path.basename(os.path.abspath(name))
@@ -244,7 +245,7 @@ class MPI(object):
         @param cls: the class that calls this function
         @param mpirun_path: the path to the mpirun aka `which mpirun`
 
-        @return bool: true if $mpirun_path is defined as an mpirun implementation of $cls
+        @return: true if $mpirun_path is defined as an mpirun implementation of $cls
         """
 
         # regex matches "cls._mpirun_for/version number"
@@ -268,9 +269,9 @@ class MPI(object):
         check if this class provides support for scriptname
 
         @param cls: the class that calls this function
-        @param mpirun_path: the executable that called mympirun
+        @param scriptname: the executable that called mympirun
 
-        @return bool: true if $scriptname is defined as an mpiscriptname of $cls
+        @return: true if $scriptname is defined as an mpiscriptname of $cls
         """
 
         return scriptname in cls._mpiscriptname_for
@@ -576,7 +577,7 @@ class MPI(object):
 
         Raises Exception if no no localhost interface was found
 
-        @return res: the list of interfaces that correspond to the list of uniquenodes
+        @return: the list of interfaces that correspond to the list of uniquenodes
         """
         iface_prefix = ['eth', 'em', 'ib', 'wlan']
         reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
@@ -783,7 +784,7 @@ class MPI(object):
         iterates over mpiexec_global_options, and picks the options that aren't already in mpiexec_pass_environment
         this way the options that are set with environment variables get a higher priority
 
-        @returns global_options: the final list of options, including the correct command line argument for the mpi flavor
+        @return: the final list of options, including the correct command line argument for the mpi flavor
         """
         global_options = []
 
@@ -806,7 +807,7 @@ class MPI(object):
         iterates over mpiexec_local_options, and picks the options that aren't already in mpiexec_pass_environment
         this way the options that are set with environment variables get a higher priority
 
-        @returns local_options: the final list of options, including the correct command line argument for the mpi flavor
+        @return: the final list of options, including the correct command line argument for the mpi flavor
         """
         local_options = []
         for k, v in self.mpiexec_local_options.items():
@@ -878,34 +879,33 @@ class MPI(object):
     def pinning_override(self):
         """
         Create own pinning
-        - using taskset or numactl?
-        - start the real executable with correct pinning
+          - using taskset or numactl?
+          - start the real executable with correct pinning
 
         There are self.mpiprocesspernode number of processes to start on (self.nruniquenodes * self.ppn) requested slots
         Each node has to accept self.mpiprocesspernode/self.ppn processes over self.ppn number of cpu slots
 
         Do we assume heterogenous nodes (ie same cpu layout as current node?)
-        - yes
-        -- reality NO: different cpusets!
+          - We should but in reality we don't because of different cpusets!
 
         What do we support?
-         - packed/compact : all together, ranks close to each other
-         - spread: as far away as possible from each other
-         - explicit map: TODO
+          - packed/compact : all together, ranks close to each other
+          - spread: as far away as possible from each other
+          - explicit map: TODO
 
         Option:
-         - threaded (default yes): eg in hybrid, pin on all available cores or just one
+          - threaded (default yes): eg in hybrid, pin on all available cores or just one
 
         When in this mode, one needs to disable default/native pinning
 
         There seems no clean way to simply prefix the variables before the real exe
-        - some mpirun are binary, others are bash
-        -- no clean way to pass the variable
-        --- a simple bash script also resolves the csh problem?
+          - some mpirun are binary, others are bash
+            - no clean way to pass the variable
+              - a simple bash script also resolves the csh problem?
 
         Simple shell check. This is the login shell of the current user
-        - not necessarily the current shell
-        -- but it is when multinode is used i think (eg startup with ssh)
+          - not necessarily the current shell
+            - but it is when multinode is used i think (eg startup with ssh)
         """
         variableexpression = self.get_pinning_override_variable()
         if variableexpression is None:
@@ -1000,25 +1000,20 @@ class MPI(object):
     def get_pinning_override_variable(self):
         """
         Key element is that one needs to know the rank or something similar of each process
-        - preferably in environment
-        -- eg QLogic PSC_MPI_NODE_RANK: this instance is the nth local rank.
-        - alternative is small c mpi program with bash wrapper
-
-        -- see also likwid-mpirun for alternative example
-        --- mentions similar OMPI_COMM_WORLD_RANK for OpenMPI and PMI_RANK for IntelMPI
-        ---- local_rank is remainder of myrank diveded by number of nodes?
+          - preferably in environment
+            - eg QLogic PSC_MPI_NODE_RANK: this instance is the nth local rank.
+          - alternative is small c mpi program with bash wrapper
+            - see also likwid-mpirun for alternative example
+              - mentions similar OMPI_COMM_WORLD_RANK for OpenMPI and PMI_RANK for IntelMPI
+                - local_rank is remainder of myrank diveded by number of nodes?
 
         This is a bash expression.
-        - eg $((x/y)) is also fine
+          - eg $((x/y)) is also fine
         """
         self.log.raiseException("get_pinning_override_variable: not implemented.")
 
     def mpirun_prepare_execution(self):
-        """
-        Make a list of tuples to start the actual mpirun command
-            list of tuples
-                (run_function_to_run, cmd)
-        """
+        """Make a list of tuples to start the actual mpirun command"""
         def main_runfunc(cmd):
             if self.options.output is not None:
                 return run_to_file(cmd, filename=self.options.output)
