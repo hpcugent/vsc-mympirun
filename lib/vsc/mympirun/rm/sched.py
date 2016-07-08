@@ -189,7 +189,7 @@ class Sched(object):
         try:
             cs = sched_getaffinity()  # get affinity for current proc
             self.cpus = [idx for idx, cpu in enumerate(cs.cpus) if cpu == 1]
-        except :
+        except Exception:
             self.cpus = range(self.foundppn)
 
         self.log.debug("which_cpus: using cpus %s" % (self.cpus))
