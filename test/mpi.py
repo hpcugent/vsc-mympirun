@@ -158,6 +158,29 @@ class TestMPI(unittest.TestCase):
         self.assertTrue(mpi_instance.mympirundir and mpi_instance.mympirundir is not None)
         self.assertTrue(os.path.isdir(mpi_instance.mympirundir))
 
+    def test_make_mpdboot(self):
+        m = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, m)
+        mpi_instance.make_mpdboot()
+        self.assertTrue(os.path.exists(os.path.expanduser('~/.mpd.conf')))
+
+    def test_mpdboot_set_localhost_interface(self):
+        m = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, m)
+        mpi_instance.mpdboot_set_localhost_interface()
+        self.assertTrue(mpi_instance.mpdboot_localhost_interface and mpi_instance.mpdboot_localhost_interface is not None)
+
+    def test_get_localhosts(self):
+        m = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, m)
+        res = mpi_instance.get_localhosts()
+        _, out = run_simple("/sbin/ip -4 -o addr show")
+        for (nodename,interface) in res:
+            self.assertTrue(isinstance(nodename, basestring))
+            self.assertTrue(isinstance(interface, basestring))
+            self.assertTrue(nodename in mpi_instance.uniquenodes)
+            self.assertTrue(interface in out)
+
     def test_MPI_local(self):
         """Test the MPI class with the local scheduler"""
         # options
