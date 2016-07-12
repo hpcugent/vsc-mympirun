@@ -30,16 +30,16 @@ Tests for the vsc.utils.missing module.
 import os
 import stat
 import unittest
-from random import choice
-from string import ascii_uppercase
+import re
+import string
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.run import run_simple
 from vsc.mympirun.rm.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
-import vsc.mympirun.mpi.intelmpi as intelmpi
-import vsc.mympirun.mpi.openmpi as openmpi
-import vsc.mympirun.mpi.mpich as mpich
+from vsc.mympirun.mpi.openmpi import OpenMPI
+from vsc.mympirun.mpi.intelmpi import IntelMPI
+from vsc.mympirun.mpi.mpich import MPICH2
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
 
@@ -105,36 +105,31 @@ class TestMPI(unittest.TestCase):
 
         # for opt in m.args:
         #    self.assertFalse(opt in mpi_instance.options)
-        _testlogger.debug("11 HALLO")
 
     def test_is_mpirun_for(self):
-        _testlogger.debug("21 HALLO %s" , "HALLO")
         m = MympirunOption()
-        _testlogger.debug("22 HALLO")
-        ompi_instance = getinstance(openmpi.OpenMPI, Local, m)
-        _testlogger.debug("23 HALLO")
-        asdf = ompi_instance._mpiscriptname_for[0]
-        _testlogger.debug("IS MPIRUN FOR ASDf %s:", asdf)
-        path = mpim.which(asdf)
-        _testlogger.debug("IS MPIRUN FOR PATH %s:", path)
-        res = ompi_instance._is_mpirun_for(path)
-        _testlogger.debug("IS MPIRUN FOR RES %s:", res)
+        implementations = [ OpenMPI, IntelMPI,MPICH2 ]
+        for implementation in implementations:
+            instance = getinstance(implementation, Local, m)
+            # only works with modules
+            # self.assertTrue(instance._is_mpirun_for(mpim.which(instance._mpiscriptname_for[0])), msg="")
 
     def test_set_omp_threads(self):
-        _testlogger.debug("31 HALLO")
         m = MympirunOption()
-        _testlogger.debug("32 HALLO")
         mpi_instance = getinstance(mpim.MPI, Local, m)
-        _testlogger.debug("33 HALLO")
         mpi_instance.set_omp_threads()
-        _testlogger.debug("34 HALLO")
         self.assertTrue(getattr(mpi_instance.options, 'ompthreads', None) is not None)
         self.assertEqual(os.environ["OMP_NUM_THREADS"],getattr(mpi_instance.options, 'ompthreads', None))
 
-#    def test_is_mpirun_for(self):
-#        m = MympirunOption()
-#        mpi_instance = getinstance(mpim.MPI, Local, m)
-#        mpi_instance.set_netmask()
+    def test_set_netmask(self):
+        m = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, m)
+        mpi_instance.set_netmask()
+        _testlogger.debug("netmask %s", mpi_instance.netmask)
+        # matches "IP address / netmask"
+        reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+        for substr in string.split(mpi_instance.netmask,sep=":"):
+            self.assertTrue(reg.match(substr))
 
     def test_MPI_local(self):
         """Test the MPI class with the local scheduler"""

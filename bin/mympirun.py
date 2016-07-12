@@ -109,8 +109,8 @@ def get_mpi_and_sched_and_options():
              "the mpirun command can be found. Found MPI %s") %
             (scriptname, isfake, ", ".join(found_mpi_names)))
     else:
-        mo.log.debug("Found MPI class %s (scriptname %s; isfake %s)" %
-                     (mpi.__name__, scriptname, isfake))
+        mo.log.debug("Found MPI class %s (scriptname %s; isfake %s), picked from %s" %
+                     (mpi.__name__, scriptname, isfake, map(lambda x: x.__name__,found_mpi)))
 
     if sched is None:
         mo.log.raiseException(

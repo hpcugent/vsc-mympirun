@@ -252,7 +252,7 @@ class MPI(object):
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
                          ("|".join(cls._mpirun_for), os.sep))
         reg_match = reg.search(mpirun_path)
-        _logger.debug("_is_mpisrun_for(), reg_match: %s", reg_match)
+        _logger.debug("_is_mpirun_for(), reg_match: %s", reg_match)
 
         if reg_match:
             if cls._mpirun_version is None:
