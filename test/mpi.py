@@ -125,11 +125,38 @@ class TestMPI(unittest.TestCase):
         m = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, m)
         mpi_instance.set_netmask()
-        _testlogger.debug("netmask %s", mpi_instance.netmask)
         # matches "IP address / netmask"
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
         for substr in string.split(mpi_instance.netmask,sep=":"):
             self.assertTrue(reg.match(substr))
+
+    def test_select_device(self):
+        m = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, m)
+        mpi_instance.select_device()
+        self.assertTrue(mpi_instance.device and mpi_instance.device is not None)
+        self.assertTrue(mpi_instance.device in mpi_instance.DEVICE_MPIDEVICE_MAP.values())
+        self.assertTrue(mpi_instance.netmasktype and mpi_instance.netmasktype is not None)
+        self.assertTrue(mpi_instance.netmasktype in mpi_instance.NETMASK_TYPE_MAP.values())
+
+    def test_make_node_file(self):
+        m = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, m)
+        mpi_instance.make_node_file()
+        self.assertTrue(os.path.isfile(mpi_instance.mpiexec_node_filename))
+
+        # test is amount of lines in nodefile matches amount of nodes
+        with open(mpi_instance.mpiexec_node_filename) as f:
+            for i, l in enumerate(f):
+                pass
+            self.assertEqual(len(mpi_instance.mpinodes),i+1)
+
+    def test_make_mympirundir(self):
+        m = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, m)
+        mpi_instance.make_mympirundir()
+        self.assertTrue(mpi_instance.mympirundir and mpi_instance.mympirundir is not None)
+        self.assertTrue(os.path.isdir(mpi_instance.mympirundir))
 
     def test_MPI_local(self):
         """Test the MPI class with the local scheduler"""
