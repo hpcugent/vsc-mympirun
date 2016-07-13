@@ -24,17 +24,22 @@
 #
 """
 Intel MPI specific class
+
+Documentation can be found at https://software.intel.com/en-us/node/528769
 """
+import os
+import re
 
 from distutils.version import LooseVersion
-from vsc.mympirun.mpi.mpi import MPI, which
-import os, re
 import socket
+import tempfile
+
+from vsc.mympirun.mpi.mpi import MPI, which
 
 class IntelMPI(MPI):
     """TODO: support for tuning
-        - runtune: generate the tuning files
-        - tuneconf: pass the generated config files
+      - runtune: generate the tuning files
+      - tuneconf: pass the generated config files
     """
 
     _mpiscriptname_for = ['impirun']
@@ -91,7 +96,7 @@ class IntelMPI(MPI):
 
     def make_mpdboot_options(self):
         """Make the mpdboot options.
-            bulletproof customisation
+          - bulletproof customisation
         """
         super(IntelMPI, self).make_mpdboot_options()
 
@@ -105,7 +110,7 @@ class IntelMPI(MPI):
     def check_usable_cpus(self):
         """
         Check and act on fact of non-standard cpus (eg due to cpusets)
-        - default: do nothing more then log
+          - default: do nothing more then log
         """
         if not self.foundppn == len(self.cpus):
             # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
@@ -119,7 +124,7 @@ class IntelMPI(MPI):
             else:
                 txt = ",".join(["%d" % x for x in self.cpus])
                 self.mpiexec_global_options['I_MPI_PIN_PROCESSOR_LIST'] = txt
-                self._setenv('I_MPI_PIN_PROCESSOR_LIST', txt)
+                os.environ['I_MPI_PIN_PROCESSOR_LIST'] = txt
                 self.log.info(("check_usable_cpus: one node requested. "
                                "Setting I_MPI_PIN_PROCESSOR_LIST to %s") % txt)
 
@@ -128,8 +133,9 @@ class IntelMPI(MPI):
         super(IntelMPI, self).mpiexec_set_global_options()
 
         # this one also needs to be set at runtime
-        self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = "/tmp"
-        self._setenv('I_MPI_MPD_TMPDIR', "/tmp")
+        self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
+        os.environ['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
+        self.log.debug("Set intel temp dir: %s", os.environ['I_MPI_MPD_TMPDIR'])
 
         if self.options.debuglvl > 0:
             self.mpiexec_global_options['I_MPI_DEBUG'] = "+%s" % self.options.debuglvl
@@ -190,9 +196,9 @@ class IntelMPI(MPI):
 
     def mpirun_prepare_execution(self):
         """Small change"""
-        # intel mpi mpirun strips the --file otion for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
+        # intel mpi mpirun strips the --file option for mpdboot if it detects PBS_ENVIRONMENT to some fixed value
         # - we don't want that
-        self._setenv('PBS_ENVIRONMENT', 'PBS_BATCH_MPI')
+        os.environ['PBS_ENVIRONMENT'] = 'PBS_BATCH_MPI'
 
         return super(IntelMPI, self).mpirun_prepare_execution()
 
@@ -217,7 +223,7 @@ class IntelHydraMPI(IntelMPI):
 
     def make_mpiexec_hydra_options(self):
         super(IntelMPI, self).make_mpiexec_hydra_options()
-        self.mpiexec_options.append("-perhost %d" % self.mpitotalppn)
+        self.mpiexec_options.append("-perhost %d" % self.mpiprocesspernode)
 
 
     def mpiexec_set_global_options(self):
@@ -227,17 +233,17 @@ class IntelHydraMPI(IntelMPI):
 
         if 'I_MPI_DEVICE' in self.mpiexec_global_options:
             del self.mpiexec_global_options['I_MPI_DEVICE']
-        if not 'I_MPI_FABRICS' in self.mpiexec_global_options:
+        if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.mpitotalppn * self.nruniquenodes) > 64
+        scalable_progress = (self.mpiprocesspernode * self.nruniquenodes) > 64
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero(scalable_progress)
 
         if self.options.impi_daplud:
             if self.options.impi_xrc:
                 self.log.warning('Ignoring XRC setting when also requesting UD')
             self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enable_disable(self.options.impi_daplud)
-            if not 'I_MPI_DAPL_UD_PROVIDER' in os.environ:
+            if 'I_MPI_DAPL_UD_PROVIDER' not in os.environ:
                 self.mpiexec_global_options['I_MPI_DAPL_UD_PROVIDER'] = 'ofa-v2-mlx4_0-1u'
         elif self.options.impi_xrc:
             # force it
@@ -250,8 +256,7 @@ class IntelLegacy(IntelMPI):
     _mpirun_version = staticmethod(_mpirun_version)
 
     def maketunecmds(self):
-        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for the application
-        """
+        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for the application"""
         self.log.raiseException("Legacy code, information purposes only!")
         ans = []
 

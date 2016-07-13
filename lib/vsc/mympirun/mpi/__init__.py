@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2016 Ghent University
+# Copyright 2009-2016 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,5 +25,20 @@
 """
 Allow other packages to extend this namespace, zip safe setuptools style
 """
+import inspect
+import pkgutil
 import pkg_resources
 pkg_resources.declare_namespace(__name__)
+
+# import all modules in this dir
+__all__ = []
+
+for loader, name, is_pkg in pkgutil.walk_packages(__path__):
+    module = loader.find_module(name).load_module(name)
+
+    for name, value in inspect.getmembers(module):
+        if name.startswith('__'):
+            continue
+
+        globals()[name] = value
+        __all__.append(name)

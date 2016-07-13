@@ -25,15 +25,12 @@
 """
 Local scheduler : no scheduler, act on single node
 """
-
 from vsc.mympirun.rm.sched import Sched
-import time
-import random
 
 class Local(Sched):
     """
     Local class for local debugging (ie no scheduler settings)
-    - will use the amount of cores found on localhost.
+      - will use the amount of cores found on localhost.
     """
     _sched_for = ['local']
     SCHED_ENVIRON_ID = 'LOCAL_JOBID'
@@ -43,7 +40,7 @@ class Local(Sched):
 
     def get_node_list(self):
         """Get the hostnames for the localnode
-            MPIRUN_LOCALHOSTNAME is from multiple inheritance with MPI class
+        MPIRUN_LOCALHOSTNAME is from multiple inheritance with MPI class
         """
 
         localhostname = getattr(self, 'MPIRUN_LOCALHOSTNAME', 'localhost')

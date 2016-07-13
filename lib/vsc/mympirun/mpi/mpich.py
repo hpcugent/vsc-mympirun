@@ -24,7 +24,10 @@
 #
 """
 MPICH specific classes
+
+Documentation can be found at https://www.mpich.org/documentation/guides/
 """
+import os
 
 from distutils.version import LooseVersion
 
@@ -42,16 +45,17 @@ class MVAPICH2Hydra(MPI):
 
     PASS_VARIABLES_CLASS_PREFIX = ['MV2', 'HYDRA']
 
-    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-envlist %(commaseparated)s"
+    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-x %(name)s=%(value)s"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "-x %(name)s=%(value)s"
 
     def prepare(self):
         super(MVAPICH2Hydra, self).prepare()
 
         if self.options.pinmpi:
-            self._setenv('MV2_ENABLE_AFFINITY', 1)
-            self._setenv('MV2_CPU_BINDING_POLICY', 'bunch')
+            os.environ['MV2_ENABLE_AFFINITY'] = "1"
+            os.environ['MV2_CPU_BINDING_POLICY'] = 'bunch'
         else:
-            self._setenv('MV2_ENABLE_AFFINITY', 0)
+            os.environ['MV2_ENABLE_AFFINITY'] = "0"
 
     def mpiexec_set_global_options(self):
         """Set mpiexec global options"""
@@ -71,7 +75,7 @@ class MVAPICH2Hydra(MPI):
 class MVAPICH2(MVAPICH2Hydra):
     """
     MVAPICH2 from 1.6 has new style of starting (wrt 1.4)
-    - it uses the hydra interface and sligthly other mpdboot
+      - it uses the hydra interface and sligthly other mpdboot
     """
     _mpiscriptname_for = ['mmpirun']
     _mpirun_for = ['MVAPICH2']

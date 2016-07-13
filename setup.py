@@ -46,6 +46,7 @@ PACKAGE = {
         'vsc-install >= 0.10.9', # for modified subclassing
         'IPy',
     ],
+    'tests_require': ['mpi4py'],
     'version': '3.4.4',
     'author': [sdw],
     'maintainer': [sdw],

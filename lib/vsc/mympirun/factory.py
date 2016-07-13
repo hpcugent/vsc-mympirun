@@ -39,8 +39,10 @@ def getinstance(mpi, sched, options):
 
     @param mpi: a class subclassing from MPI (e.g. retunred by whatMPI)
     @param sched: a class subclassing from sched (e.g. returned by whatSched)
-    @param mo: an instance of MympirunOption
+    @param options: an instance of MympirunOption
     """
+    _logger.info("getinstance(%s, %s, %s)", mpi, sched, options)
+
     class M(mpi, sched):
         """Temporary class to couple MPI and local sched"""
         def __init__(self, **kwargs):
