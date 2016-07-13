@@ -29,7 +29,6 @@ Base MPI class, all actual classes should inherit from this one
 @author: Jeroen De Clerck
 """
 
-import inspect
 import os
 import random
 import re
@@ -39,14 +38,13 @@ import socket
 import stat
 import string
 import subprocess
-import sys
 import time
 
 from IPy import IP
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
+from vsc.utils.run import run_simple, run_to_file, run_async_to_stdout
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'

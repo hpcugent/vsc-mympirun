@@ -32,7 +32,7 @@ import stat
 from unittest import TestCase
 
 
-from vsc.mympirun.rm.factory import getinstance
+from vsc.mympirun.factory import getinstance
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption

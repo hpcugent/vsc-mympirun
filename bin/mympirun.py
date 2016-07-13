@@ -39,15 +39,13 @@ TODO:
 @author: Jeroen De Clerck
 """
 
-import glob
-import inspect
 import os
 import sys
 import traceback
 
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.option import MympirunOption
-from vsc.mympirun.rm.factory import getinstance
+from vsc.mympirun.factory import getinstance
 import vsc.mympirun.rm.sched as schedm
 from vsc.utils import fancylogger
 

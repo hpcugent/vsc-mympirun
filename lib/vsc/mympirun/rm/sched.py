@@ -25,18 +25,14 @@
 """
 Main sched class
 """
-
-
-import glob
 import os
 import time
 import random
 import re
 
-from vsc.mympirun.mpi.mpi import get_subclasses
 from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.fancylogger import getLogger
-from vsc.utils.missing import nub
+from vsc.utils.missing import get_subclasses, nub
 
 
 def whatSched(requested):
