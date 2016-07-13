@@ -61,10 +61,6 @@ def get_mpi_and_sched_and_options():
     @return: A triplet containing the chosen mpi flavor, chosen scheduler and the MympirunOption class.
     """
 
-    # import the various MPI flavours and Schedulers
-    import_implementations(mpim)
-    import_implementations(schedm)
-
     scriptname = os.path.basename(os.path.abspath(sys.argv[0]))
     isfake = scriptname == 'mpirun'
 
@@ -76,7 +72,7 @@ def get_mpi_and_sched_and_options():
     # We are using sys.argv because generaloption depends on the the returned
     # scriptname
     setmpi = mo.options.setmpi if mo.options.setmpi else sys.argv[0]
-    _logger.debug("mympirun.py - setmpi: %s" % setmpi)
+    _logger.debug("User chose MPI flavor: %s" % setmpi)
     scriptname, mpi, found_mpi = mpim.whatMPI(setmpi)
 
     if mo.args is None or len(mo.args) == 0:
@@ -92,13 +88,13 @@ def get_mpi_and_sched_and_options():
 
     if mo.options.showmpi:
         fancylogger.setLogLevelInfo()
-        _logger.info("mympirun.py - Found MPI classes %s" %
+        _logger.info("Found MPI classes %s" %
             (", ".join(found_mpi_names)))
         sys.exit(0)
 
     if mo.options.showsched:
         fancylogger.setLogLevelInfo()
-        _logger.info("mympirun.py - Found Sched classes %s" %
+        _logger.info("Found Sched classes %s" %
             (", ".join(found_sched_names)))
         sys.exit(0)
 
@@ -125,42 +121,13 @@ def get_mpi_and_sched_and_options():
 
     return mpi, sched, mo
 
-
-def import_implementations(module):
-    """
-    searches and imports python files in the some folder as a module
-
-    @param module: The module
-    """
-
-
-    # get the paths of all the python files in the module folder
-    modulepaths = glob.glob(os.path.dirname(module.__file__) + "/*.py")
-
-    # parse the module namespace
-    namespace = ".".join(module.__name__.split('.')[:-1])
-
-    # transform the paths to module names while discarding __init__.py
-    modulenames = [namespace + "." + os.path.basename(os.path.splitext(f)[0])
-                   for f in modulepaths if os.path.isfile(f) and
-                   "__init__" not in f]
-
-    _logger.debug("namespace: %s", namespace)
-
-    # import the modules
-    map(__import__, modulenames)
-    _logger.debug("mympirun.py - imported modules: %s", modulenames)
-
-    return
-
-
 def main():
     """Main function"""
     try:
         m = getinstance(*get_mpi_and_sched_and_options())
         m.main()
     except Exception:
-        _logger.exception("mympirun.py - Main failed; Trace: \n %s", traceback.format_exc())
+        _logger.exception("Main failed; Trace: \n %s", traceback.format_exc())
         sys.exit(1)
 
 

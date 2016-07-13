@@ -133,6 +133,7 @@ class IntelMPI(MPI):
         # this one also needs to be set at runtime
         self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
         os.environ['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
+        self.log.debug("Set intel temp dir: %s", os.environ['I_MPI_MPD_TMPDIR'])
 
         if self.options.debuglvl > 0:
             self.mpiexec_global_options['I_MPI_DEBUG'] = "+%s" % self.options.debuglvl

@@ -46,8 +46,7 @@ from IPy import IP
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import (run_simple, run_simple_noworries,
-                           run_to_file, run_async_to_stdout)
+from vsc.utils.run import run_simple, run_simple_noworries, run_to_file, run_async_to_stdout
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -71,7 +70,7 @@ def whatMPI(name):
     """
 
     scriptname = os.path.basename(os.path.abspath(name))
-    supp_mpi_impl = get_subclasses(MPI)  # support MPI implementations
+    supp_mpi_impl = get_subclasses(MPI)  # support MPI implementations, these were imported in __init__.py
 
     stripfake()
 
