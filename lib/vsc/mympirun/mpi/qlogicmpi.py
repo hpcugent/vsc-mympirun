@@ -24,6 +24,8 @@
 #
 """
 QLogicMPI specific class
+
+Documentation can be found at filedownloads.qlogic.com/files/manual/68842/IB6054601-00G.pdf
 """
 
 from vsc.mympirun.mpi.mpi import MPI

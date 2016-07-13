@@ -24,6 +24,8 @@
 #
 """
 OpenMPI specific classes
+
+Documentation can be found at https://www.open-mpi.org/doc/
 """
 
 from vsc.mympirun.mpi.mpi import MPI

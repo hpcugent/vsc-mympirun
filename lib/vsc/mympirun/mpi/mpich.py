@@ -24,6 +24,8 @@
 #
 """
 MPICH specific classes
+
+Documentation can be found at https://www.mpich.org/documentation/guides/
 """
 import os
 

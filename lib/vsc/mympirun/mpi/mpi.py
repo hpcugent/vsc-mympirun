@@ -536,7 +536,6 @@ class MPI(object):
         """Make the mpdboot configuration
 
         Read a password from ~/.mpd.conf (if this does not exist, create it.)
-
         """
         # check .mpd.conf existence
         mpdconffn = os.path.expanduser('~/.mpd.conf')
