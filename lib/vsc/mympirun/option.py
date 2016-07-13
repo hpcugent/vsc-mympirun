@@ -28,6 +28,7 @@ Optionparser for mympirun
 
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
+from vsc.utils.missing import get_subclasses, nub
 
 # introduce usage / -u option. (original has -h for --hybrid)
 # TODO: generate real message with possible alias + mention all supported versions
@@ -144,11 +145,13 @@ class MympirunOption(GeneralOption):
         self.add_group_parser(opts, descr, prefix=prefix)
 
         # for all MPI classes, get the additional options
-        for mpi in MPI.__subclasses__():
-            if not mpi.RUNTIMEOPTION is None:
+        parsed_prefixes = []
+        for mpi in nub(get_subclasses(MPI)):
+            if mpi.RUNTIMEOPTION is not None and mpi.RUNTIMEOPTION['prefix'] not in parsed_prefixes:
                 opts = mpi.RUNTIMEOPTION['options']
                 descr = mpi.RUNTIMEOPTION['description']
                 prefix = mpi.RUNTIMEOPTION['prefix']
+                parsed_prefixes.append(mpi.RUNTIMEOPTION['prefix'])
                 self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s" %
                                (mpi.__name__, prefix, descr, opts))
                 self.add_group_parser(opts, descr, prefix=prefix)

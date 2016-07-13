@@ -35,7 +35,7 @@ import string
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.run import run_simple
-from vsc.mympirun.rm.factory import getinstance
+from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.mpi.openmpi import OpenMPI
 from vsc.mympirun.mpi.intelmpi import IntelMPI
@@ -66,7 +66,7 @@ class TestMPI(unittest.TestCase):
                     self.assertTrue(mpi in found)
                     self.assertTrue(returned_scriptname == scriptname)
                 else:
-                    self.assertEqual(returned_scriptname, "mpirun", "")
+                    self.assertTrue(returned_scriptname.endswith("mpirun"))
 
     def test_stripfake(self):
         """Test if stripfake actually removes the /bin/fake path in $PATH"""
