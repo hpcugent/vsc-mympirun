@@ -124,6 +124,7 @@ class TestMPI(unittest.TestCase):
     def test_set_netmask(self):
         m = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, m)
+        m.log.debug("mpi instance: %s", mpi_instance)
         mpi_instance.set_netmask()
         # matches "IP address / netmask"
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
@@ -133,6 +134,7 @@ class TestMPI(unittest.TestCase):
     def test_select_device(self):
         m = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, m)
+        m.log.debug("mpi instance: %s", mpi_instance)
         mpi_instance.select_device()
         self.assertTrue(mpi_instance.device and mpi_instance.device is not None)
         self.assertTrue(mpi_instance.device in mpi_instance.DEVICE_MPIDEVICE_MAP.values())
