@@ -74,6 +74,15 @@ def get_mpi_and_sched_and_options():
         mo.log.info("Found MPI classes %s", ", ".join(found_mpi_names))
         return
 
+    # Select a Scheduler from the available schedulers
+    sched, found_sched = schedm.whatSched(getattr(mo.options, 'setsched', None))
+    found_sched_names = [x.__name__ for x in found_sched]
+
+    if mo.options.showsched:
+        fancylogger.setLogLevelInfo()
+        mo.log.info("Found Sched classes %s", ", ".join(found_sched_names))
+        return
+
     if mpi is None:
         mo.log.raiseException(
             ("No MPI class found that supports scriptname %s; isfake %s). "
@@ -83,15 +92,6 @@ def get_mpi_and_sched_and_options():
     else:
         mo.log.debug("Found MPI class %s (scriptname %s; isfake %s)" %
                      (mpi.__name__, scriptname, isfake))
-
-    # Select a Scheduler from the available schedulers
-    sched, found_sched = schedm.whatSched(getattr(mo.options, 'setsched', None))
-    found_sched_names = [x.__name__ for x in found_sched]
-
-    if mo.options.showsched:
-        fancylogger.setLogLevelInfo()
-        mo.log.info("Found Sched classes %s", ", ".join(found_sched_names))
-        return
 
     if sched is None:
         mo.log.raiseException(
