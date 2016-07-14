@@ -30,6 +30,7 @@ Base MPI class, all actual classes should inherit from this one
 """
 
 import os
+import pkgutil
 import random
 import re
 import resource
@@ -67,7 +68,10 @@ def whatMPI(name):
       - The python classes of the supported MPI flavors (from the various .py files in mympirun/mpi)
     """
 
-    scriptname = os.path.basename(os.path.abspath(name))
+    # import all modules in this dir: http://stackoverflow.com/a/16853487
+    for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
+        module = loader.find_module(modulename).load_module(modulename)
+
     supp_mpi_impl = get_subclasses(MPI)  # supported MPI implementations, these were imported in __init__.py
 
     # remove fake mpirun from $PATH
@@ -79,6 +83,8 @@ def whatMPI(name):
         # no MPI implementation installed
         _logger.warn("no mpirun command found")
         return None, None, supp_mpi_impl
+
+    scriptname = os.path.basename(os.path.abspath(name))
 
     # check if mympirun was called by a known mpirun alias (like
     # ompirun for OpenMPI or mhmpirun for mpich)

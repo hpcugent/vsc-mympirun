@@ -31,6 +31,7 @@ from vsc.utils.generaloption import GeneralOption
 
 # introduce usage / -u option. (original has -h for --hybrid)
 
+
 class MympirunParser(GeneralOption.PARSER):
 
     """Simple class to implement other help messages"""
@@ -53,7 +54,7 @@ class MympirunOption(GeneralOption):
 
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
-            #long option: (description, type, action, default, short option)
+            # long option: (description, type, action, default, short option)
             "showmpi": ("Print the known MPI classes and exit", None,
                         "store_true", False, 'm'),
 
@@ -77,20 +78,20 @@ class MympirunOption(GeneralOption):
             "stats": ("Set MPI statistics level", "int", "store", 0),
 
             "hybrid": (("Run in hybrid mode, specify number of processes "
-                       "per node."), "int", "store", None, 'h'),
+                        "per node."), "int", "store", None, 'h'),
 
             "double": (("Run double the amount of processes (eg for GAMESS; "
-                       "to change multiplier, use --hybrid)"), None,
+                        "to change multiplier, use --hybrid)"), None,
                        "store_true", False),
 
             "output": (("filename to write stdout/stderr directly to (instead "
-                       "of stdout)"), "str", "store", None),
+                        "of stdout)"), "str", "store", None),
 
             "ssh": (("Force ssh for mpd startup (will try to use optimised "
-                    " method by default)"), None, "store_false", True),
+                     " method by default)"), None, "store_false", True),
 
             "order": (("Reorder the generated nodelist (default: normal. "
-                      "supports: sort, random[_<seed>])"), "str", "store",
+                       "supports: sort, random[_<seed>])"), "str", "store",
                       None),
 
             "basepath": ("Directory (preferably shared) to use for temporary "
@@ -106,25 +107,25 @@ class MympirunOption(GeneralOption):
             "socket": ("Force socket device", None, "store_true", None),
 
             "universe": (("Start only this number of processes instead of all "
-                         "(e.g. for MPI_Spawn) Total size of the universe is "
-                         "all requested processes.)"), "int", "store", None),
+                          "(e.g. for MPI_Spawn) Total size of the universe is "
+                          "all requested processes.)"), "int", "store", None),
 
             "overridepin": (("Let mympriun set the affinity (default: "
-                            "disabled, left over to MPI implementation). "
-                            "Supported types: 'compact','spread','cycle' "
-                            "(add 'pin' postfix for single core pinning, "
-                            "e.g. 'cyclepin')."), "str", "store", None),
+                             "disabled, left over to MPI implementation). "
+                             "Supported types: 'compact','spread','cycle' "
+                             "(add 'pin' postfix for single core pinning, "
+                             "e.g. 'cyclepin')."), "str", "store", None),
 
             "variablesprefix": (("Comma-separated list of exact names or "
-                                "prefixes to match environment variables "
-                                "(<prefix>_ should match) to pass through."),
+                                 "prefixes to match environment variables "
+                                 "(<prefix>_ should match) to pass through."),
                                 "string", "extend", []),
 
             "noenvmodules": ("Don't pass the environment modules variables",
                              None, "store_true", False),
 
             "mpirunoptions": (("String with options to pass to mpirun (will be "
-                              "appended to generate command)"), "str", "store",
+                               "appended to generate command)"), "str", "store",
                               None),
 
             'branchcount': ("Set the hydra branchcount", "int", "store", None),
@@ -138,7 +139,7 @@ class MympirunOption(GeneralOption):
         prefix = ''
         self.log.debug(("Add mympirun advanced option parser: "
                         "options %s, description %s, prefix %s") %
-                        (opts, descr, prefix))
+                       (opts, descr, prefix))
         self.add_group_parser(opts, descr, prefix=prefix)
 
         # for all MPI classes, get the additional options

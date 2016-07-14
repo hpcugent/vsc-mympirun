@@ -33,21 +33,20 @@ import os
 
 
 class QLogicMPI(MPI):
-    """
-    """
+
     _mpiscriptname_for = ['qmpirun']
     _mpirun_for = ['QLogicMPI']
 
-    RUNTIMEOPTION = {'options':{'quiescencecheck':(("Set level of quiescence checking (default 1) [0=No ; "
-                                                    "1=Some checking; 2: All supported checking]"), "int", "store", 1)
-                                },
-                     'prefix':'qlogicmpi',
+    RUNTIMEOPTION = {'options': {'quiescencecheck': (("Set level of quiescence checking (default 1) [0=No ; "
+                                                      "1=Some checking; 2: All supported checking]"), "int", "store", 1)
+                                 },
+                     'prefix': 'qlogicmpi',
                      'description': ('QLogicMPI options', 'Advanced options specific for QLogicMPI'),
                      }
 
-    MPIEXEC_QUIESCENCECHECK_MAP = {0:'-q 0',
-                                   1:'-disable-mpi-progress-check',
-                                   2:''}
+    MPIEXEC_QUIESCENCECHECK_MAP = {0: '-q 0',
+                                   1: '-disable-mpi-progress-check',
+                                   2: ''}
 
     MPIEXEC_TEMPLATE_GLOBAL_OPTION = "export %(name)s='%(value)s'"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "export %(name)s='%(value)s'"

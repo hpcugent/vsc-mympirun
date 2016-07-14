@@ -24,15 +24,6 @@
 #
 """
 Allow other packages to extend this namespace, zip safe setuptools style
-http://stackoverflow.com/a/16853487
 """
-import inspect
-import pkgutil
 import pkg_resources
 pkg_resources.declare_namespace(__name__)
-
-# import all modules in this dir
-__all__ = []
-
-for loader, name, is_pkg in pkgutil.walk_packages(__path__):
-    module = loader.find_module(name).load_module(name)

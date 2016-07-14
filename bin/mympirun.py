@@ -46,6 +46,7 @@ from vsc.mympirun.factory import getinstance
 import vsc.mympirun.rm.sched as schedm
 from vsc.utils import fancylogger
 
+
 def get_mpi_and_sched_and_options():
     """
     Selects mpi flavor and scheduler based on environment and arguments
@@ -97,18 +98,19 @@ def get_mpi_and_sched_and_options():
         mo.log.raiseException(
             ("No sched class found (options.setsched %s ; found Sched "
              "classes %s)") % (mo.options.setsched,
-             ", ".join(found_sched_names)))
+                               ", ".join(found_sched_names)))
     else:
         mo.log.debug(
             ("Found sched class %s from options.setsched %s (all Sched "
              "found %s)") % (sched.__name__, mo.options.setsched,
-             ", ".join(found_sched_names)))
+                             ", ".join(found_sched_names)))
 
     if mo.args is None or len(mo.args) == 0:
         mo.log.warn("no mpi script provided")
         return
 
     return mpi, sched, mo
+
 
 def main():
     """Main function"""
@@ -118,6 +120,7 @@ def main():
             m = getinstance(*instance_options)
             m.main()
     except Exception:
+        fancylogger.getLogger().exception("Main failed")
         sys.exit(1)
 
 

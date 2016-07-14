@@ -27,7 +27,9 @@ Local scheduler : no scheduler, act on single node
 """
 from vsc.mympirun.rm.sched import Sched
 
+
 class Local(Sched):
+
     """
     Local class for local debugging (ie no scheduler settings)
       - will use the amount of cores found on localhost.
@@ -48,4 +50,3 @@ class Local(Sched):
         self.nrnodes = len(self.nodes)  # same as len(self.cpus)
 
         self.log.debug("get_node_list: set %s nodes: %s" % (self.nrnodes, self.nodes))
-

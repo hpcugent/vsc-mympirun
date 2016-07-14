@@ -25,6 +25,7 @@
 """
 Main sched class
 """
+import pkgutil
 import os
 import time
 import random
@@ -37,6 +38,10 @@ from vsc.utils.missing import get_subclasses, nub
 
 def whatSched(requested):
     """Return the scheduler class"""
+
+    # import all modules in this dir: http://stackoverflow.com/a/16853487
+    for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
+        module = loader.find_module(modulename).load_module(modulename)
 
     found_sched = get_subclasses(Sched)
 
@@ -54,6 +59,7 @@ def whatSched(requested):
 
     # if there is no local scheduler, return None
     return None, found_sched
+
 
 class Sched(object):
 
@@ -156,7 +162,7 @@ class Sched(object):
                 else:
                     self.log.raiseException(
                         "get_id: failed to get id from environment variable %s"
-                         % self.SCHED_ENVIRON_ID)
+                        % self.SCHED_ENVIRON_ID)
 
     def _cores_on_this_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""

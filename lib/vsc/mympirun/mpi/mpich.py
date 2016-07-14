@@ -73,6 +73,7 @@ class MVAPICH2Hydra(MPI):
 
 
 class MVAPICH2(MVAPICH2Hydra):
+
     """
     MVAPICH2 from 1.6 has new style of starting (wrt 1.4)
       - it uses the hydra interface and sligthly other mpdboot
@@ -85,7 +86,6 @@ class MVAPICH2(MVAPICH2Hydra):
     HYDRA = False
 
     PASS_VARIABLES_CLASS_PREFIX = ['MV2']
-
 
     def make_mpdboot_options(self):
         """Small fix"""
@@ -121,8 +121,9 @@ class MPICH2Hydra(MVAPICH2Hydra):
         # add pinning
         options = super(MPICH2Hydra, self).mpiexec_get_global_options()
         if self.options.pinmpi:
-            options.extend(['-binding', 'rr' , '-topolib' , 'hwloc'])
+            options.extend(['-binding', 'rr', '-topolib', 'hwloc'])
         return options
+
 
 class MPICH2(MVAPICH2):
     _mpiscriptname_for = ['m2mpirun']
@@ -136,5 +137,5 @@ class MPICH2(MVAPICH2):
         # add pinning
         options = super(MPICH2Hydra, self).mpiexec_get_global_options()
         if self.options.pinmpi:
-            options.extend(['-binding', 'rr' , '-topolib' , 'hwloc'])
+            options.extend(['-binding', 'rr', '-topolib', 'hwloc'])
         return options

@@ -29,7 +29,9 @@ Torque / PBS
 from vsc.mympirun.rm.sched import Sched
 import os
 
+
 class PBS(Sched):
+
     """Torque/PBS based"""
     _sched_for = ['pbs', 'torque']
     SCHED_ENVIRON_ID = 'PBS_JOBID'
@@ -47,16 +49,10 @@ class PBS(Sched):
             self.log.raiseException("get_node_list: failed to get %s from environment" % nodevar)
 
         try:
-            self.nodes = [ x.strip() for x in file(fn).read().split("\n") if len(x.strip()) > 0]
+            self.nodes = [x.strip() for x in file(fn).read().split("\n") if len(x.strip()) > 0]
             self.nrnodes = len(self.nodes)
             self.log.debug("get_node_list: found %s nodes in %s: %s" % (self.nrnodes, fn, self.nodes))
         except IOError:
             self.log.raiseException("get_node_list: failed to get nodes from nodefile %s" % fn)
 
         self.log.debug("get_node_list: set %s nodes: %s" % (self.nrnodes, self.nodes))
-
-
-
-
-
-
