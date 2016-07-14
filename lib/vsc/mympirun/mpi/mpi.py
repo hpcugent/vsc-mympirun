@@ -74,7 +74,7 @@ def whatMPI(name):
     stripfake()
 
     # get the path of the mpirun executable
-    mpirun_path = which(['mpirun'])
+    mpirun_path = which('mpirun')
     if mpirun_path is None:
         # no MPI implementation installed
         _logger.warn("no mpirun command found")
