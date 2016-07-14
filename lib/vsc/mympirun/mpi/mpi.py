@@ -70,7 +70,7 @@ def whatMPI(name):
 
     # import all modules in this dir: http://stackoverflow.com/a/16853487
     for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
-        module = loader.find_module(modulename).load_module(modulename)
+        loader.find_module(modulename).load_module(modulename)
 
     supp_mpi_impl = get_subclasses(MPI)  # supported MPI implementations, these were imported in __init__.py
 

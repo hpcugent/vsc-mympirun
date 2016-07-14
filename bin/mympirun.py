@@ -38,7 +38,6 @@ v4 cleanup 5/11/2013
 
 import os
 import sys
-import traceback
 
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.option import MympirunOption
