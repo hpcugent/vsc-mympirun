@@ -37,11 +37,12 @@ _logger = fancylogger.getLogger()
 def getinstance(mpi, sched, options):
     """Make an instance of the relevant MPI class. Also set the RM instance
 
-    @param mpi: a class subclassing from MPI (e.g. retunred by whatMPI)
+    @param mpi: a class subclassing from MPI (e.g. returned by whatMPI)
     @param sched: a class subclassing from sched (e.g. returned by whatSched)
     @param options: an instance of MympirunOption
+
+    @return: an instance that is a subclass of the selected MPI and Scheduler
     """
-    _logger.info("getinstance(%s, %s, %s)", mpi, sched, options)
 
     class M(mpi, sched):
         """Temporary class to couple MPI and local sched"""
