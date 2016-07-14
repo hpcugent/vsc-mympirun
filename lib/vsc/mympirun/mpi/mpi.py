@@ -59,7 +59,7 @@ def whatMPI(name):
     """
     Return the path of the selected mpirun and its class
 
-    @param name: The name of the executable used to run mympirun (sys.argv[0])
+    @param name: The name of the executable used to run mympirun
 
     @return: A triplet containing the following variables:
       - The path to the executable used to run mympirun (should be the path to an mpirun implementation)
@@ -68,16 +68,10 @@ def whatMPI(name):
     """
 
     scriptname = os.path.basename(os.path.abspath(name))
-    supp_mpi_impl = get_subclasses(MPI)  # support MPI implementations, these were imported in __init__.py
+    supp_mpi_impl = get_subclasses(MPI)  # supported MPI implementations, these were imported in __init__.py
 
+    # remove fake mpirun from $PATH
     stripfake()
-
-    # check if mympirun was called by a known mpirun alias (like
-    # ompirun for OpenMPI or mhmpirun for mpich)
-    for mpi in supp_mpi_impl:
-        if mpi._is_mpiscriptname_for(scriptname):
-            _logger.debug("mpi.py - %s was used to call mympirun", scriptname)
-            return scriptname, mpi, supp_mpi_impl
 
     # get the path of the mpirun executable
     mpirun_path = which(['mpirun'])
@@ -86,15 +80,22 @@ def whatMPI(name):
         _logger.warn("no mpirun command found")
         return None, None, supp_mpi_impl
 
+    # check if mympirun was called by a known mpirun alias (like
+    # ompirun for OpenMPI or mhmpirun for mpich)
+    for mpi in supp_mpi_impl:
+        if mpi._is_mpiscriptname_for(scriptname):
+            _logger.debug("%s was used to call mympirun", scriptname)
+            return scriptname, mpi, supp_mpi_impl
+
     # mympirun was not called through a known alias, so find out which MPI
-    # implimentation the user has installed
+    # implementation the user has installed
     for mpi in supp_mpi_impl:
         if mpi._is_mpirun_for(mpirun_path):
             return scriptname, mpi, supp_mpi_impl
 
-    # return found mpirun_path
-    _logger.warn("The executable that called mympirun isn't supported"
-                 ", defaulting to %s", mpirun_path)
+    # no specific flavor found, default to mpirun_path
+    _logger.warn("The executable that called mympirun (%s) isn't supported"
+                 ", defaulting to %s", name, mpirun_path)
     return mpirun_path, None, supp_mpi_impl
 
 
@@ -104,7 +105,7 @@ def stripfake():
     This function removes the fake path trickery from $PATH (assumes (VSC-tools|mympirun)/1.0.0/bin/fake)
     """
 
-    _logger.debug("mpi.py - PATH before stripfake(): %s", os.environ['PATH'])
+    _logger.debug("PATH before stripfake(): %s", os.environ['PATH'])
 
     # compile a regex that matches the faked mpirun
     reg_fakepath = re.compile(
@@ -123,7 +124,7 @@ def stripfake():
     # remove all $PATH elements that match the fakepath regex
     os.environ['PATH'] = os.pathsep.join([x for x in oldpath if not reg_fakepath.match(x)])
 
-    _logger.debug("mpi.py - PATH after stripfake(): %s", os.environ['PATH'])
+    _logger.debug("PATH after stripfake(): %s", os.environ['PATH'])
     return
 
 
@@ -273,9 +274,7 @@ class MPI(object):
 
         return scriptname in cls._mpiscriptname_for
 
-    #
     # other general functionality
-    #
     def _has_hydra(self):
         """Has HYDRA or not"""
         return self.HYDRA
@@ -887,7 +886,6 @@ class MPI(object):
         What do we support?
           - packed/compact : all together, ranks close to each other
           - spread: as far away as possible from each other
-          - explicit map: TODO
 
         Option:
           - threaded (default yes): eg in hybrid, pin on all available cores or just one

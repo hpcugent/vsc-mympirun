@@ -31,9 +31,6 @@ v2 python rewrite 19/03/2010
 v3 refactored python 28/08/2012
 v4 cleanup 5/11/2013
 
-TODO:
-    intel tuning code
-
 @author: Stijn De Weirdt
 @author: Jens Timmerman
 @author: Jeroen De Clerck
@@ -49,52 +46,33 @@ from vsc.mympirun.factory import getinstance
 import vsc.mympirun.rm.sched as schedm
 from vsc.utils import fancylogger
 
-_logger = fancylogger.getLogger()
-fancylogger.setLogLevelDebug()
-
 def get_mpi_and_sched_and_options():
     """
-    selects mpi flavor and scheduler based on environment and arguments
+    Selects mpi flavor and scheduler based on environment and arguments
 
     @return: A triplet containing the chosen mpi flavor, chosen scheduler and the MympirunOption class.
     """
 
     scriptname = os.path.basename(os.path.abspath(sys.argv[0]))
+    # if the scriptname is 'mpirun', its means that mympirun was called through the faked mpirun path
     isfake = scriptname == 'mpirun'
 
     # init generaloption with the various mpirun cli options
     mo = MympirunOption(ismpirun=isfake)
 
-    # see if an mpi flaver was explicitly chosen as an argument
+    # see if an mpi flavor was explicitly chosen as an argument
     # if not, just use the mpirun that was called
     # We are using sys.argv because generaloption depends on the the returned
     # scriptname
     setmpi = mo.options.setmpi if mo.options.setmpi else sys.argv[0]
-    _logger.debug("User chose MPI flavor: %s" % setmpi)
+    mo.log.debug("mympirun will use %s as MPI flavor" % setmpi)
     scriptname, mpi, found_mpi = mpim.whatMPI(setmpi)
-
-    if mo.args is None or len(mo.args) == 0:
-        mo.parser.print_shorthelp()
-        _logger.warn("no arguments provided, exiting")
-        sys.exit(0)
-
-    # Select a Scheduler from the available schedulers
-    sched, found_sched = schedm.whatSched(getattr(mo.options, 'setsched', None))
-
     found_mpi_names = [x.__name__ for x in found_mpi]
-    found_sched_names = [x.__name__ for x in found_sched]
 
     if mo.options.showmpi:
         fancylogger.setLogLevelInfo()
-        _logger.info("Found MPI classes %s" %
-            (", ".join(found_mpi_names)))
-        sys.exit(0)
-
-    if mo.options.showsched:
-        fancylogger.setLogLevelInfo()
-        _logger.info("Found Sched classes %s" %
-            (", ".join(found_sched_names)))
-        sys.exit(0)
+        mo.log.info("Found MPI classes %s", ", ".join(found_mpi_names))
+        return
 
     if mpi is None:
         mo.log.raiseException(
@@ -105,6 +83,15 @@ def get_mpi_and_sched_and_options():
     else:
         mo.log.debug("Found MPI class %s (scriptname %s; isfake %s)" %
                      (mpi.__name__, scriptname, isfake))
+
+    # Select a Scheduler from the available schedulers
+    sched, found_sched = schedm.whatSched(getattr(mo.options, 'setsched', None))
+    found_sched_names = [x.__name__ for x in found_sched]
+
+    if mo.options.showsched:
+        fancylogger.setLogLevelInfo()
+        mo.log.info("Found Sched classes %s", ", ".join(found_sched_names))
+        return
 
     if sched is None:
         mo.log.raiseException(
@@ -117,15 +104,20 @@ def get_mpi_and_sched_and_options():
              "found %s)") % (sched.__name__, mo.options.setsched,
              ", ".join(found_sched_names)))
 
+    if mo.args is None or len(mo.args) == 0:
+        mo.log.warn("no mpi script provided")
+        return
+
     return mpi, sched, mo
 
 def main():
     """Main function"""
     try:
-        m = getinstance(*get_mpi_and_sched_and_options())
-        m.main()
+        instance_options = get_mpi_and_sched_and_options()
+        if instance_options:
+            m = getinstance(*instance_options)
+            m.main()
     except Exception:
-        _logger.exception("Main failed; Trace: \n %s", traceback.format_exc())
         sys.exit(1)
 
 

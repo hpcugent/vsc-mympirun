@@ -30,8 +30,6 @@ from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
 
 # introduce usage / -u option. (original has -h for --hybrid)
-# TODO: generate real message with possible alias + mention all supported versions
-
 
 class MympirunParser(GeneralOption.PARSER):
 

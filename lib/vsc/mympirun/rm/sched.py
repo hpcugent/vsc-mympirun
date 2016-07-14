@@ -176,8 +176,6 @@ class Sched(object):
           - and how big is it (nr of procs compared to local number of cores)
 
         stores local core ids in array
-        # TODO fix remote cpusets
-          - what with remote ones?
         """
         if self.foundppn is None:
             self._cores_on_this_node()

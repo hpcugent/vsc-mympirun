@@ -36,27 +36,26 @@ import tempfile
 
 from vsc.mympirun.mpi.mpi import MPI, which
 
+SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
+
+
 class IntelMPI(MPI):
-    """TODO: support for tuning
-      - runtune: generate the tuning files
-      - tuneconf: pass the generated config files
-    """
 
     _mpiscriptname_for = ['impirun']
     _mpirun_for = ['impi']
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("4.1.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
-    RUNTIMEOPTION = {'options':{'mpdbulletproof':("Start MPD in bulletproof", None, "store_true", False),
-                                'fallback':("Enable device fallback", None, "store_true", False),
-                                'daplud':("Enable DAPL UD connections", None, "store_true", False),
-                                'xrc':("Enable Mellanox XRC", None, "store_true", False),
-                                },
-                     'prefix':'impi',
+    RUNTIMEOPTION = {'options': {'mpdbulletproof': ("Start MPD in bulletproof", None, "store_true", False),
+                                 'fallback': ("Enable device fallback", None, "store_true", False),
+                                 'daplud': ("Enable DAPL UD connections", None, "store_true", False),
+                                 'xrc': ("Enable Mellanox XRC", None, "store_true", False),
+                                 },
+                     'prefix': 'impi',
                      'description': ('Intel MPI options', 'Advanced options specific for Intel MPI'),
                      }
 
-    DEVICE_MPIDEVICE_MAP = {'ib':'rdssm', 'det':'det', 'shm':'shm', 'socket':'sock'}
+    DEVICE_MPIDEVICE_MAP = {'ib': 'rdssm', 'det': 'det', 'shm': 'shm', 'socket': 'sock'}
 
     MPIRUN_LOCALHOSTNAME = socket.gethostname()
 
@@ -88,14 +87,15 @@ class IntelMPI(MPI):
 
     def _enable_disable(self, boolvalue):
         """Return enable/disable for boolean value"""
-        return {True:'enable', False:'disable'}.get(bool(boolvalue))
+        return {True: 'enable', False: 'disable'}.get(bool(boolvalue))
 
     def _one_zero(self, boolvalue):
         """Return enable/disable for boolean value"""
         return int(bool(boolvalue))
 
     def make_mpdboot_options(self):
-        """Make the mpdboot options.
+        """
+        Make the mpdboot options.
           - bulletproof customisation
         """
         super(IntelMPI, self).make_mpdboot_options()
@@ -135,7 +135,7 @@ class IntelMPI(MPI):
         # this one also needs to be set at runtime
         self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
         os.environ['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
-        self.log.debug("Set intel temp dir: %s", os.environ['I_MPI_MPD_TMPDIR'])
+        self.log.debug("Set intel temp dir based on I_MPI_MPD_TMPDIR: %s", os.environ['I_MPI_MPD_TMPDIR'])
 
         if self.options.debuglvl > 0:
             self.mpiexec_global_options['I_MPI_DEBUG'] = "+%s" % self.options.debuglvl
@@ -215,16 +215,15 @@ class IntelHydraMPI(IntelMPI):
     MPDBOOT_SET_INTERFACE = False
 
     DEVICE_MPIDEVICE_MAP = {
-                            'ib':'shm:dapl',
-                            'det':'det',
-                            'shm':'shm',
-                            'socket':'shm:tcp',
-                            }
+        'ib': 'shm:dapl',
+        'det': 'det',
+        'shm': 'shm',
+        'socket': 'shm:tcp',
+    }
 
     def make_mpiexec_hydra_options(self):
         super(IntelMPI, self).make_mpiexec_hydra_options()
         self.mpiexec_options.append("-perhost %d" % self.mpiprocesspernode)
-
 
     def mpiexec_set_global_options(self):
         """Set mpiexec global options"""
@@ -236,7 +235,7 @@ class IntelHydraMPI(IntelMPI):
         if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.mpiprocesspernode * self.nruniquenodes) > 64
+        scalable_progress = (self.mpiprocesspernode * self.nruniquenodes) > SCALABLE_PROGRESS_LOWER_THRESHOLD
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero(scalable_progress)
 
         if self.options.impi_daplud:
@@ -254,48 +253,6 @@ class IntelHydraMPI(IntelMPI):
 class IntelLegacy(IntelMPI):
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("3.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
-
-    def maketunecmds(self):
-        """Wrap command in Intel MPI tuning facility that generates tuned MPI parameters for the application"""
-        self.log.raiseException("Legacy code, information purposes only!")
-        ans = []
-
-        # disable tuning file!!
-        self.tune = False
-        # set this to manually start mpdboot
-        self.mpitotalnum = self.sched.nruniq
-
-        opts = self.getmpdboot()
-        cmd = "%s %s" % ('mpdboot', ' '.join(opts))
-        ans.append([cmd, False])
-
-        rulesname = 'rules.xml'
-        if not os.path.exists(rulesname):
-            self.log.error("Rules file %s not found" % rulesname)
-        else:
-            rules = os.path.abspath(rulesname)
-        envname = 'env.xml'
-        if not os.path.exists(envname):
-            self.log.error("Env file %s not found" % envname)
-        else:
-            env = os.path.abspath(envname)
-
-        if self.debug:
-            ans.append(['mpdtrace -l', False])
-
-        opts = []
-        # start mpdboot manually
-        opts += ["--file %s" % self.mpdbootfile]
-        opts += ["--rules %s" % rules, "--env %s" % env, "--outdir %s" % os.getcwd()]
-        opts += ['--app mpiexec']
-        opts += self.getmpiexec(notune=False)
-        cmd = "%s %s" % ('mpitune', ' '.join(opts))
-        ans.append([cmd, True, True])
-
-        ans.append(['mpdallexit', False])
-
-        self.log.debug("maketunecmds returns %s" % ans)
-        return ans
 
     def gettuning(self):
         """Get a tuning config file that matches the current code"""
@@ -348,4 +305,3 @@ class IntelLegacy(IntelMPI):
                 ans = "-tune %s" % conf
         self.log.debug("Tuning parameter: %s" % ans)
         return ans
-
