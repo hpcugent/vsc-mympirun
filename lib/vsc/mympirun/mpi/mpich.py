@@ -45,8 +45,7 @@ class MVAPICH2Hydra(MPI):
 
     PASS_VARIABLES_CLASS_PREFIX = ['MV2', 'HYDRA']
 
-    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-x %(name)s=%(value)s"
-    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "-x %(name)s=%(value)s"
+    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-envlist %(commaseparated)s"
 
     def prepare(self):
         super(MVAPICH2Hydra, self).prepare()
@@ -65,9 +64,10 @@ class MVAPICH2Hydra(MPI):
         super(MVAPICH2Hydra, self).mpiexec_set_global_options()
 
     def _make_final_mpirun_cmd(self):
-        """Create the acual mpirun command
-            add it to self.mpirun_cmd
-            No mpdboot for openmpi
+        """
+        Create the acual mpirun command
+          - add it to self.mpirun_cmd
+          - No mpdboot for openmpi
         """
         self.mpirun_cmd += self.mpiexec_options
 

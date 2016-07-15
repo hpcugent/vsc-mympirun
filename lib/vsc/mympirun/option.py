@@ -55,48 +55,39 @@ class MympirunOption(GeneralOption):
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
             # long option: (description, type, action, default, short option)
-            "showmpi": ("Print the known MPI classes and exit", None,
-                        "store_true", False, 'm'),
+            "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
 
-            "setmpi": (("Specify MPI flavor (eg mpich2, openmpi...; will try "
-                        " to guess by default)."), "str", "store", None, "M"),
+            "setmpi": ("Specify MPI flavor (eg mpich2, openmpi...; will try to guess by default).",
+                       "str", "store", None, "M"),
 
-            "debugmpi": ("Enable MPI level debugging", None, "store_true",
-                         False),
+            "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
 
-            "showsched": ("Print the known Sched classes and exit", None,
-                          "store_true", False, 's'),
+            "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
 
-            "setsched": (("Specify scheduler (eg local, pbs...; will try to "
-                          "guess by default)."), "str", "store", None, "S"),
+            "setsched": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
+                         "str", "store", None, "S"),
 
             "debuglvl": ("Specify debug level", "int", "store", 0),
 
-            "mpdbootverbose": ("Run verbose mpdboot", None, "store_true",
-                               False),
+            "mpdbootverbose": ("Run verbose mpdboot", None, "store_true", False),
 
             "stats": ("Set MPI statistics level", "int", "store", 0),
 
-            "hybrid": (("Run in hybrid mode, specify number of processes "
-                        "per node."), "int", "store", None, 'h'),
+            "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
 
-            "double": (("Run double the amount of processes (eg for GAMESS; "
-                        "to change multiplier, use --hybrid)"), None,
-                       "store_true", False),
+            "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
+                       None, "store_true", False),
 
-            "output": (("filename to write stdout/stderr directly to (instead "
-                        "of stdout)"), "str", "store", None),
+            "output": ("filename to write stdout/stderr directly to (instead of stdout)", "str", "store", None),
 
-            "ssh": (("Force ssh for mpd startup (will try to use optimised "
-                     " method by default)"), None, "store_false", True),
+            "ssh": ("Force ssh for mpd startup (will try to use optimised  method by default)",
+                    None, "store_false", True),
 
-            "order": (("Reorder the generated nodelist (default: normal. "
-                       "supports: sort, random[_<seed>])"), "str", "store",
-                      None),
+            "order": ("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])",
+                      "str", "store", None),
 
-            "basepath": ("Directory (preferably shared) to use for temporary "
-                         "mympirun files (default: HOME).", "str", "store",
-                         None),
+            "basepath": ("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
+                         "str", "store", None),
             # legacy naming
 
             # don't set it by default. It will be set if needed (eg ipath)
@@ -106,40 +97,31 @@ class MympirunOption(GeneralOption):
 
             "socket": ("Force socket device", None, "store_true", None),
 
-            "universe": (("Start only this number of processes instead of all "
-                          "(e.g. for MPI_Spawn) Total size of the universe is "
-                          "all requested processes.)"), "int", "store", None),
+            "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
+                         "universe is all requested processes.)"), "int", "store", None),
 
-            "overridepin": (("Let mympriun set the affinity (default: "
-                             "disabled, left over to MPI implementation). "
-                             "Supported types: 'compact','spread','cycle' "
-                             "(add 'pin' postfix for single core pinning, "
-                             "e.g. 'cyclepin')."), "str", "store", None),
+            "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
+                            "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
+                            "e.g. 'cyclepin')."), "str", "store", None),
 
-            "variablesprefix": (("Comma-separated list of exact names or "
-                                 "prefixes to match environment variables "
-                                 "(<prefix>_ should match) to pass through."),
-                                "string", "extend", []),
+            "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
+                                 "(<prefix>_ should match) to pass through."), "string", "extend", []),
 
             "noenvmodules": ("Don't pass the environment modules variables",
                              None, "store_true", False),
 
-            "mpirunoptions": (("String with options to pass to mpirun (will be "
-                               "appended to generate command)"), "str", "store",
-                              None),
+            "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate command)",
+                              "str", "store", None),
 
             'branchcount': ("Set the hydra branchcount", "int", "store", None),
 
-            'qlogic_ipath': ("Force qlogic/true scale ipath", None,
-                             "store_true", None),
+            'qlogic_ipath': ("Force qlogic/true scale ipath", None, "store_true", None),
         }
 
         descr = ["mympirun options", "General advanced mympirun options"]
 
         prefix = ''
-        self.log.debug(("Add mympirun advanced option parser: "
-                        "options %s, description %s, prefix %s") %
-                       (opts, descr, prefix))
+        self.log.debug("Add advanced option parser: options %s, description %s, prefix %s", opts, descr, prefix)
         self.add_group_parser(opts, descr, prefix=prefix)
 
         # for all MPI classes, get the additional options
@@ -148,15 +130,16 @@ class MympirunOption(GeneralOption):
                 opts = mpi.RUNTIMEOPTION['options']
                 descr = mpi.RUNTIMEOPTION['description']
                 prefix = mpi.RUNTIMEOPTION['prefix']
-                self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s" %
-                               (mpi.__name__, prefix, descr, opts))
+                self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s",
+                               mpi.__name__, prefix, descr, opts)
                 self.add_group_parser(opts, descr, prefix=prefix)
 
     def parseoptions(self, options_list=None):
-        """Handle mpirun mode:
-            continue with reduced set of commandline options
-            These options are the keys of optsToRemove.
-            The values of optsToRemove are the number of arguments of these options, that also need to be removed.
+        """
+        Handle mpirun mode:
+          - continue with reduced set of commandline options
+          - These options are the keys of optsToRemove.
+          - The values of optsToRemove are the number of arguments of these options, that also need to be removed.
         """
 
         if options_list is None:

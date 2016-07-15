@@ -67,7 +67,7 @@ class IntelMPI(MPI):
         """Has HYDRA or not"""
         mgr = os.environ.get('I_MPI_PROCESS_MANAGER', None)
         if mgr == 'mpd':
-            self.log.debug("No hydra, I_MPI_PROCESS_MANAGER set to %s" % mgr)
+            self.log.debug("No hydra, I_MPI_PROCESS_MANAGER set to %s", mgr)
             return False
         else:
             return super(IntelMPI, self)._has_hydra()
@@ -75,7 +75,7 @@ class IntelMPI(MPI):
     def _pin_flavour(self, mp=None):
         if self.options.hybrid is not None and self.options.hybrid in (4,):
             mp = True
-        self.log.debug("_pin_flavour: return %s" % mp)
+        self.log.debug("_pin_flavour: return %s", mp)
         return mp
 
     def get_universe_ncpus(self):
@@ -114,9 +114,8 @@ class IntelMPI(MPI):
         """
         if not self.foundppn == len(self.cpus):
             # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
-            self.log.info(("check_usable_cpus: non-standard cpus found: "
-                           "requested ppn %s, found cpus %s, usable cpus %s") %
-                          (self.ppn, self.foundppn, len(self.cpus)))
+            self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
+                          self.ppn, self.foundppn, len(self.cpus))
 
             if self.nruniquenodes > 1:
                 self.log.info(("check_usable_cpus: more then one unique node requested. "
@@ -125,8 +124,7 @@ class IntelMPI(MPI):
                 txt = ",".join(["%d" % x for x in self.cpus])
                 self.mpiexec_global_options['I_MPI_PIN_PROCESSOR_LIST'] = txt
                 os.environ['I_MPI_PIN_PROCESSOR_LIST'] = txt
-                self.log.info(("check_usable_cpus: one node requested. "
-                               "Setting I_MPI_PIN_PROCESSOR_LIST to %s") % txt)
+                self.log.info("check_usable_cpus: one node requested. Setting I_MPI_PIN_PROCESSOR_LIST to %s", txt)
 
     def mpiexec_set_global_options(self):
         """Set mpiexec global options"""
@@ -177,7 +175,7 @@ class IntelMPI(MPI):
             if 'TMI_CONFIG' in os.environ:
                 tmicfg = os.environ.get('TMI_CONFIG')
                 if not os.path.exists(tmicfg):
-                    self.log.error('TMI_CONFIG set (%s), but not found.' % tmicfg)
+                    self.log.error('TMI_CONFIG set (%s), but not found.', tmicfg)
             elif not os.path.exists('/etc/tmi.conf'):
                 self.log.debug("No TMI_CONFIG and no /etc/tmi.conf found, creating one")
                 # make the psm tmi config
@@ -248,60 +246,3 @@ class IntelHydraMPI(IntelMPI):
             # force it
             self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:ofa'
             self.mpiexec_global_options['I_MPI_OFA_USE_XRC'] = 1
-
-
-class IntelLegacy(IntelMPI):
-    _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("3.0.0")
-    _mpirun_version = staticmethod(_mpirun_version)
-
-    def gettuning(self):
-        """Get a tuning config file that matches the current code"""
-        self.log.raiseException("Legacy code, information purposes only!")
-
-        ans = '-noconf'
-        if not self.tune:
-            self.log.debug("No tuning parameter: %s" % ans)
-            return ans
-
-        conf = None
-        if os.environ.has_key('TUNINGCONF'):
-            conf = os.environ['TUNINGCONF']
-            self.log.debug("TUNINGCONF variable: %s" % conf)
-        else:
-            if not os.environ.has_key('SOFTROOTIMPI'):
-                self.log.error('gettuning: environment variable SOFTROOTIMPI not found')
-                return ans
-            tmpdir = os.path.join(os.environ['SOFTROOTIMPI'], 'etc64')
-            if not os.path.exists(tmpdir):
-                self.log.error("path with configfiles %s not found" % tmpdir)
-                return ans
-            # <app>_<device>_nn_<#nodes>_np_<#processes>_ppn_<#processes/node>.conf
-            # 2 factors: np and nn
-            w = 10
-            goal = w * (self.sched.nrnodes + 1) + (self.sched.nruniq + 1)
-            mindist = 10 * 1000 * 1000
-
-            if os.environ.has_key('TUNINGAPP'):
-                app = os.environ['TUNINGAPP']
-            else:
-                app = 'mpiexec'
-            import glob
-            reg = re.compile(r"%s_%s_nn_(\d+)_np_(\d+)_ppn_(\d+).conf" % (app, self.dev))
-            for fi in glob.glob("%s/*.conf" % (tmpdir)):
-                r = reg.search(os.path.basename(fi))
-                if r:
-                    nn = int(r.group(1))
-                    np = int(r.group(2))
-                    ppn = int(r.group(3))
-                    dist = abs(goal - (w * (np + 1) + (nn + 1) + (0 * ppn)))
-                    if dist < mindist:
-                        conf = fi
-                        mindist = dist
-
-        if conf:
-            if not os.path.isfile(conf):
-                self.log.error("Tuning config file %s not found" % conf)
-            else:
-                ans = "-tune %s" % conf
-        self.log.debug("Tuning parameter: %s" % ans)
-        return ans

@@ -41,7 +41,8 @@ class Local(Sched):
     HYDRA_LAUNCHER = ['local']
 
     def get_node_list(self):
-        """Get the hostnames for the localnode
+        """
+        Get the hostnames for the localnode
         MPIRUN_LOCALHOSTNAME is from multiple inheritance with MPI class
         """
 
@@ -49,4 +50,4 @@ class Local(Sched):
         self.nodes = [localhostname] * len(self.cpus)
         self.nrnodes = len(self.nodes)  # same as len(self.cpus)
 
-        self.log.debug("get_node_list: set %s nodes: %s" % (self.nrnodes, self.nodes))
+        self.log.debug("get_node_list: set %s nodes: %s", self.nrnodes, self.nodes)

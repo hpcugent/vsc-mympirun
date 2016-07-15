@@ -48,7 +48,7 @@ from vsc.utils import fancylogger
 
 def get_mpi_and_sched_and_options():
     """
-    Selects mpi flavor and scheduler based on environment and arguments
+    Selects mpi flavor and scheduler based on environment and arguments.
 
     @return: A triplet containing the chosen mpi flavor, chosen scheduler and the MympirunOption class.
     """
@@ -65,7 +65,7 @@ def get_mpi_and_sched_and_options():
     # We are using sys.argv because generaloption depends on the the returned
     # scriptname
     setmpi = mo.options.setmpi if mo.options.setmpi else sys.argv[0]
-    mo.log.debug("mympirun will use %s as MPI flavor" % setmpi)
+    mo.log.debug("mympirun will use %s as MPI flavor", setmpi)
     scriptname, mpi, found_mpi = mpim.whatMPI(setmpi)
     found_mpi_names = [x.__name__ for x in found_mpi]
 
@@ -84,25 +84,18 @@ def get_mpi_and_sched_and_options():
         return
 
     if mpi is None:
-        mo.log.raiseException(
-            ("No MPI class found that supports scriptname %s; isfake %s). "
-             "Please use mympirun through one of the direct calls or make sure "
-             "the mpirun command can be found. Found MPI %s") %
-            (scriptname, isfake, ", ".join(found_mpi_names)))
+        mo.log.raiseException(("No MPI class found that supports scriptname %s; isfake %s). Please use mympirun through"
+                              " one of the direct calls or make sure the mpirun command can be found. Found MPI %s"),
+                              scriptname, isfake, ", ".join(found_mpi_names))
     else:
-        mo.log.debug("Found MPI class %s (scriptname %s; isfake %s)" %
-                     (mpi.__name__, scriptname, isfake))
+        mo.log.debug("Found MPI class %s (scriptname %s; isfake %s)", mpi.__name__, scriptname, isfake)
 
     if sched is None:
-        mo.log.raiseException(
-            ("No sched class found (options.setsched %s ; found Sched "
-             "classes %s)") % (mo.options.setsched,
-                               ", ".join(found_sched_names)))
+        mo.log.raiseException("No sched class found (options.setsched %s ; found Sched classes %s)",
+                              mo.options.setsched, ", ".join(found_sched_names))
     else:
-        mo.log.debug(
-            ("Found sched class %s from options.setsched %s (all Sched "
-             "found %s)") % (sched.__name__, mo.options.setsched,
-                             ", ".join(found_sched_names)))
+        mo.log.debug("Found sched class %s from options.setsched %s (all Sched found %s)",
+                     sched.__name__, mo.options.setsched, ", ".join(found_sched_names))
 
     if mo.args is None or len(mo.args) == 0:
         mo.log.warn("no mpi script provided")

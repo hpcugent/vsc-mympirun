@@ -47,7 +47,7 @@ def whatSched(requested):
 
     # if there is no requested scheduler set or if the script is not in a job
     # environment, default to local
-    if "PBS_JOBID" not in os.environ or requested is None:
+    if "SCHED_ENVIRON_ID" not in os.environ or requested is None:
         for sched in found_sched:
             if sched._is_sched_for("local"):
                 return sched, found_sched
@@ -119,8 +119,7 @@ class Sched(object):
 
         super(Sched, self).__init__(**kwargs)
 
-    # factory methods for Sched. To add a new Sched class just create a new class
-    # that extends the cluster class
+    # factory methods for Sched. To add a new Sched class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
     @classmethod
     def _is_sched_for(cls, name=None):
@@ -152,17 +151,14 @@ class Sched(object):
         if self.id is None:
             if self.SCHED_ENVIRON_ID is not None:
                 if self.SCHED_ENVIRON_ID_AUTOGENERATE_JOBID:
-                    self.log.info(("get_id: failed to get id from environment "
-                                   "variable %s, will generate one.") %
+                    self.log.info("get_id: failed to get id from environment variable %s, will generate one.",
                                   self.SCHED_ENVIRON_ID)
-                    self.id = "SCHED_%s%s%05d" % (self.__class__.__name__,
-                                                  time.strftime("%Y%m%d%H%M%S"),
+                    self.id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
                                                   random.randint(0, 10 ** 5 - 1))
-                    self.log.debug("get_id: using generated id %s" % self.id)
+                    self.log.debug("get_id: using generated id %s", self.id)
                 else:
-                    self.log.raiseException(
-                        "get_id: failed to get id from environment variable %s"
-                        % self.SCHED_ENVIRON_ID)
+                    self.log.raiseException("get_id: failed to get id from environment variable %s",
+                                            self.SCHED_ENVIRON_ID)
 
     def _cores_on_this_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""
@@ -172,7 +168,7 @@ class Sched(object):
 
         self.foundppn = len(regcores.findall(file(fn).read()))
 
-        self.log.debug("_cores_on_thisnode: found %s" % self.foundppn)
+        self.log.debug("_cores_on_thisnode: found %s", self.foundppn)
 
     def which_cpus(self):
         """
@@ -192,7 +188,7 @@ class Sched(object):
         except Exception:
             self.cpus = range(self.foundppn)
 
-        self.log.debug("which_cpus: using cpus %s" % (self.cpus))
+        self.log.debug("which_cpus: using cpus %s", self.cpus)
 
     def get_node_list(self):
         """get a list with the node of every requested processor/core"""
@@ -207,8 +203,7 @@ class Sched(object):
         self.uniquenodes = nub(nodes)
         self.nruniquenodes = len(self.uniquenodes)
 
-        self.log.debug("get_unique_nodes: %s uniquenodes: %s from %s" %
-                       (self.nruniquenodes, self.uniquenodes, nodes))
+        self.log.debug("get_unique_nodes: %s uniquenodes: %s from %s", self.nruniquenodes, self.uniquenodes, nodes)
 
     def set_ppn(self):
         """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
@@ -221,8 +216,7 @@ class Sched(object):
         # set default
         self.totalppn = self.ppn
 
-        self.log.debug("Set ppn to %s (totalppn %s)" %
-                       (self.ppn, self.totalppn))
+        self.log.debug("Set ppn to %s (totalppn %s)", self.ppn, self.totalppn)
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -245,7 +239,7 @@ class Sched(object):
             else:
                 rsh = self.RSH_CMD
 
-        self.log.debug("get_rsh returns %s" % rsh)
+        self.log.debug("get_rsh returns %s", rsh)
         return rsh
 
     def is_large(self):
@@ -257,11 +251,12 @@ class Sched(object):
 
         res = ((self.nrnodes > self.RSH_LARGE_LIMIT) and
                (self.ppn == self.foundppn))
-        self.log.debug("is_large returns %s" % res)
+        self.log.debug("is_large returns %s", res)
         return res
 
     def make_node_list(self):
-        """Make a list of nodes that MPI should use
+        """
+        Make a list of nodes that MPI should use
 
         Calculates the amount of mpi processes based on the processors per node and options like double and hybrid
         Will also make a list with nodes, where each entry is supposed to run an mpi process
@@ -285,8 +280,7 @@ class Sched(object):
         else:
             multi = 1
 
-        self.log.debug("make_node_list: hybrid %s double %s multi %s" %
-                       (hybrid, double, multi))
+        self.log.debug("make_node_list: hybrid %s double %s multi %s", hybrid, double, multi)
 
         res = []
         if double:
@@ -311,25 +305,22 @@ class Sched(object):
         ordermode = ordermode.split("_")
         if ordermode[0] in ('normal',):
             # do nothing
-            self.log.debug("make_node_list: no reordering (mode %s)" %
-                           ordermode)
+            self.log.debug("make_node_list: no reordering (mode %s)", ordermode)
         elif ordermode[0] in ('random',):
             if len(ordermode) == 2:
                 seed = int(ordermode[1])
                 random.seed(seed)
-                self.log.debug("make_node_list: setting random seed %s" % seed)
+                self.log.debug("make_node_list: setting random seed %s", seed)
             random.shuffle(res)
             self.log.debug("make_node_list shuffled nodes (mode %s)" %
                            ordermode)
         elif ordermode[0] in ('sort',):
             res.sort()
-            self.log.debug("make_node_list sort nodes (mode %s)" % ordermode)
+            self.log.debug("make_node_list sort nodes (mode %s)", ordermode)
         else:
-            self.log.raiseExcepetion("make_node_list unknown ordermode %s" %
-                                     ordermode)
+            self.log.raiseExcepetion("make_node_list unknown ordermode %s", ordermode)
 
-        self.log.debug("make_node_list: ordered node list %s (mpiprocesspernode %s)"
-                       % (res, self.mpiprocesspernode))
+        self.log.debug("make_node_list: ordered node list %s (mpiprocesspernode %s)", res, self.mpiprocesspernode)
 
         self.mpinodes = res
         self.nrmpinodes = len(res)

@@ -37,8 +37,8 @@ class OpenMPI(MPI):
 
     DEVICE_MPIDEVICE_MAP = {'ib': 'sm,openib,self', 'det': 'sm,tcp,self', 'shm': 'sm,self', 'socket': 'sm,tcp,self'}
 
-    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "--mca %(name)s %(value)s"
-    MPIEXEC_TEMPLATE_LOCAL_OPTION = "--mca %(name)s %(value)s"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "--mca %(name)s '%(value)s'"
+    MPIEXEC_TEMPLATE_LOCAL_OPTION = "--mca %(name)s '%(value)s'"
 
     MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME = "--mca pls_rsh_agent %(rsh)s"
 
@@ -49,8 +49,9 @@ class OpenMPI(MPI):
         super(OpenMPI, self).mpiexec_set_global_options()
 
     def _make_final_mpirun_cmd(self):
-        """Create the acual mpirun command
-            add it to self.mpirun_cmd
-            No mpdboot for openmpi
+        """
+        Create the acual mpirun command
+          - add it to self.mpirun_cmd
+          - No mpdboot for openmpi
         """
         self.mpirun_cmd += self.mpiexec_options
