@@ -27,10 +27,9 @@ Intel MPI specific class
 
 Documentation can be found at https://software.intel.com/en-us/node/528769
 """
-import os
-import re
 
 from distutils.version import LooseVersion
+import os
 import socket
 import tempfile
 
