@@ -31,92 +31,91 @@ v2 python rewrite 19/03/2010
 v3 refactored python 28/08/2012
 v4 cleanup 5/11/2013
 
-Expert mode:
-    export MYMPIRUN_MAIN_EXCEPTION=1 to show all exceptions
-
-TODO:
-    intel tuning code
-
-@author: Stijn De Weirdt, Jens Timmerman (HPC UGent / VSC)
+@author: Stijn De Weirdt
+@author: Jens Timmerman
+@author: Jeroen De Clerck
 """
 
-import sys
 import os
+import sys
 
-from vsc.utils import fancylogger
-from vsc.mympirun.mpi.factory import getinstance
-from vsc.mympirun.mpi.mpi import whatMPI
+import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.option import MympirunOption
-from vsc.mympirun.rm.sched import whatSched
-
-_logger = fancylogger.getLogger()
-
-
-class ExitException(Exception):
-    """Exception thrown when we wish to exit, but no real errors occured"""
-    pass
+from vsc.mympirun.factory import getinstance
+import vsc.mympirun.rm.sched as schedm
+from vsc.utils import fancylogger
 
 
 def get_mpi_and_sched_and_options():
-    """Parses the mpi and scheduler based on current environment and guesses the best one to use"""
-    scriptname, mpi, found_mpi = whatMPI(sys.argv[0])
+    """
+    Selects mpi flavor and scheduler based on environment and arguments.
 
-    ismpirun = scriptname == 'mpirun'
+    @return: A triplet containing the chosen mpi flavor, chosen scheduler and the MympirunOption class.
+    """
 
-    mo = MympirunOption(ismpirun=ismpirun)
+    scriptname = os.path.basename(os.path.abspath(sys.argv[0]))
+    # if the scriptname is 'mpirun', its means that mympirun was called through the faked mpirun path
+    isfake = scriptname == 'mpirun'
 
-    if mo.args is None or len(mo.args) == 0:
-        mo.parser.print_shorthelp()
-        raise ExitException("Exit no args provided")
+    # init generaloption with the various mpirun cli options
+    optionparser = MympirunOption(ismpirun=isfake)
 
-    sched, found_sched = whatSched(getattr(mo.options, 'schedtype', None))
-
+    # see if an mpi flavor was explicitly chosen as an argument
+    # if not, just use the mpirun that was called
+    # We are using sys.argv because generaloption depends on the the returned
+    # scriptname
+    setmpi = optionparser.options.setmpi if optionparser.options.setmpi else sys.argv[0]
+    optionparser.log.debug("mympirun will use %s as MPI flavor", setmpi)
+    scriptname, mpi, found_mpi = mpim.what_mpi(setmpi)
     found_mpi_names = [x.__name__ for x in found_mpi]
+
+    if optionparser.options.showmpi:
+        fancylogger.setLogLevelInfo()
+        optionparser.log.info("Found MPI classes %s", ", ".join(found_mpi_names))
+        return
+
+    # Select a Scheduler from the available schedulers
+    sched, found_sched = schedm.what_sched(getattr(optionparser.options, 'setsched', None))
     found_sched_names = [x.__name__ for x in found_sched]
 
-    if mo.options.showmpi:
+    if optionparser.options.showsched:
         fancylogger.setLogLevelInfo()
-        _logger.info("Found MPI classes %s" % (", ".join(found_mpi_names)))
-        raise ExitException("Exit from showmpi")
-
-    if mo.options.showsched:
-        fancylogger.setLogLevelInfo()
-        _logger.info("Found Sched classes %s" % (", ".join(found_sched_names)))
-        raise ExitException("Exit from showsched")
+        optionparser.log.info("Found Sched classes %s", ", ".join(found_sched_names))
+        return
 
     if mpi is None:
-        mo.parser.print_shorthelp()
-        mo.log.raiseException(("No MPI class found (scriptname %s; ismpirun %s). Please use mympirun through one "
-                               "of the direct calls or make sure the mpirun command can be found. "
-                               "Found MPI %s") % (scriptname, ismpirun, ", ".join(found_mpi_names)))
+        optionparser.log.raiseException(("No MPI class found that supports scriptname %s; isfake %s). Please use "
+                                         "mympirun through one of the direct calls or make sure the mpirun command can"
+                                         " be found. Found MPI %s"),
+                                        scriptname, isfake, ", ".join(found_mpi_names))
     else:
-        mo.log.debug("Found MPI class %s (scriptname %s; ismpirun %s)" % (mpi.__name__, scriptname, ismpirun))
+        optionparser.log.debug("Found MPI class %s (scriptname %s; isfake %s)", mpi.__name__, scriptname, isfake)
 
     if sched is None:
-        mo.log.raiseException("No sched class found (options.schedtype %s ; found Sched classes %s)" %
-                              (mo.options.schedtype, ", ".join(found_sched_names)))
+        optionparser.log.raiseException("No sched class found (options.setsched %s ; found Sched classes %s)",
+                                        optionparser.options.setsched, ", ".join(found_sched_names))
     else:
-        mo.log.debug("Found sched class %s from options.schedtype %s (all Sched found %s)" %
-                     (sched.__name__, mo.options.schedtype, ", ".join(found_sched_names)))
+        optionparser.log.debug("Found sched class %s from options.setsched %s (all Sched found %s)",
+                               sched.__name__, optionparser.options.setsched, ", ".join(found_sched_names))
 
-    return mpi, sched, mo
+    if optionparser.args is None or len(optionparser.args) == 0:
+        optionparser.log.warn("no mpi script provided")
+        return
+
+    return mpi, sched, optionparser
 
 
 def main():
     """Main function"""
     try:
-        m = getinstance(*get_mpi_and_sched_and_options())
-        m.main()
-        ec = 0
-    except ExitException:
-        ec = 0
-    except:
-        # # TODO: cleanup, only catch known exceptions
-        if os.environ.get('MYMPIRUN_MAIN_EXCEPTION', 0) == '1':
-            _logger.exception("Main failed")
-        ec = 1
+        instance_options = get_mpi_and_sched_and_options()
+        if instance_options:
+            instance = getinstance(*instance_options)
+            instance.main()
+    except Exception:
+        fancylogger.getLogger().exception("Main failed")
+        sys.exit(1)
 
-    sys.exit(ec)
 
 if __name__ == '__main__':
     main()
