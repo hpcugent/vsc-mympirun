@@ -47,7 +47,7 @@ class QLogicMPI(MPI):
                                    1:'-disable-mpi-progress-check',
                                    2:''}
 
-    MPIEXEC_TEMPLATE_GOBAL_OPTION = "export %(name)s='%(value)s'"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "export %(name)s='%(value)s'"
     MPIEXEC_TEMPLATE_LOCAL_OPTION = "export %(name)s='%(value)s'"
     MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "export %(name)s='%(value)s'"
 
@@ -62,11 +62,10 @@ class QLogicMPI(MPI):
     def get_pinning_override_variable(self):
         """
         QLogic MPI has no real fine control
-        - affinity is packed, no MP opts
-        - one has to calculate the map oneself and then calculate the affinity
-        -- variables
-        --- PSC_MPI_NODE_RANK, PSC_MPI_PPN, PSC_MPI_NP, PSC_MPI_RANK
-        -- then start the real exe with numactl or taskset
+          - affinity is packed, no MP opts
+          - one has to calculate the map oneself and then calculate the affinity
+            - variables: PSC_MPI_NODE_RANK, PSC_MPI_PPN, PSC_MPI_NP, PSC_MPI_RANK
+            - then start the real exe with numactl or taskset
         """
         return 'PSC_MPI_NODE_RANK'
 
@@ -95,7 +94,7 @@ class QLogicMPI(MPI):
             fn = os.path.join(self.mympirundir, 'qlcrcfile')
             file(fn, 'w').write(txt)
             self.log.debug("mpiexec_get_local_pass_variable_options: wrote rcfile %s:\n%s" % (fn, txt))
-        except:
+        except IOError:
             self.log.raiseException('mpiexec_get_local_pass_variable_options: failed to write rcfile %s' % (fn))
 
         variables = "-rcfile %s" % fn
@@ -103,9 +102,7 @@ class QLogicMPI(MPI):
         return [variables]
 
     def _make_final_mpirun_cmd(self):
-        """Create the acual mpirun command
-            add it to self.mpirun_cmd
-        """
+        """Create the acual mpirun command and add it to self.mpirun_cmd"""
         # mpirun opts
         if self.options.debuglvl > 0:
             self.mpirun_cmd.append('-V')
