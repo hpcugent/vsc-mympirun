@@ -25,9 +25,11 @@
 """
 Optionparser for mympirun
 """
+import os
 
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
+from vsc.utils import fancylogger
 
 # introduce usage / -u option. (original has -h for --hybrid)
 
@@ -82,7 +84,9 @@ class MympirunOption(GeneralOption):
             "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
                        None, "store_true", False),
 
-            "output": ("filename to write stdout/stderr directly to (instead of stdout)", "str", "store", None),
+            "output": ("filename to write stdout directly to (instead of stdout)", "str", "store", None),
+
+            "error": ("filename to write stderr directly to (instead of stdout)", "str", "store", None),
 
             "ssh": ("Force ssh for mpd startup (will try to use optimised  method by default)",
                     None, "store_false", True),
@@ -138,6 +142,8 @@ class MympirunOption(GeneralOption):
                                mpi.__name__, prefix, descr, opts)
                 self.add_group_parser(opts, descr, prefix=prefix)
 
+
+
     def parseoptions(self, options_list=None):
         """
         Handle mpirun mode:
@@ -166,9 +172,14 @@ class MympirunOption(GeneralOption):
 
         GeneralOption.parseoptions(self, newopts)
 
+        # set error logging to file as soon as possible
+        if self.options.error:
+            if os.path.exists(self.options.error):
+                os.remove(self.options.error)
+            fancylogger.logToFile(self.options.error)
+
     def postprocess(self):
         """Some additional processing"""
-
         if self.options.debugmpi:
             # set some
             self.options.debug = True
