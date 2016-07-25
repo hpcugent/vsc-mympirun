@@ -36,6 +36,9 @@ from vsc.utils.run import run_simple
 
 
 class MVAPICH2Hydra(MPI):
+
+    """An implementation of the MPI class for MVAPICH2 with Hydra"""
+
     _mpiscriptname_for = ['mhmpirun']
     _mpirun_for = ['MVAPICH2']
     _mpirun_version = lambda x: LooseVersion(x) >= LooseVersion("1.6.0")
@@ -43,9 +46,9 @@ class MVAPICH2Hydra(MPI):
 
     HYDRA = True
 
-    PASS_VARIABLES_CLASS_PREFIX = ['MV2', 'HYDRA']
+    OPTS_FROM_ENV_FLAVOR_PREFIX = ['MV2', 'HYDRA']
 
-    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-envlist %(commaseparated)s"
+    OPTS_FROM_ENV_TEMPLATE = "-envlist %(commaseparated)s"
 
     def prepare(self):
         super(MVAPICH2Hydra, self).prepare()
@@ -56,12 +59,12 @@ class MVAPICH2Hydra(MPI):
         else:
             os.environ['MV2_ENABLE_AFFINITY'] = "0"
 
-    def mpiexec_set_global_options(self):
+    def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
-        if self.options.debuglvl > 0 and self.options.qlogic_ipath:
+        if self.options.debuglvl > 0 and self.options.use_psm:
             self.mpiexec_global_options['MV2_PSM_DEBUG'] = 1
 
-        super(MVAPICH2Hydra, self).mpiexec_set_global_options()
+        super(MVAPICH2Hydra, self).set_mpiexec_global_options()
 
     def _make_final_mpirun_cmd(self):
         """
@@ -85,7 +88,7 @@ class MVAPICH2(MVAPICH2Hydra):
 
     HYDRA = False
 
-    PASS_VARIABLES_CLASS_PREFIX = ['MV2']
+    OPTS_FROM_ENV_FLAVOR_PREFIX = ['MV2']
 
     def make_mpdboot_options(self):
         """Small fix"""
@@ -110,32 +113,38 @@ class MVAPICH2(MVAPICH2Hydra):
 
 
 class MPICH2Hydra(MVAPICH2Hydra):
+
+    """An implementation of the MPI class for MPICH2 with Hydra"""
+
     _mpiscriptname_for = ['m2hmpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
     _mpirun_version = lambda x: LooseVersion(x) >= LooseVersion("1.4.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
-    PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
+    OPTS_FROM_ENV_FLAVOR_PREFIX = ['MPICH']
 
-    def mpiexec_get_global_options(self):
+    def get_mpiexec_global_options(self):
         # add pinning
-        options = super(MPICH2Hydra, self).mpiexec_get_global_options()
+        options = super(MPICH2Hydra, self).get_mpiexec_global_options()
         if self.options.pinmpi:
             options.extend(['-binding', 'rr', '-topolib', 'hwloc'])
         return options
 
 
 class MPICH2(MVAPICH2):
+
+    """An implementation of the MPI class for MPICH2"""
+
     _mpiscriptname_for = ['m2mpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("1.4.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
-    PASS_VARIABLES_CLASS_PREFIX = ['MPICH']
+    OPTS_FROM_ENV_FLAVOR_PREFIX = ['MPICH']
 
-    def mpiexec_get_global_options(self):
+    def get_mpiexec_global_options(self):
         # add pinning
-        options = super(MPICH2Hydra, self).mpiexec_get_global_options()
+        options = super(MPICH2Hydra, self).get_mpiexec_global_options()
         if self.options.pinmpi:
             options.extend(['-binding', 'rr', '-topolib', 'hwloc'])
         return options

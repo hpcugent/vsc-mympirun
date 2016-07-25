@@ -58,50 +58,51 @@ def get_mpi_and_sched_and_options():
     isfake = scriptname == 'mpirun'
 
     # init generaloption with the various mpirun cli options
-    mo = MympirunOption(ismpirun=isfake)
+    optionparser = MympirunOption(ismpirun=isfake)
 
     # see if an mpi flavor was explicitly chosen as an argument
     # if not, just use the mpirun that was called
     # We are using sys.argv because generaloption depends on the the returned
     # scriptname
-    setmpi = mo.options.setmpi if mo.options.setmpi else sys.argv[0]
-    mo.log.debug("mympirun will use %s as MPI flavor", setmpi)
-    scriptname, mpi, found_mpi = mpim.whatMPI(setmpi)
+    setmpi = optionparser.options.setmpi if optionparser.options.setmpi else sys.argv[0]
+    optionparser.log.debug("mympirun will use %s as MPI flavor", setmpi)
+    scriptname, mpi, found_mpi = mpim.what_mpi(setmpi)
     found_mpi_names = [x.__name__ for x in found_mpi]
 
-    if mo.options.showmpi:
+    if optionparser.options.showmpi:
         fancylogger.setLogLevelInfo()
-        mo.log.info("Found MPI classes %s", ", ".join(found_mpi_names))
+        optionparser.log.info("Found MPI classes %s", ", ".join(found_mpi_names))
         return
 
     # Select a Scheduler from the available schedulers
-    sched, found_sched = schedm.whatSched(getattr(mo.options, 'setsched', None))
+    sched, found_sched = schedm.what_sched(getattr(optionparser.options, 'setsched', None))
     found_sched_names = [x.__name__ for x in found_sched]
 
-    if mo.options.showsched:
+    if optionparser.options.showsched:
         fancylogger.setLogLevelInfo()
-        mo.log.info("Found Sched classes %s", ", ".join(found_sched_names))
+        optionparser.log.info("Found Sched classes %s", ", ".join(found_sched_names))
         return
 
     if mpi is None:
-        mo.log.raiseException(("No MPI class found that supports scriptname %s; isfake %s). Please use mympirun through"
-                              " one of the direct calls or make sure the mpirun command can be found. Found MPI %s"),
-                              scriptname, isfake, ", ".join(found_mpi_names))
+        optionparser.log.raiseException(("No MPI class found that supports scriptname %s; isfake %s). Please use "
+                                         "mympirun through one of the direct calls or make sure the mpirun command can"
+                                         " be found. Found MPI %s"),
+                                        scriptname, isfake, ", ".join(found_mpi_names))
     else:
-        mo.log.debug("Found MPI class %s (scriptname %s; isfake %s)", mpi.__name__, scriptname, isfake)
+        optionparser.log.debug("Found MPI class %s (scriptname %s; isfake %s)", mpi.__name__, scriptname, isfake)
 
     if sched is None:
-        mo.log.raiseException("No sched class found (options.setsched %s ; found Sched classes %s)",
-                              mo.options.setsched, ", ".join(found_sched_names))
+        optionparser.log.raiseException("No sched class found (options.setsched %s ; found Sched classes %s)",
+                                        optionparser.options.setsched, ", ".join(found_sched_names))
     else:
-        mo.log.debug("Found sched class %s from options.setsched %s (all Sched found %s)",
-                     sched.__name__, mo.options.setsched, ", ".join(found_sched_names))
+        optionparser.log.debug("Found sched class %s from options.setsched %s (all Sched found %s)",
+                               sched.__name__, optionparser.options.setsched, ", ".join(found_sched_names))
 
-    if mo.args is None or len(mo.args) == 0:
-        mo.log.warn("no mpi script provided")
+    if optionparser.args is None or len(optionparser.args) == 0:
+        optionparser.log.warn("no mpi script provided")
         return
 
-    return mpi, sched, mo
+    return mpi, sched, optionparser
 
 
 def main():
@@ -109,8 +110,8 @@ def main():
     try:
         instance_options = get_mpi_and_sched_and_options()
         if instance_options:
-            m = getinstance(*instance_options)
-            m.main()
+            instance = getinstance(*instance_options)
+            instance.main()
     except Exception:
         fancylogger.getLogger().exception("Main failed")
         sys.exit(1)

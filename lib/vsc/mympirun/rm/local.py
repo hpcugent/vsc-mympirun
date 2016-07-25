@@ -36,7 +36,7 @@ class Local(Sched):
     """
     _sched_for = ['local']
     SCHED_ENVIRON_ID = 'LOCAL_JOBID'
-    SCHED_ENVIRON_ID_AUTOGENERATE_JOBID = True
+    AUTOGENERATE_JOBID = True
 
     HYDRA_LAUNCHER = ['local']
 

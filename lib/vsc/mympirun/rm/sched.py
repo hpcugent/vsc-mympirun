@@ -36,8 +36,8 @@ from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
 
 
-def whatSched(requested):
-    """Return the scheduler class"""
+def what_sched(requested):
+    """Return the scheduler class """
 
     # import all modules in this dir: http://stackoverflow.com/a/16853487
     for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
@@ -69,7 +69,7 @@ class Sched(object):
     SCHED_ENVIRON_ID = None
 
     # if the SCHED_ENVIRON_ID is not found, create one yourself
-    SCHED_ENVIRON_ID_AUTOGENERATE_JOBID = False
+    AUTOGENERATE_JOBID = False
 
     SAFE_RSH_CMD = 'ssh'
     SAFE_RSH_LARGE_CMD = 'sshsleep'
@@ -97,10 +97,10 @@ class Sched(object):
         self.nruniquenodes = None
 
         self.mpinodes = None
-        self.mpinrnodes = None
+        self.nrmpinodes = None
         self.mpiprocesspernode = None
 
-        self.id = None
+        self.sched_id = None
 
         self.foundppn = None
         self.ppn = None
@@ -146,16 +146,16 @@ class Sched(object):
     def get_id(self):
         """get a unique id for this scheduler"""
         if self.SCHED_ENVIRON_ID is not None:
-            self.id = os.environ.get(self.SCHED_ENVIRON_ID, None)
+            self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
-        if self.id is None:
+        if self.sched_id is None:
             if self.SCHED_ENVIRON_ID is not None:
-                if self.SCHED_ENVIRON_ID_AUTOGENERATE_JOBID:
+                if self.AUTOGENERATE_JOBID:
                     self.log.info("get_id: failed to get id from environment variable %s, will generate one.",
                                   self.SCHED_ENVIRON_ID)
-                    self.id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
-                                                  random.randint(0, 10 ** 5 - 1))
-                    self.log.debug("get_id: using generated id %s", self.id)
+                    self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
+                                                        random.randint(0, 10 ** 5 - 1))
+                    self.log.debug("get_id: using generated id %s", self.sched_id)
                 else:
                     self.log.raiseException("get_id: failed to get id from environment variable %s",
                                             self.SCHED_ENVIRON_ID)
@@ -163,10 +163,10 @@ class Sched(object):
     def _cores_on_this_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""
 
-        fn = '/proc/cpuinfo'
+        filename = '/proc/cpuinfo'
         regcores = re.compile(r"^processor\s*:\s*\d+\s*$", re.M)
 
-        self.foundppn = len(regcores.findall(file(fn).read()))
+        self.foundppn = len(regcores.findall(open(filename).read()))
 
         self.log.debug("_cores_on_thisnode: found %s", self.foundppn)
 
@@ -183,8 +183,8 @@ class Sched(object):
             self._cores_on_this_node()
 
         try:
-            cs = sched_getaffinity()  # get affinity for current proc
-            self.cpus = [idx for idx, cpu in enumerate(cs.cpus) if cpu == 1]
+            proc_affinity = sched_getaffinity()  # get affinity for current proc
+            self.cpus = [idx for idx, cpu in enumerate(proc_affinity.cpus) if cpu == 1]
         except Exception:
             self.cpus = range(self.foundppn)
 
@@ -290,13 +290,13 @@ class Sched(object):
             # return multi unique nodes
             # mpiprocesspernode = 1 per node * multi
             self.mpiprocesspernode = multi
-            for n in self.uniquenodes:
-                res.extend([n] * multi)
+            for uniquenode in self.uniquenodes:
+                res.extend([uniquenode] * multi)
         else:
             # default mode
             self.mpiprocesspernode = self.ppn * multi
-            for n in self.uniquenodes:
-                res.extend([n] * self.mpiprocesspernode)
+            for uniquenode in self.uniquenodes:
+                res.extend([uniquenode] * self.mpiprocesspernode)
 
         # reorder
         ordermode = getattr(self.options, 'order', None)

@@ -53,10 +53,10 @@ INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
 # also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
-_logger = getLogger()
+LOGGER = getLogger()
 
 
-def whatMPI(name):
+def what_mpi(name):
     """
     Return the path of the selected mpirun and its class.
 
@@ -81,7 +81,7 @@ def whatMPI(name):
     mpirun_path = which('mpirun')
     if mpirun_path is None:
         # no MPI implementation installed
-        _logger.warn("no mpirun command found")
+        LOGGER.warn("no mpirun command found")
         return None, None, supp_mpi_impl
 
     scriptname = os.path.basename(os.path.abspath(name))
@@ -90,7 +90,7 @@ def whatMPI(name):
     # ompirun for OpenMPI or mhmpirun for mpich)
     for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname):
-            _logger.debug("%s was used to call mympirun", scriptname)
+            LOGGER.debug("%s was used to call mympirun", scriptname)
             return scriptname, mpi, supp_mpi_impl
 
     # mympirun was not called through a known alias, so find out which MPI
@@ -100,8 +100,8 @@ def whatMPI(name):
             return scriptname, mpi, supp_mpi_impl
 
     # no specific flavor found, default to mpirun_path
-    _logger.warn("The executable that called mympirun (%s) isn't supported"
-                 ", defaulting to %s", name, mpirun_path)
+    LOGGER.warn("The executable that called mympirun (%s) isn't supported"
+                ", defaulting to %s", name, mpirun_path)
     return mpirun_path, None, supp_mpi_impl
 
 
@@ -111,7 +111,7 @@ def stripfake():
     This function removes the fake path trickery from $PATH (assumes (VSC-tools|mympirun)/1.0.0/bin/fake).
     """
 
-    _logger.debug("PATH before stripfake(): %s", os.environ['PATH'])
+    LOGGER.debug("PATH before stripfake(): %s", os.environ['PATH'])
 
     # compile a regex that matches the faked mpirun
     reg_fakepath = re.compile(
@@ -123,14 +123,14 @@ def stripfake():
                                'fake_subdir': FAKE_SUBDIRECTORY_NAME,
                                'sep': os.sep
                            }
-                           ]))
+                          ]))
 
     oldpath = os.environ.get('PATH', '').split(os.pathsep)
 
     # remove all $PATH elements that match the fakepath regex
     os.environ['PATH'] = os.pathsep.join([x for x in oldpath if not reg_fakepath.match(x)])
 
-    _logger.debug("PATH after stripfake(): %s", os.environ['PATH'])
+    LOGGER.debug("PATH after stripfake(): %s", os.environ['PATH'])
     return
 
 
@@ -145,9 +145,9 @@ def which(cmd):
         cmd_path = os.path.join(path, cmd)
         # only accept path is command is there, and both readable and executable
         if os.access(cmd_path, os.R_OK | os.X_OK):
-            _logger.info("Command %s found at %s", cmd, cmd_path)
+            LOGGER.info("Command %s found at %s", cmd, cmd_path)
             return cmd_path
-    _logger.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
+    LOGGER.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
     return None
 
 
@@ -185,20 +185,19 @@ class MPI(object):
     PINNING_OVERRIDE_METHOD = 'numactl'
     PINNING_OVERRIDE_TYPE_DEFAULT = None
 
-    MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME = "--rsh=%(rsh)s"
+    REMOTE_OPTION_TEMPLATE = "--rsh=%(rsh)s"
     MPDBOOT_OPTIONS = []
     MPDBOOT_SET_INTERFACE = True
 
     MPIEXEC_TEMPLATE_GLOBAL_OPTION = "-genv %(name)s '%(value)s'"
-    MPIEXEC_TEMPLATE_LOCAL_OPTION = "-env %(name)s '%(value)s'"
-    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-x '%(name)s'"
+    OPTS_FROM_ENV_TEMPLATE = "-x '%(name)s'"
     MPIEXEC_OPTIONS = []
 
-    GLOBAL_VARIABLES_ENVIRONMENT_MODULES = ['MODULEPATH', 'LOADEDMODULES', 'MODULESHOME']
+    MODULE_ENVIRONMENT_VARIABLES = ['MODULEPATH', 'LOADEDMODULES', 'MODULESHOME']
 
-    PASS_VARIABLES_BASE = ['LD_LIBRARY_PATH', 'PATH', 'PYTHONPATH', 'CLASSPATH', 'LD_PRELOAD', 'PYTHONUNBUFFERED']
-    PASS_VARIABLES_BASE_PREFIX = ['OMP', 'MKL', 'KMP', 'DAPL', 'PSM', 'IPATH', 'TMI', 'PSC', 'O64', 'VSMP']
-    PASS_VARIABLES_CLASS_PREFIX = []  # to be set per derived class
+    OPTS_FROM_ENV_BASE = ['LD_LIBRARY_PATH', 'PATH', 'PYTHONPATH', 'CLASSPATH', 'LD_PRELOAD', 'PYTHONUNBUFFERED']
+    OPTS_FROM_ENV_BASE_PREFIX = ['OMP', 'MKL', 'KMP', 'DAPL', 'PSM', 'IPATH', 'TMI', 'PSC', 'O64', 'VSMP']
+    OPTS_FROM_ENV_FLAVOR_PREFIX = []  # to be set per flavor
 
     def __init__(self, options, cmdargs, **kwargs):
         if not hasattr(self, 'log'):
@@ -225,8 +224,7 @@ class MPI(object):
         self.mpiexec_node_filename = None
         self.mpiexec_options = None
         self.mpiexec_global_options = {}
-        self.mpiexec_local_options = {}
-        self.mpiexec_pass_environment = []  # list of variables
+        self.mpiexec_opts_from_env = []  # list of variables
 
         self.mpirun_cmd = None
 
@@ -235,7 +233,7 @@ class MPI(object):
         super(MPI, self).__init__(**kwargs)
 
         # sanity checks
-        if getattr(self, 'id', None) is None:
+        if getattr(self, 'sched_id', None) is None:
             self.log.raiseException("__init__: id None (should be set by one of the Sched classes)")
 
         if self.cmdargs is None or len(self.cmdargs) == 0:
@@ -257,7 +255,7 @@ class MPI(object):
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
                          ("|".join(cls._mpirun_for), os.sep))
         reg_match = reg.search(mpirun_path)
-        _logger.debug("_is_mpisrun_for(), reg_match: %s", reg_match)
+        LOGGER.debug("_is_mpisrun_for(), reg_match: %s", reg_match)
 
         if reg_match:
             if cls._mpirun_version is None:
@@ -294,9 +292,8 @@ class MPI(object):
         self.make_mpdboot()
 
         # prepare these separately
-        self.mpiexec_set_global_options()
-        self.mpiexec_set_local_options()
-        self.mpiexec_set_local_pass_variable_options()
+        self.set_mpiexec_global_options()
+        self.set_mpiexec_opts_from_env()
 
         self.set_mpiexec_options()
 
@@ -305,10 +302,10 @@ class MPI(object):
         # actual execution
         for runfunc, cmd in self.mpirun_prepare_execution():
             self.log.debug("main: going to execute cmd %s", " ".join(cmd))
-            ec, _ = runfunc(cmd)
-            if ec > 0:
+            exitcode, _ = runfunc(cmd)
+            if exitcode > 0:
                 self.cleanup()
-                self.log.raiseException("main: exitcode %s > 0; cmd %s", (ec, cmd))
+                self.log.raiseException("main: exitcode %s > 0; cmd %s", exitcode, cmd)
                 break
 
         self.cleanup()
@@ -371,8 +368,8 @@ class MPI(object):
             self.select_device()
 
         device_ip_reg_map = {
-            'eth': "ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
-            'ib': "infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
+            'eth': r"ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
+            'ib': r"infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
             }
 
         if self.netmasktype not in device_ip_reg_map:
@@ -380,19 +377,19 @@ class MPI(object):
                                     self.netmasktype, device_ip_reg_map)
 
         cmd = "/sbin/ip addr show"
-        ec, out = run_simple(cmd)
-        if ec > 0:
+        exitcode, out = run_simple(cmd)
+        if exitcode > 0:
             self.log.raiseException("set_netmask: failed to run cmd %s: %s", cmd, out)
 
-        reg = re.compile(r"" + device_ip_reg_map[self.netmasktype])
+        reg = re.compile(device_ip_reg_map[self.netmasktype])
         if not reg.search(out):
             self.log.raiseException("set_netmask: can't get netmask for %s: no matches found (reg %s out %s)",
                                     self.netmasktype, device_ip_reg_map[self.netmasktype], out)
 
         res = []
         for ipaddr_mask in reg.finditer(out):
-            ip = IP(ipaddr_mask.group(1), make_net=True)
-            network_netmask = "%s/%s" % (ip.net(), ip.netmask())
+            ip_info = IP(ipaddr_mask.group(1), make_net=True)
+            network_netmask = "%s/%s" % (ip_info.net(), ip_info.netmask())
             res.append(network_netmask)
             self.log.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s",
                            ipaddr_mask.group(1), network_netmask)
@@ -464,23 +461,23 @@ class MPI(object):
         nodetxt = "\n".join(self.mpinodes + [''])
 
         mpdboottxt = ""
-        for n in self.uniquenodes:
-            txt = n
+        for uniquenode in self.uniquenodes:
+            txt = uniquenode
             if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
                     txt += ":%s" % self.get_universe_ncpus()
-                txt += " ifhn=%s" % n
+                txt += " ifhn=%s" % uniquenode
 
             mpdboottxt += "%s\n" % txt
 
         try:
             nodefn = os.path.join(self.mympirundir, 'nodes')
-            file(nodefn, 'w').write(nodetxt)
+            open(nodefn, 'w').write(nodetxt)
             self.mpiexec_node_filename = nodefn
             self.log.debug("make_node_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
             mpdfn = os.path.join(self.mympirundir, 'mpdboot')
-            file(mpdfn, 'w').write(mpdboottxt)
+            open(mpdfn, 'w').write(mpdboottxt)
             self.mpdboot_node_filename = mpdfn
             self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
         except Exception:
@@ -504,7 +501,7 @@ class MPI(object):
             self.log.raiseException("make_mympirun_dir: basepath %s should exist.", basepath)
 
         self.mympirunbasedir = os.path.join(basepath, '.mympirun')
-        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.id, time.strftime("%Y%m%d_%H%M%S")))
+        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
         if not os.path.exists(destdir):
             try:
                 os.makedirs(destdir)
@@ -560,7 +557,7 @@ class MPI(object):
                                                    for x in range(10)))
             mpdconff.close()
             # set correct permissions on this file.
-            os.chmod(mpdconffn, 0400)
+            os.chmod(mpdconffn, stat.S_IREAD)
 
         self.mpdboot_set_localhost_interface()
 
@@ -573,7 +570,7 @@ class MPI(object):
         localhosts = self.get_localhosts()
         if len(localhosts) > 1:
             self.log.warning(("set_mpd_localhost_interface: more then one match for localhost from unique nodes "
-                             " found %s, using 1st."), localhosts)
+                              " found %s, using 1st."), localhosts)
         nodename, iface = localhosts[0]  # take the first one
         self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s", iface, nodename)
         self.mpdboot_localhost_interface = (nodename, iface)
@@ -595,11 +592,11 @@ class MPI(object):
         for idx, nodename in enumerate(self.uniquenodes):
             ip = socket.gethostbyname(nodename)
             cmd = "/sbin/ip -4 -o addr show to %s/32" % ip
-            ec, out = run_simple(cmd)
-            if ec == 0:
-                r = reg_iface.search(out)
-                if r:
-                    iface = r.group(1)
+            exitcode, out = run_simple(cmd)
+            if exitcode == 0:
+                regex = reg_iface.search(out)
+                if regex:
+                    iface = regex.group(1)
                     self.log.debug("get_localhost idx %s: localhost interface %s found for %s (ip: %s)",
                                    idx, iface, nodename, ip)
 
@@ -647,41 +644,39 @@ class MPI(object):
 
         # mpdboot rsh command
         if not self.has_hydra:
-            self.mpdboot_options.append(self.MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME % {'rsh': self.get_rsh()})
+            self.mpdboot_options.append(self.REMOTE_OPTION_TEMPLATE % {'rsh': self.get_rsh()})
 
     ### BEGIN mpiexec ###
-    def mpiexec_set_global_options(self):
+    def set_mpiexec_global_options(self):
         """
-        Set mpiexec global options.
+        Set mpiexec_global_options.
 
         Unless explicitly asked not to, will add all environment variables to mpiexec_global_options.
         """
         self.mpiexec_global_options['MKL_NUM_THREADS'] = '1'
 
         if not self.options.noenvmodules:
-            for env_var in self.GLOBAL_VARIABLES_ENVIRONMENT_MODULES:
+            for env_var in self.MODULE_ENVIRONMENT_VARIABLES:
                 if env_var in os.environ and env_var not in self.mpiexec_global_options:
                     self.mpiexec_global_options[env_var] = os.environ[env_var]
 
-    def mpiexec_set_local_options(self):
-        """Set mpiexec local options"""
-
-    def mpiexec_set_local_pass_variable_options(self):
+    def set_mpiexec_opts_from_env(self):
         """
-        Set mpiexec pass variables.
+        Get relevant environment variables and append them to mpiexec_opts_from_env
 
-        Gets the union of PASS_VARIABLES_BASE and the environment variables that start with a given prefix.
+        Gets the union of OPTS_FROM_ENV_BASE and the environment variables that start with a given prefix.
+        These will then be parsed and passed to mpiexec as an option
         """
 
-        # get all unique variables that are both in os.environ and in PASS_VARIABLES_BASE
-        vars_to_pass = nub(filter(os.environ.has_key, self.PASS_VARIABLES_BASE))
+        # get all unique variables that are both in os.environ and in OPTS_FROM_ENV_BASE
+        vars_to_pass = nub(filter(os.environ.has_key, self.OPTS_FROM_ENV_BASE))
 
-        for env_prefix in self.PASS_VARIABLES_CLASS_PREFIX + self.PASS_VARIABLES_BASE_PREFIX + self.options.variablesprefix:
+        for env_prefix in self.OPTS_FROM_ENV_FLAVOR_PREFIX + self.OPTS_FROM_ENV_BASE_PREFIX + self.options.variablesprefix:
             for env_var in os.environ.keys():
                 # add all environment variable keys that are equal to <prefix> or start with <prefix>_
-                # to mpiexec_pass_environment, but only if they aren't already in vars_to_pass
+                # to mpiexec_opts_from_env, but only if they aren't already in vars_to_pass
                 if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and env_var not in vars_to_pass:
-                    self.mpiexec_pass_environment.append(env_var)
+                    self.mpiexec_opts_from_env.append(env_var)
 
     def set_mpiexec_options(self):
         """Add various options to mpiexec_options."""
@@ -693,7 +688,7 @@ class MPI(object):
             self.mpiexec_options.append("-machinefile %s" % self.mpiexec_node_filename)
 
         # mpdboot global variables
-        self.mpiexec_options += self.mpiexec_get_global_options()
+        self.mpiexec_options += self.get_mpiexec_global_options()
 
         # number of procs to start
         if self.options.universe is not None and self.options.universe > 0:
@@ -701,11 +696,8 @@ class MPI(object):
         else:
             self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * self.nruniquenodes))
 
-        # mpdboot local variables
-        self.mpiexec_options += self.mpiexec_get_local_options()
-
-        # pass local env variables
-        self.mpiexec_options += self.mpiexec_get_local_pass_variable_options()
+        # pass local env variables to mpiexec
+        self.mpiexec_options += self.get_mpiexec_opts_from_env()
 
     def make_mpiexec_hydra_options(self):
         """Hydra specific mpiexec options."""
@@ -748,21 +740,21 @@ class MPI(object):
         reg_hydra_info = re.compile(r"^\s+(?P<key>\S[^:\n]*)\s*:(?P<value>.*?)\s*$", re.M)
 
         cmd = "mpirun -help"
-        ec, out = run_simple(cmd)
-        if ec > 0:
+        exitcode, out = run_simple(cmd)
+        if exitcode > 0:
             self.log.raiseException("get_hydra_info: failed to run cmd %s: %s", cmd, out)
 
         hydra_info = {}
-        for r in reg_hydra_info.finditer(out):
-            key = r.groupdict()['key']
+        for regex in reg_hydra_info.finditer(out):
+            key = regex.groupdict()['key']
             if key is None:
                 self.log.raiseException("get_hydra_info: failed to get hydra info: missing key in %s (out: %s)",
-                                        r.groupdict(), out)
+                                        regex.groupdict(), out)
             key = key.strip().lower()
-            value = r.groupdict()['value']
+            value = regex.groupdict()['value']
             if value is None:
                 self.log.debug("get_hydra_info: failed to get hydra info: missing value in %s (out: %s)" %
-                               (r.groupdict(), out))
+                               (regex.groupdict(), out))
                 value = ''
             values = [x.strip().strip('"').strip("'") for x in value.split() if len(x.strip()) > 0]
             hydra_info[key] = values
@@ -771,7 +763,7 @@ class MPI(object):
         keymap = {"rmk": r'^resource\s+management\s+kernel.*available',
                   "launcher": r'^%s.*available' % self.HYDRA_LAUNCHER_NAME,
                   "chkpt": r'^checkpointing.*available',
-                  }
+                 }
         self.hydra_info = {}
         for newkey, regtxt in keymap.items():
             reg = re.compile(regtxt, re.I)
@@ -786,73 +778,52 @@ class MPI(object):
 
         self.log.debug("get_hydra_info: filtered info %s", self.hydra_info)
 
-    def mpiexec_get_global_options(self):
+    def get_mpiexec_global_options(self):
         """
-        Create the global options to pass through mpiexec.
+        Create the global options to pass to mpiexec.
 
-        Iterates over mpiexec_global_options, and picks the options that aren't already in mpiexec_pass_environment.
+        Iterates over mpiexec_global_options, and picks the options that aren't already in mpiexec_opts_from_env.
         This way the options that are set with environment variables get a higher priority.
 
         @return: the final list of options, including the correct command line argument for the mpi flavor
         """
         global_options = []
 
-        for k, v in self.mpiexec_global_options.items():
-            if k in self.mpiexec_pass_environment:
+        for key, val in self.mpiexec_global_options.items():
+            if key in self.mpiexec_opts_from_env:
                 # environment variable is already set
-                self.log.debug("mpiexec_get_global_options: found global option %s in mpiexec_pass_environment.", k)
+                self.log.debug("get_mpiexec_global_options: found global option %s in mpiexec_opts_from_env.", key)
             else:
                 # insert the keyvalue pair into the correct command line argument
                 # the command for setting the environment variable depends on the mpi flavor
-                global_options.append(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION % {'name': k, "value": v})
+                global_options.append(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION % {'name': key, "value": val})
 
-        self.log.debug("mpiexec_get_global_options: template %s return options %s",
+        self.log.debug("get_mpiexec_global_options: template %s return options %s",
                        self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, global_options)
         return global_options
 
-    def mpiexec_get_local_options(self):
+    def get_mpiexec_opts_from_env(self):
         """
-        Create the local options to pass through mpiexec.
+        gets the environment variables that should be passed to mpiexec as an option.
 
-        Iterates over mpiexec_local_options, and picks the options that aren't already in mpiexec_pass_environment.
-        This way the options that are set with environment variables get a higher priority.
-
-        @return: the final list of options, including the correct command line argument for the mpi flavor
-        """
-        local_options = []
-        for k, v in self.mpiexec_local_options.items():
-            if k in self.mpiexec_pass_environment:
-                # environment variable is already set
-                self.log.debug("mpiexec_get_local_options: found local option %s in mpiexec_pass_environment.", k)
-            else:
-                local_options.append(self.MPIEXEC_TEMPLATE_LOCAL_OPTION % {'name': k, "value": v})
-
-        self.log.debug("mpiexec_get_local_options: templates %s return options %s",
-                       self.MPIEXEC_TEMPLATE_LOCAL_OPTION, local_options)
-        return local_options
-
-    def mpiexec_get_local_pass_variable_options(self):
-        """
-        Create the local pass environment variables to pass through mpiexec.
-
-        Parses mpiexec_pass_environment so that the chosen mpi flavor can understand it when it is passed to the
+        Parses mpiexec_opts_from_env so that the chosen mpi flavor can understand it when it is passed to the
         command line argument.
         """
 
-        self.log.debug("mpiexec_get_local_pass_variable_options: variables (and current value) to pass: %s",
-                       [[x, os.environ[x]] for x in self.mpiexec_pass_environment])
+        self.log.debug("get_mpiexec_opts_from_env: variables (and current value) to pass: %s",
+                       [[x, os.environ[x]] for x in self.mpiexec_opts_from_env])
 
-        if '%(commaseparated)s' in self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION:
-            self.log.debug("mpiexec_get_local_pass_variable_options: found commaseparated in template.")
-            local_pass_options = [self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION %
-                                  {'commaseparated': ','.join(self.mpiexec_pass_environment)}]
+        if '%(commaseparated)s' in self.OPTS_FROM_ENV_TEMPLATE:
+            self.log.debug("get_mpiexec_opts_from_env: found commaseparated in template.")
+            environment_options = [self.OPTS_FROM_ENV_TEMPLATE %
+                                   {'commaseparated': ','.join(self.mpiexec_opts_from_env)}]
         else:
-            local_pass_options = [self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION %
-                                  {'name': x, 'value': os.environ[x]} for x in self.mpiexec_pass_environment]
+            environment_options = [self.OPTS_FROM_ENV_TEMPLATE %
+                                   {'name': x, 'value': os.environ[x]} for x in self.mpiexec_opts_from_env]
 
-        self.log.debug("mpiexec_get_local_pass_variable_options: template %s return options %s",
-                       self.MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION, local_pass_options)
-        return local_pass_options
+        self.log.debug("get_mpiexec_opts_from_env: template %s return options %s",
+                       self.OPTS_FROM_ENV_TEMPLATE, environment_options)
+        return environment_options
 
     ### BEGIN mpirun ###
     def make_mpirun(self):
@@ -956,7 +927,7 @@ class MPI(object):
                             "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.foundppn)
         if corespp_rest > 0:
             self.log.debug(("pinning_override: number of mpiprocesses (%s) is not an exact multiple of "
-                            "number of procs (%s). Ignoring rest."),self.mpiprocesspernode, self.foundppn)
+                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.foundppn)
 
         map_func = None
         if override_type in ('packed', 'compact',):
@@ -1024,8 +995,13 @@ class MPI(object):
         self.log.raiseException("get_pinning_override_variable: not implemented.")
 
     def mpirun_prepare_execution(self):
-        """Make a list of tuples to start the actual mpirun command"""
+        """
+        Make a function that runs mpirun with all arguments correctly set
+
+        @return: a tuple containing the final function and the final command
+        """
         def main_runfunc(cmd):
+            """The function that will run mpirun"""
             if self.options.output is not None:
                 return run_to_file(cmd, filename=self.options.output)
             else:

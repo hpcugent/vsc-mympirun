@@ -40,6 +40,11 @@ class MympirunParser(GeneralOption.PARSER):
 
 
 class MympirunOption(GeneralOption):
+    """
+    Class that extends vsc-utils.GeneralOption
+
+    Parses commandline options and sets them to variables
+    """
     PARSER = MympirunParser
     ALLOPTSMANDATORY = False  # eg scriptname and other options. same for mpirun options
     INTERSPERSED = False  # Stop parsing cmdline, all others opts are opts for the exe
@@ -47,7 +52,6 @@ class MympirunOption(GeneralOption):
     def __init__(self, ismpirun=False):
         self.mpirunmode = ismpirun
 
-        # super(MympirunOption, self).__init__()
         GeneralOption.__init__(self)
 
     def make_init(self):
@@ -98,11 +102,11 @@ class MympirunOption(GeneralOption):
             "socket": ("Force socket device", None, "store_true", None),
 
             "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
-                         "universe is all requested processes.)"), "int", "store", None),
+                          "universe is all requested processes.)"), "int", "store", None),
 
             "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
-                            "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
-                            "e.g. 'cyclepin')."), "str", "store", None),
+                             "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
+                             "e.g. 'cyclepin')."), "str", "store", None),
 
             "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
                                  "(<prefix>_ should match) to pass through."), "string", "extend", []),
@@ -115,7 +119,7 @@ class MympirunOption(GeneralOption):
 
             'branchcount': ("Set the hydra branchcount", "int", "store", None),
 
-            'qlogic_ipath': ("Force qlogic/true scale ipath", None, "store_true", None),
+            'use_psm': ("Use Performance Scaled Messaging", None, "store_true", None),
         }
 
         descr = ["mympirun options", "General advanced mympirun options"]
@@ -138,8 +142,8 @@ class MympirunOption(GeneralOption):
         """
         Handle mpirun mode:
           - continue with reduced set of commandline options
-          - These options are the keys of optsToRemove.
-          - The values of optsToRemove are the number of arguments of these options, that also need to be removed.
+          - These options are the keys of opts_to_remove.
+          - The values of opts_to_remove are the number of arguments of these options, that also need to be removed.
         """
 
         if options_list is None:
@@ -147,16 +151,16 @@ class MympirunOption(GeneralOption):
 
         newopts = options_list[:]  # copy
         if self.mpirunmode:
-            optsToRemove = {
+            opts_to_remove = {
                 '-np': 1,
                 '-machinefile': 1
             }
 
-            for opt in optsToRemove.keys():
+            for opt in opts_to_remove.keys():
                 try:
                     pos = newopts.index(opt)
                     # remove 1 + args
-                    del newopts[pos:pos + 1 + optsToRemove[opt]]
+                    del newopts[pos:pos + 1 + opts_to_remove[opt]]
                 except ValueError:
                     continue
 

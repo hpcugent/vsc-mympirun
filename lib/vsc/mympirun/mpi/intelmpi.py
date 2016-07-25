@@ -40,6 +40,8 @@ SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
 
 class IntelMPI(MPI):
 
+    """An implementation of the MPI class for IntelMPI"""
+
     _mpiscriptname_for = ['impirun']
     _mpirun_for = ['impi']
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("4.1.0.0")
@@ -49,18 +51,18 @@ class IntelMPI(MPI):
                                  'fallback': ("Enable device fallback", None, "store_true", False),
                                  'daplud': ("Enable DAPL UD connections", None, "store_true", False),
                                  'xrc': ("Enable Mellanox XRC", None, "store_true", False),
-                                 },
+                                },
                      'prefix': 'impi',
                      'description': ('Intel MPI options', 'Advanced options specific for Intel MPI'),
-                     }
+                    }
 
     DEVICE_MPIDEVICE_MAP = {'ib': 'rdssm', 'det': 'det', 'shm': 'shm', 'socket': 'sock'}
 
     MPIRUN_LOCALHOSTNAME = socket.gethostname()
 
-    PASS_VARIABLES_CLASS_PREFIX = ['I_MPI']
+    OPTS_FROM_ENV_FLAVOR_PREFIX = ['I_MPI']
 
-    MPIEXEC_TEMPLATE_PASS_VARIABLE_OPTION = "-envlist %(commaseparated)s"
+    OPTS_FROM_ENV_TEMPLATE = "-envlist %(commaseparated)s"
 
     def _has_hydra(self):
         """Has HYDRA or not"""
@@ -100,9 +102,7 @@ class IntelMPI(MPI):
         super(IntelMPI, self).make_mpdboot_options()
 
         if self.options.impi_mpdbulletproof:
-            """
-            Start the mpd with the --bulletproof option
-            """
+            # Start the mpd with the --bulletproof option
             mpd = which(['mpd.py'])
             self.mpdboot_options.append('-m "\\\"%s --bulletproof\\\""' % mpd)
 
@@ -125,9 +125,9 @@ class IntelMPI(MPI):
                 os.environ['I_MPI_PIN_PROCESSOR_LIST'] = txt
                 self.log.info("check_usable_cpus: one node requested. Setting I_MPI_PIN_PROCESSOR_LIST to %s", txt)
 
-    def mpiexec_set_global_options(self):
+    def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
-        super(IntelMPI, self).mpiexec_set_global_options()
+        super(IntelMPI, self).set_mpiexec_global_options()
 
         # this one also needs to be set at runtime
         self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
@@ -161,14 +161,12 @@ class IntelMPI(MPI):
             # this only affects libiomp5 usage (ie intel compilers!)
             self.mpiexec_global_options["KMP_AFFINITY"] = "compact"
 
-            """
-            if self.options.hybrid == 4:
-                self.mpiexec_global_options["I_MPI_PIN_DOMAIN"]="cache"
-            elif self.options.hybrid == 2:
-                self.mpiexec_global_options["I_MPI_PIN_DOMAIN"]="socket"
-            """
+            # if self.options.hybrid == 4:
+            #     self.mpiexec_global_options["I_MPI_PIN_DOMAIN"]="cache"
+            # elif self.options.hybrid == 2:
+            #     self.mpiexec_global_options["I_MPI_PIN_DOMAIN"]="socket"
 
-        if self.options.qlogic_ipath:
+        if self.options.use_psm:
             if 'I_MPI_DEVICE' in self.mpiexec_global_options:
                 del self.mpiexec_global_options['I_MPI_DEVICE']
             if 'TMI_CONFIG' in os.environ:
@@ -182,7 +180,7 @@ class IntelMPI(MPI):
                 if not os.path.exists(tmicfg):
                     open(tmicfg, 'w').write('psm 1.0 libtmip_psm.so " "\n')
                 self.mpiexec_global_options['TMI_CONFIG'] = tmicfg
-            self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:tmi'  # TODO shm:tmi or tmi
+            self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:tmi'
             self.mpiexec_global_options['I_MPI_TMI_PROVIDER'] = 'psm'
             if self.options.debuglvl > 0:
                 self.mpiexec_global_options['TMI_DEBUG'] = '1'
@@ -222,9 +220,9 @@ class IntelHydraMPI(IntelMPI):
         super(IntelMPI, self).make_mpiexec_hydra_options()
         self.mpiexec_options.append("-perhost %d" % self.mpiprocesspernode)
 
-    def mpiexec_set_global_options(self):
+    def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
-        super(IntelHydraMPI, self).mpiexec_set_global_options()
+        super(IntelHydraMPI, self).set_mpiexec_global_options()
         self.mpiexec_global_options['I_MPI_FALLBACK'] = self._enable_disable(self.options.impi_fallback)
 
         if 'I_MPI_DEVICE' in self.mpiexec_global_options:

@@ -31,9 +31,6 @@ mpi and scheduler class
 
 from vsc.utils import fancylogger
 
-_logger = fancylogger.getLogger()
-
-
 def getinstance(mpi, sched, options):
     """
     Make an instance of the relevant MPI class. Also set the RM instance
