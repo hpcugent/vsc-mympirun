@@ -60,12 +60,15 @@ def get_mpi_and_sched_and_options():
     # init generaloption with the various mpirun cli options
     optionparser = MympirunOption(ismpirun=isfake)
 
-    # see if an mpi flavor was explicitly chosen as an argument
-    # if not, just use the mpirun that was called
-    # We are using sys.argv because generaloption depends on the the returned
-    # scriptname
-    setmpi = optionparser.options.setmpi if optionparser.options.setmpi else sys.argv[0]
-    optionparser.log.debug("mympirun will use %s as MPI flavor", setmpi)
+    # see if an mpi flavor was explicitly chosen as a command line argument. If not, just use the mpirun that was called
+    # We are using sys.argv because generaloption depends on the the returned scriptname
+    if optionparser.options.setmpi:
+        setmpi = optionparser.options.setmpi
+        optionparser.log.debug("mympirun has been forced to use %s as MPI flavor", setmpi)
+    else:
+        setmpi = sys.argv[0]
+        optionparser.log.debug("mympirun will be executed by %s", setmpi)
+
     scriptname, mpi, found_mpi = mpim.what_mpi(setmpi)
     found_mpi_names = [x.__name__ for x in found_mpi]
 

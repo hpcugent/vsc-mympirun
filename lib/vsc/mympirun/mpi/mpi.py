@@ -305,7 +305,7 @@ class MPI(object):
             exitcode, _ = runfunc(cmd)
             if exitcode > 0:
                 self.cleanup()
-                self.log.raiseException("main: exitcode %s > 0; cmd %s", exitcode, cmd)
+                self.log.raiseException("main: exitcode %s > 0; cmd %s" % (exitcode, cmd))
                 break
 
         self.cleanup()
