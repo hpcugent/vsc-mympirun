@@ -141,8 +141,6 @@ class MympirunOption(GeneralOption):
                                mpi.__name__, prefix, descr, opts)
                 self.add_group_parser(opts, descr, prefix=prefix)
 
-
-
     def parseoptions(self, options_list=None):
         """
         Handle mpirun mode:
@@ -179,6 +177,7 @@ class MympirunOption(GeneralOption):
 
     def postprocess(self):
         """Some additional processing"""
+
         if self.options.debugmpi:
             # set some
             self.options.debug = True
