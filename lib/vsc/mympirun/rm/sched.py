@@ -47,14 +47,22 @@ def what_sched(requested):
 
     # if there is no requested scheduler set or if the script is not in a job
     # environment, default to local
-    if "SCHED_ENVIRON_ID" not in os.environ or requested is None:
+
+    # first, try to use the scheduler that was requested
+    if requested:
         for sched in found_sched:
-            if sched._is_sched_for("local"):
+            if sched._is_sched_for(requested):
                 return sched, found_sched
 
-    # search for a scheduler that matches requested
+    # next, try to use the scheduler defined by environment variables
+    else:
+        for sched in found_sched:
+            if sched.SCHED_ENVIRON_ID in os.environ:
+                return sched, found_sched
+
+    # If that fails, try to force the local scheduler
     for sched in found_sched:
-        if sched._is_sched_for(requested):
+        if sched._is_sched_for("local"):
             return sched, found_sched
 
     # if there is no local scheduler, return None
@@ -135,7 +143,7 @@ class Sched(object):
 
         for envvar in totest:
             envval = os.environ.get(envvar, None)
-            if envval is None or len(envval) == 0:
+            if not envval:
                 continue
             else:
                 return True
@@ -157,7 +165,7 @@ class Sched(object):
                                                         random.randint(0, 10 ** 5 - 1))
                     self.log.debug("get_id: using generated id %s", self.sched_id)
                 else:
-                    self.log.raiseException("get_id: failed to get id from environment variable %s",
+                    self.log.raiseException("get_id: failed to get id from environment variable %s" %
                                             self.SCHED_ENVIRON_ID)
 
     def _cores_on_this_node(self):
@@ -185,10 +193,10 @@ class Sched(object):
         try:
             proc_affinity = sched_getaffinity()  # get affinity for current proc
             self.cpus = [idx for idx, cpu in enumerate(proc_affinity.cpus) if cpu == 1]
+            self.log.debug("found cpus from affinity: %s", self.cpus)
         except Exception:
             self.cpus = range(self.foundppn)
-
-        self.log.debug("which_cpus: using cpus %s", self.cpus)
+            self.log.debug("could not find cpus from affinity, simulating with range(foundppn): %s", self.cpus)
 
     def get_node_list(self):
         """get a list with the node of every requested processor/core"""
@@ -318,7 +326,7 @@ class Sched(object):
             res.sort()
             self.log.debug("make_node_list sort nodes (mode %s)", ordermode)
         else:
-            self.log.raiseExcepetion("make_node_list unknown ordermode %s", ordermode)
+            self.log.raiseException("make_node_list unknown ordermode %s" % ordermode)
 
         self.log.debug("make_node_list: ordered node list %s (mpiprocesspernode %s)", res, self.mpiprocesspernode)
 

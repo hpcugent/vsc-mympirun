@@ -47,14 +47,16 @@ class IntelMPI(MPI):
     _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("4.1.0.0")
     _mpirun_version = staticmethod(_mpirun_version)
 
-    RUNTIMEOPTION = {'options': {'mpdbulletproof': ("Start MPD in bulletproof", None, "store_true", False),
-                                 'fallback': ("Enable device fallback", None, "store_true", False),
-                                 'daplud': ("Enable DAPL UD connections", None, "store_true", False),
-                                 'xrc': ("Enable Mellanox XRC", None, "store_true", False),
-                                },
-                     'prefix': 'impi',
-                     'description': ('Intel MPI options', 'Advanced options specific for Intel MPI'),
-                    }
+    RUNTIMEOPTION = {
+        'options': {
+            'mpdbulletproof': ("Start MPD in bulletproof", None, "store_true", False),
+            'fallback': ("Enable device fallback", None, "store_true", False),
+            'daplud': ("Enable DAPL UD connections", None, "store_true", False),
+            'xrc': ("Enable Mellanox XRC", None, "store_true", False),
+            },
+        'prefix': 'impi',
+        'description': ('Intel MPI options', 'Advanced options specific for Intel MPI'),
+        }
 
     DEVICE_MPIDEVICE_MAP = {'ib': 'rdssm', 'det': 'det', 'shm': 'shm', 'socket': 'sock'}
 
@@ -160,11 +162,6 @@ class IntelMPI(MPI):
 
             # this only affects libiomp5 usage (ie intel compilers!)
             self.mpiexec_global_options["KMP_AFFINITY"] = "compact"
-
-            # if self.options.hybrid == 4:
-            #     self.mpiexec_global_options["I_MPI_PIN_DOMAIN"]="cache"
-            # elif self.options.hybrid == 2:
-            #     self.mpiexec_global_options["I_MPI_PIN_DOMAIN"]="socket"
 
         if self.options.use_psm:
             if 'I_MPI_DEVICE' in self.mpiexec_global_options:

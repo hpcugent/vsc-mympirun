@@ -46,13 +46,13 @@ class PBS(Sched):
         nodevar = 'PBS_NODEFILE'
         filename = os.environ.get(nodevar, None)
         if filename is None:
-            self.log.raiseException("get_node_list: failed to get %s from environment", nodevar)
+            self.log.raiseException("get_node_list: failed to get %s from environment"  % nodevar)
 
         try:
             self.nodes = [x.strip() for x in open(filename).read().split("\n") if len(x.strip()) > 0]
             self.nrnodes = len(self.nodes)
             self.log.debug("get_node_list: found %s nodes in %s: %s", self.nrnodes, filename, self.nodes)
         except IOError:
-            self.log.raiseException("get_node_list: failed to get nodes from nodefile %s", filename)
+            self.log.raiseException("get_node_list: failed to get nodes from nodefile %s" % filename)
 
         self.log.debug("get_node_list: set %s nodes: %s", self.nrnodes, self.nodes)

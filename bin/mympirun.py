@@ -89,8 +89,8 @@ def get_mpi_and_sched_and_options():
     if mpi is None:
         optionparser.log.raiseException(("No MPI class found that supports scriptname %s; isfake %s). Please use "
                                          "mympirun through one of the direct calls or make sure the mpirun command can"
-                                         " be found. Found MPI %s"),
-                                        scriptname, isfake, ", ".join(found_mpi_names))
+                                         " be found. Found MPI %s") %
+                                        (scriptname, isfake, ", ".join(found_mpi_names)))
     else:
         optionparser.log.debug("Found MPI class %s (scriptname %s; isfake %s)", mpi.__name__, scriptname, isfake)
 
@@ -101,7 +101,7 @@ def get_mpi_and_sched_and_options():
         optionparser.log.debug("Found sched class %s from options.setsched %s (all Sched found %s)",
                                sched.__name__, optionparser.options.setsched, ", ".join(found_sched_names))
 
-    if optionparser.args is None or len(optionparser.args) == 0:
+    if not optionparser.args:
         optionparser.log.warn("no mpi script provided")
         return
 

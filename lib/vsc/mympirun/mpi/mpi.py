@@ -72,7 +72,7 @@ def what_mpi(name):
     for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
         loader.find_module(modulename).load_module(modulename)
 
-    supp_mpi_impl = get_subclasses(MPI)  # supported MPI implementations, these were imported in __init__.py
+    supp_mpi_impl = get_subclasses(MPI)  # supported MPI implementations
 
     # remove fake mpirun from $PATH
     stripfake()
@@ -171,10 +171,6 @@ class MPI(object):
 
     HYDRA = None
     HYDRA_LAUNCHER_NAME = "launcher"
-    # to be set in Sched subclasses, not here
-    # HYDRA_RMK = None
-    # HYDRA_LAUNCHER = 'ssh'
-    # HYDRA_LAUNCHER_EXEC = None
 
     DEVICE_LOCATION_MAP = {'ib': '/dev/infiniband', 'det': '/dev/det', 'shm': '/dev/shm', 'socket': None}
     DEVICE_ORDER = ['ib', 'det', 'shm', 'socket']
@@ -234,9 +230,9 @@ class MPI(object):
 
         # sanity checks
         if getattr(self, 'sched_id', None) is None:
-            self.log.raiseException("__init__: id None (should be set by one of the Sched classes)")
+            self.log.raiseException("__init__: sched_id is None (should be set by one of the Sched classes)")
 
-        if self.cmdargs is None or len(self.cmdargs) == 0:
+        if not self.cmdargs:
             self.log.raiseException("__init__: no executable or command provided")
 
     # factory methods for MPI
@@ -327,8 +323,8 @@ class MPI(object):
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
         if not self.foundppn == len(self.cpus):
-            self.log.info(("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, "
-                           "usable cpus %s"), self.ppn, self.foundppn, len(self.cpus))
+            self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
+                          self.ppn, self.foundppn, len(self.cpus))
 
     def check_limit(self):
         """Check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error."""
@@ -347,7 +343,7 @@ class MPI(object):
         if 'OMP_NUM_THREADS' in os.environ:
             threads = os.environ['OMP_NUM_THREADS']
         else:
-            if self.options.hybrid is None or self.options.hybrid == 0:
+            if not self.options.hybrid:
                 threads = 1
             else:
                 threads = max(self.ppn // self.options.hybrid, 1)
@@ -369,22 +365,22 @@ class MPI(object):
 
         device_ip_reg_map = {
             'eth': r"ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
-            'ib': r"infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)"
+            'ib': r"infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
             }
 
         if self.netmasktype not in device_ip_reg_map:
-            self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)",
-                                    self.netmasktype, device_ip_reg_map)
+            self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" %
+                                    (self.netmasktype, device_ip_reg_map))
 
         cmd = "/sbin/ip addr show"
         exitcode, out = run_simple(cmd)
         if exitcode > 0:
-            self.log.raiseException("set_netmask: failed to run cmd %s: %s", cmd, out)
+            self.log.raiseException("set_netmask: failed to run cmd %s, ec: %s" % (cmd, exitcode))
 
         reg = re.compile(device_ip_reg_map[self.netmasktype])
         if not reg.search(out):
-            self.log.raiseException("set_netmask: can't get netmask for %s: no matches found (reg %s out %s)",
-                                    self.netmasktype, device_ip_reg_map[self.netmasktype], out)
+            self.log.raiseException("set_netmask: can't get netmask for %s: no matches found (reg %s out %s)" %
+                                    (self.netmasktype, device_ip_reg_map[self.netmasktype], out))
 
         res = []
         for ipaddr_mask in reg.finditer(out):
@@ -395,7 +391,7 @@ class MPI(object):
                            ipaddr_mask.group(1), network_netmask)
 
         self.log.debug("set_netmask: return complete netmask %s", res)
-        if len(res) > 0:
+        if res:
             self.netmask = os.pathsep.join(res)
 
     def select_device(self, force=False):
@@ -424,7 +420,7 @@ class MPI(object):
                         continue
 
                 path = self.DEVICE_LOCATION_MAP[dev]
-                if path is None or os.path.exists(path):
+                if os.path.exists(path):
                     founddev = dev
                     self.device = self.DEVICE_MPIDEVICE_MAP[dev]
                     self.log.debug("select_device: found path %s for device %s", path, self.device)
@@ -441,7 +437,7 @@ class MPI(object):
         """Set self.device to founddev, but doublecheck if the path to this device actually exists """
         self.device = self.DEVICE_MPIDEVICE_MAP[founddev]
         path = self.DEVICE_LOCATION_MAP[founddev]
-        if path is None or os.path.exists(path):
+        if path is None or not os.path.exists(path):
             self.log.warning("Forcing device %s (founddevice %s), but path %s not found.",
                              self.device, founddev, path)
 
@@ -481,7 +477,7 @@ class MPI(object):
             self.mpdboot_node_filename = mpdfn
             self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
         except Exception:
-            self.log.raiseException('make_node_file: failed to write nodefile %s mpbboot nodefile %s', nodefn, mpdfn)
+            self.log.raiseException('make_node_file: failed to write nodefile %s mpbboot nodefile %s' % (nodefn, mpdfn))
 
     def get_universe_ncpus(self):
         """Return ppn for universe"""
@@ -498,7 +494,7 @@ class MPI(object):
         if basepath is None:
             basepath = os.environ['HOME']
         if not os.path.exists(basepath):
-            self.log.raiseException("make_mympirun_dir: basepath %s should exist.", basepath)
+            self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
 
         self.mympirunbasedir = os.path.join(basepath, '.mympirun')
         destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
@@ -506,7 +502,7 @@ class MPI(object):
             try:
                 os.makedirs(destdir)
             except os.error:
-                self.log.raiseException('make_mympirun_dir: failed to make job dir %s', destdir)
+                self.log.raiseException('make_mympirun_dir: failed to make job dir %s' % destdir)
 
         self.log.debug("make_mympirun_dir: tmp mympirundir %s", destdir)
         self.mympirundir = destdir
@@ -559,20 +555,20 @@ class MPI(object):
             # set correct permissions on this file.
             os.chmod(mpdconffn, stat.S_IREAD)
 
-        self.mpdboot_set_localhost_interface()
+        self.set_mpdboot_localhost_interface()
 
         self.make_mpdboot_options()
 
         self.log.debug("make_mpdboot set options %s", self.mpdboot_options)
 
-    def mpdboot_set_localhost_interface(self):
+    def set_mpdboot_localhost_interface(self):
         """Sets mpdboot_localhost_interface to the first result of get_localhosts()."""
         localhosts = self.get_localhosts()
         if len(localhosts) > 1:
-            self.log.warning(("set_mpd_localhost_interface: more then one match for localhost from unique nodes "
+            self.log.warning(("set_mpdboot_localhost_interface: more then one match for localhost from unique nodes "
                               " found %s, using 1st."), localhosts)
         nodename, iface = localhosts[0]  # take the first one
-        self.log.debug("set_mpd_localhost_interface: mpd localhost interface %s found for %s", iface, nodename)
+        self.log.debug("set_mpdboot_localhost_interface: mpd localhost interface %s found for %s", iface, nodename)
         self.mpdboot_localhost_interface = (nodename, iface)
 
     def get_localhosts(self):
@@ -607,8 +603,8 @@ class MPI(object):
             else:
                 self.log.error("get_localhost idx %s: cmd %s failed with output %s", idx, cmd, out)
 
-        if len(res) == 0:
-            self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s", self.uniquenodes)
+        if not res:
+            self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s" % self.uniquenodes)
         return res
 
     def make_mpdboot_options(self):
@@ -719,14 +715,14 @@ class MPI(object):
             launcher = None
             if getattr(self, 'HYDRA_LAUNCHER', None) is not None:
                 launcher = [x for x in self.HYDRA_LAUNCHER if x in self.hydra_info.get('launcher', [])]
-                if len(launcher) > 0:
+                if launcher:
                     self.log.debug("make_mpiexec_hydra_options: HYDRA: launcher %s, using first one", launcher)
                 else:
                     self.log.debug("make_mpiexe_hydra_options: no launcher from HYDRA_LAUNCHER %s and hydra_info %s",
                                    self.HYDRA_LAUNCHER, self.hydra_info)
 
             launcher_exec = self.HYDRA_LAUNCHER_EXEC
-            if launcher is None or len(launcher) == 0:
+            if not launcher:
                 launcher_exec = self.get_rsh()
             else:
                 self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher[0]))
@@ -739,31 +735,33 @@ class MPI(object):
         """Get a dict with hydra info."""
         reg_hydra_info = re.compile(r"^\s+(?P<key>\S[^:\n]*)\s*:(?P<value>.*?)\s*$", re.M)
 
-        cmd = "mpirun -help"
+        cmd = "mpirun -info"
         exitcode, out = run_simple(cmd)
         if exitcode > 0:
-            self.log.raiseException("get_hydra_info: failed to run cmd %s: %s", cmd, out)
+            self.log.raiseException("get_hydra_info: failed to run cmd %s: %s" % (cmd, out))
 
         hydra_info = {}
         for regex in reg_hydra_info.finditer(out):
             key = regex.groupdict()['key']
             if key is None:
-                self.log.raiseException("get_hydra_info: failed to get hydra info: missing key in %s (out: %s)",
-                                        regex.groupdict(), out)
+                self.log.raiseException("get_hydra_info: failed to get hydra info: missing key in %s (out: %s)" %
+                                        (regex.groupdict(), out))
             key = key.strip().lower()
             value = regex.groupdict()['value']
             if value is None:
                 self.log.debug("get_hydra_info: failed to get hydra info: missing value in %s (out: %s)" %
                                (regex.groupdict(), out))
                 value = ''
-            values = [x.strip().strip('"').strip("'") for x in value.split() if len(x.strip()) > 0]
+            values = [x.strip().strip('"').strip("'") for x in value.split() if x.strip()]
             hydra_info[key] = values
         self.log.debug("get_hydra_info: found info %s", hydra_info)
 
-        keymap = {"rmk": r'^resource\s+management\s+kernel.*available',
-                  "launcher": r'^%s.*available' % self.HYDRA_LAUNCHER_NAME,
-                  "chkpt": r'^checkpointing.*available',
-                 }
+        keymap = {
+            "rmk": r'^resource\s+management\s+kernel.*available',
+            "launcher": r'^%s.*available' % self.HYDRA_LAUNCHER_NAME,
+            "chkpt": r'^checkpointing.*available',
+            }
+
         self.hydra_info = {}
         for newkey, regtxt in keymap.items():
             reg = re.compile(regtxt, re.I)
@@ -839,7 +837,7 @@ class MPI(object):
         if self.pinning_override_type is not None:
             p_o = self.pinning_override()
             if p_o is None or not os.path.isfile(p_o):
-                self.log.raiseException("make_mpirun: no valid pinning_overrride %s (see previous errors)", p_o)
+                self.log.raiseException("make_mpirun: no valid pinning_overrride %s (see previous errors)" % p_o)
             else:
                 self.mpirun_cmd += [p_o]
 
@@ -904,7 +902,7 @@ class MPI(object):
         # - eg numactl -s grep physcpubind
         if not self.ppn == self.foundppn:
             self.log.raiseException(("pinning_override: number of found procs %s is different from "
-                                     "requested ppn %s. Not yet supported."), self.foundppn, self.ppn)
+                                     "requested ppn %s. Not yet supported.") % (self.foundppn, self.ppn))
 
         override_type = self.pinning_override_type
         multithread = True
@@ -952,7 +950,7 @@ class MPI(object):
                 # spread cores
                 map_func = lambda x: (x * corespp)
         else:
-            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s",
+            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
                                     self.pinning_override_type)
 
         rankmap = [map_func(x) for x in range(self.mpiprocesspernode)]
@@ -961,7 +959,7 @@ class MPI(object):
 
         pinning_exe = which(self.PINNING_OVERRIDE_METHOD)  # default numactl
         if not pinning_exe:
-            self.log.raiseException("pinning_override: can't find executable %s", self.PINNING_OVERRIDE_METHOD)
+            self.log.raiseException("pinning_override: can't find executable %s" % self.PINNING_OVERRIDE_METHOD)
 
         if self.PINNING_OVERRIDE_METHOD in ('numactl',):
             pinning_exe += ' --physcpubind="${%s[$%s]}"' % (rankmapname, rankname)
@@ -1015,4 +1013,4 @@ class MPI(object):
             shutil.rmtree(self.mympirundir)
             self.log.debug("cleanup: removed mympirundir %s", self.mympirundir)
         except OSError:
-            self.log.raiseException("cleanup: cleaning up mympirundir %s failed", self.mympirundir)
+            self.log.raiseException("cleanup: cleaning up mympirundir %s failed" % self.mympirundir)
