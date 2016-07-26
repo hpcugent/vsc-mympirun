@@ -420,7 +420,7 @@ class MPI(object):
                         continue
 
                 path = self.DEVICE_LOCATION_MAP[dev]
-                if os.path.exists(path):
+                if path is None or os.path.exists(path):
                     founddev = dev
                     self.device = self.DEVICE_MPIDEVICE_MAP[dev]
                     self.log.debug("select_device: found path %s for device %s", path, self.device)
