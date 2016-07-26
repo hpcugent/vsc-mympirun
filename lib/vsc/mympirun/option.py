@@ -58,7 +58,6 @@ class MympirunOption(GeneralOption):
 
     def make_init(self):
 
-        # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
             # long option: (description, type, action, default, short option)
             "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
@@ -142,8 +141,6 @@ class MympirunOption(GeneralOption):
                                mpi.__name__, prefix, descr, opts)
                 self.add_group_parser(opts, descr, prefix=prefix)
 
-
-
     def parseoptions(self, options_list=None):
         """
         Handle mpirun mode:
@@ -180,6 +177,7 @@ class MympirunOption(GeneralOption):
 
     def postprocess(self):
         """Some additional processing"""
+
         if self.options.debugmpi:
             # set some
             self.options.debug = True
