@@ -35,6 +35,7 @@ from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
 
+LOGGER = getLogger()
 
 def what_sched(requested):
     """Return the scheduler class """
@@ -45,25 +46,24 @@ def what_sched(requested):
 
     found_sched = get_subclasses(Sched)
 
-    # if there is no requested scheduler set or if the script is not in a job
-    # environment, default to local
-
     # first, try to use the scheduler that was requested
     if requested:
         for sched in found_sched:
             if sched._is_sched_for(requested):
                 return sched, found_sched
+        LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation" % requested)
 
     # next, try to use the scheduler defined by environment variables
-    else:
-        for sched in found_sched:
-            if sched.SCHED_ENVIRON_ID in os.environ:
-                return sched, found_sched
+    for sched in found_sched:
+        if sched.SCHED_ENVIRON_ID in os.environ:
+            return sched, found_sched
 
     # If that fails, try to force the local scheduler
     for sched in found_sched:
+        LOGGER.debug("No scheduler found in environment, defaulting to local")
         if sched._is_sched_for("local"):
             return sched, found_sched
+
 
     # if there is no local scheduler, return None
     return None, found_sched
