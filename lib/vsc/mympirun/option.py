@@ -83,9 +83,11 @@ class MympirunOption(GeneralOption):
             "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
                        None, "store_true", False),
 
-            "output": ("filename to write stdout directly to (instead of stdout)", "str", "store", None),
+            "mpirunoutput": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
+                             "str", "store", None),
 
-            "error": ("filename to write stderr directly to (instead of stdout)", "str", "store", None),
+            "logtofile": ("redirect the logging of mympirun to a file (instead of stdout/stderr)",
+                          "str", "store", None),
 
             "ssh": ("Force ssh for mpd startup (will try to use optimised  method by default)",
                     None, "store_false", True),
