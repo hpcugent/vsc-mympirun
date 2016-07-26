@@ -51,7 +51,7 @@ def what_sched(requested):
         for sched in found_sched:
             if sched._is_sched_for(requested):
                 return sched, found_sched
-        LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation" % requested)
+        LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
@@ -60,7 +60,7 @@ def what_sched(requested):
 
     # If that fails, try to force the local scheduler
     for sched in found_sched:
-        LOGGER.debug("No scheduler found in environment, defaulting to local")
+        LOGGER.debug("No scheduler found in environment, trying local")
         if sched._is_sched_for("local"):
             return sched, found_sched
 
