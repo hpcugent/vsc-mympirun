@@ -25,19 +25,28 @@
 """
 Optionparser for mympirun
 """
+import os
 
-import sys
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
+from vsc.utils import fancylogger
 
 # introduce usage / -u option. (original has -h for --hybrid)
-# TODO: generate real message with possible alias + mention all supported versions
+
+
 class MympirunParser(GeneralOption.PARSER):
+
     """Simple class to implement other help messages"""
     shorthelp = ('u', '--shorthelp', '--usage',)
     longhelp = ('U', '--help',)
 
+
 class MympirunOption(GeneralOption):
+    """
+    Class that extends vsc-utils.GeneralOption
+
+    Parses commandline options and sets them to variables
+    """
     PARSER = MympirunParser
     ALLOPTSMANDATORY = False  # eg scriptname and other options. same for mpirun options
     INTERSPERSED = False  # Stop parsing cmdline, all others opts are opts for the exe
@@ -45,62 +54,82 @@ class MympirunOption(GeneralOption):
     def __init__(self, ismpirun=False):
         self.mpirunmode = ismpirun
 
-        # super(MympirunOption, self).__init__()
         GeneralOption.__init__(self)
 
     def make_init(self):
+
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
-                "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
-                "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
+            # long option: (description, type, action, default, short option)
+            "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
 
-                "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
-                "debuglvl": ("Specify debug level", "int", "store", 0),
-                "mpdbootverbose": ("Run verbose mpdboot", None, "store_true", False),
-                "stats": ("Set MPI statistics level", "int", "store", 0),
+            "setmpi": ("Specify MPI flavor (eg mpich2, openmpi...; will try to guess by default).",
+                       "str", "store", None, "M"),
 
-                "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
-                "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
-                           None, "store_true", False),
+            "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
 
-                "schedtype": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
-                              "str", "store", None, "S"),  # TODO: generate list
+            "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
 
-                "output": ("filename to write stdout/stderr directly to (instead of stdout)", "str", "store", None),
+            "setsched": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
+                         "str", "store", None, "S"),
 
-                "ssh": ("Force ssh for mpd startup (will try to use optimised method by default)",
-                        None, "store_false", True),
-                "order": ("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])",
-                          "str", "store", None),
-                "basepath": ("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
-                             "str", "store", None),
-                # legacy naming
+            "debuglvl": ("Specify debug level", "int", "store", 0),
 
-                # don't set it by default. It will be set if needed (eg ipath)
-                "pinmpi": ("Disable MPI pinning", None, "store_false", None),  
+            "mpdbootverbose": ("Run verbose mpdboot", None, "store_true", False),
 
-                "rdma": ("Force rdma device", None, "store_true", None),
-                "socket": ("Force socket device", None, "store_true", None),
+            "stats": ("Set MPI statistics level", "int", "store", 0),
 
-                "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
-                              "universe is all requested processes.)"), "int", "store", None),
-                "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
-                                 "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
-                                 "e.g. 'cyclepin')."), "str", "store", None),
+            "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
 
-                "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
-                                     "(<prefix>_ should match) to pass through."), "string", "extend", []),
-                "noenvmodules": ("Don't pass the environment modules variables", None, "store_true", False),
-                "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate comamnd)",
-                                  "str", "store", None),
-                'branchcount': ("Set the hydra branchcount", "int", "store", None),
-                'qlogic_ipath': ("Force qlogic/true scale ipath", None, "store_true", None),
-                }
+            "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
+                       None, "store_true", False),
+
+            "output": ("filename to write stdout directly to (instead of stdout)", "str", "store", None),
+
+            "error": ("filename to write stderr directly to (instead of stdout)", "str", "store", None),
+
+            "ssh": ("Force ssh for mpd startup (will try to use optimised  method by default)",
+                    None, "store_false", True),
+
+            "order": ("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])",
+                      "str", "store", None),
+
+            "basepath": ("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
+                         "str", "store", None),
+            # legacy naming
+
+            # don't set it by default. It will be set if needed (eg ipath)
+            "pinmpi": ("Disable MPI pinning", None, "store_false", None),
+
+            "rdma": ("Force rdma device", None, "store_true", None),
+
+            "socket": ("Force socket device", None, "store_true", None),
+
+            "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
+                          "universe is all requested processes.)"), "int", "store", None),
+
+            "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
+                             "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
+                             "e.g. 'cyclepin')."), "str", "store", None),
+
+            "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
+                                 "(<prefix>_ should match) to pass through."), "string", "extend", []),
+
+            "noenvmodules": ("Don't pass the environment modules variables",
+                             None, "store_true", False),
+
+            "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate command)",
+                              "str", "store", None),
+
+            'branchcount': ("Set the hydra branchcount", "int", "store", None),
+
+            'use_psm': ("Use Performance Scaled Messaging", None, "store_true", None),
+        }
 
         descr = ["mympirun options", "General advanced mympirun options"]
 
         prefix = ''
-        self.log.debug("Add mympirun advanced option parser prefix %s descr %s opts %s" % (prefix, descr, opts))
+        self.log.debug("Add advanced option parser: options %s, description %s, prefix %s", opts, descr, prefix)
         self.add_group_parser(opts, descr, prefix=prefix)
 
         # for all MPI classes, get the additional options
@@ -109,34 +138,45 @@ class MympirunOption(GeneralOption):
                 opts = mpi.RUNTIMEOPTION['options']
                 descr = mpi.RUNTIMEOPTION['description']
                 prefix = mpi.RUNTIMEOPTION['prefix']
-                self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s" %
-                               (mpi.__name__, prefix, descr, opts))
+                self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s",
+                               mpi.__name__, prefix, descr, opts)
                 self.add_group_parser(opts, descr, prefix=prefix)
 
+
+
     def parseoptions(self, options_list=None):
-        """Handle mpirun mode:
-            continue with reduced set of commandline options
-            These options are the keys of optsToRemove.
-            The values of optsToRemove are the number of arguments of these options, that also need to be removed.
         """
+        Handle mpirun mode:
+          - continue with reduced set of commandline options
+          - These options are the keys of opts_to_remove.
+          - The values of opts_to_remove are the number of arguments of these options, that also need to be removed.
+        """
+
         if options_list is None:
             options_list = self.default_parseoptions()
 
-        optsToRemove = {'-np':1,
-                        '-machinefile':1
-                        }
-
         newopts = options_list[:]  # copy
         if self.mpirunmode:
-            for opt in optsToRemove.keys():
+            opts_to_remove = {
+                '-np': 1,
+                '-machinefile': 1
+            }
+
+            for opt in opts_to_remove.keys():
                 try:
                     pos = newopts.index(opt)
                     # remove 1 + args
-                    del newopts[pos:pos + 1 + optsToRemove[opt]]
+                    del newopts[pos:pos + 1 + opts_to_remove[opt]]
                 except ValueError:
                     continue
 
         GeneralOption.parseoptions(self, newopts)
+
+        # set error logging to file as soon as possible
+        if self.options.error:
+            if os.path.exists(self.options.error):
+                os.remove(self.options.error)
+            fancylogger.logToFile(self.options.error)
 
     def postprocess(self):
         """Some additional processing"""
@@ -148,3 +188,4 @@ class MympirunOption(GeneralOption):
                 self.options.stats = 2
             self.options.mpdbootverbose = True
 
+        self.log.debug("final options: %s", self.options)

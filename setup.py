@@ -84,16 +84,16 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
                     os.symlink(rel_script, sym_name)
                     newoutfile = os.path.join(rel_script_dir, sym_name)
                     self.outfiles.append(newoutfile)
-                    log.info("symlink %s to %s newoutfile %s" % (rel_script, sym_name, newoutfile))
+                    log.info("symlink %s to %s newoutfile %s", rel_script, sym_name, newoutfile)
 
                 # fake mpirun
                 os.chdir(previous_pwd)
                 abs_fakepath = os.path.join(self.install_dir, FAKE_SUBDIRECTORY_NAME)
                 if not os.path.isdir(abs_fakepath):
-                    log.info("creating abs_fakepath %s" % abs_fakepath)
+                    log.info("creating abs_fakepath %s", abs_fakepath)
                     os.mkdir(abs_fakepath)
                 else:
-                    log.info("not creating abs_fakepath %s (already exists)" % abs_fakepath)
+                    log.info("not creating abs_fakepath %s (already exists)", abs_fakepath)
 
                 os.chdir(abs_fakepath)  # abs_fakepath si not always absolute
                 fake_mpirun = os.path.join(abs_fakepath, 'mpirun')
@@ -103,7 +103,7 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
                 mympirun_src = '../%s' % rel_script
                 os.symlink(mympirun_src, 'mpirun')
                 self.outfiles.append(fake_mpirun)
-                log.info("symlink %s to %s newoutfile %s" % (mympirun_src, 'mpirun', fake_mpirun))
+                log.info("symlink %s to %s newoutfile %s", mympirun_src, 'mpirun', fake_mpirun)
 
                 os.chdir(previous_pwd)
 
@@ -127,7 +127,7 @@ try:
             """
             res = orig_func(txt)
             if txt == 'scripts':
-                log.debug('mympirun easy_install.install_egg_scripts scripts res %s' % res)
+                log.debug('mympirun easy_install.install_egg_scripts scripts res %s', res)
                 if FAKE_SUBDIRECTORY_NAME in res:
                     idx = res.index(FAKE_SUBDIRECTORY_NAME)
                     if idx >= 0:
