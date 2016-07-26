@@ -45,7 +45,7 @@ from IPy import IP
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import run_simple, run_to_file, run_async_to_stdout
+from vsc.utils.run import run_simple, run_async_to_stdout, RunFile, RunAsync
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -998,10 +998,17 @@ class MPI(object):
 
         @return: a tuple containing the final function and the final command
         """
+
+
+        class RunAsyncToFile(RunFile, RunAsync):
+            """combines vsc-base.run classes to run asynchronously and write to a file"""
+            pass
+
         def main_runfunc(cmd):
             """The function that will run mpirun"""
             if self.options.output is not None:
-                return run_to_file(cmd, filename=self.options.output)
+                run_async_to_file = RunAsyncToFile.run
+                return run_async_to_file(cmd, filename=self.options.output)
             else:
                 return run_async_to_stdout(cmd)
 
