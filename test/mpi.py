@@ -197,3 +197,12 @@ class TestMPI(unittest.TestCase):
         for (nodename, interface) in res:
             self.assertTrue(nodename in mpi_instance.uniquenodes)
             self.assertTrue(interface in out)
+
+    def test_set_mpiexec_global_options(self):
+        """test if set_mpiexec_global_options merges os.environ and mpiexec_global_options"""
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance.set_mpiexec_global_options()
+        self.assertEqual(mpi_instance.mpiexec_global_options['MKL_NUM_THREADS'], "1")
+        for env_var in mpi_instance.MODULE_ENVIRONMENT_VARIABLES:
+            self.assertEqual(env_var in os.environ, env_var in mpi_instance.mpiexec_global_options)
