@@ -24,32 +24,36 @@
 #
 """
 OpenMPI specific classes
+
+Documentation can be found at https://www.open-mpi.org/doc/
 """
 
 from vsc.mympirun.mpi.mpi import MPI
 
 
 class OpenMPI(MPI):
+
+    """An implementation of the MPI class for OpenMPI"""
+
     _mpiscriptname_for = ['ompirun']
     _mpirun_for = ['OpenMPI']
 
-    DEVICE_MPIDEVICE_MAP = {'ib':'sm,openib,self', 'det':'sm,tcp,self', 'shm':'sm,self', 'socket':'sm,tcp,self'}
+    DEVICE_MPIDEVICE_MAP = {'ib': 'sm,openib,self', 'det': 'sm,tcp,self', 'shm': 'sm,self', 'socket': 'sm,tcp,self'}
 
-    MPIEXEC_TEMPLATE_GOBAL_OPTION = "--mca %(name)s %(value)s"
-    MPIEXEC_TEMPLATE_LOCAL_OPTION = "--mca %(name)s %(value)s"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "--mca %(name)s '%(value)s'"
 
-    MPDBOOT_TEMPLATE_REMOTE_OPTION_NAME = "--mca pls_rsh_agent %(rsh)s"
+    REMOTE_OPTION_TEMPLATE = "--mca pls_rsh_agent %(rsh)s"
 
-    def mpiexec_set_global_options(self):
+    def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
         self.mpiexec_global_options['btl'] = self.device
 
-        super(OpenMPI, self).mpiexec_set_global_options()
-
+        super(OpenMPI, self).set_mpiexec_global_options()
 
     def _make_final_mpirun_cmd(self):
-        """Create the acual mpirun command
-            add it to self.mpirun_cmd
-            No mpdboot for openmpi
+        """
+        Create the acual mpirun command
+          - add it to self.mpirun_cmd
+          - No mpdboot for openmpi
         """
         self.mpirun_cmd += self.mpiexec_options

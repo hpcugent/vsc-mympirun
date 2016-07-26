@@ -28,11 +28,12 @@ Local scheduler : no scheduler, act on single node
 
 from vsc.mympirun.rm.local import Local
 
+
 class Scoop(Local):
+
     """
     Class for jobs running on localhost started by SCOOP (ie no scheduler settings)
-    - will use the amount of cores found on localhost.
+      - will use the amount of cores found on localhost.
     """
     _sched_for = ['scoop']
     SCHED_ENVIRON_ID = 'SCOOP_JOBID'  # with Local, this is optional
-
