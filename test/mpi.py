@@ -46,21 +46,25 @@ from vsc.mympirun.option import MympirunOption
 # we wish to use the mpirun we ship
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
 
-_testlogger = getLogger()
+LOGGER = getLogger()
+
 
 class TestMPI(unittest.TestCase):
 
+    """tests for vsc.mympirun.mpi.mpi functions"""
+
     #######################
-    ## general functions ##
+    ## General functions ##
     #######################
 
     def test_what_mpi(self):
+        """test if what_mpi returns the correct mpi flavor"""
         scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
         for scriptname in scriptnames:
             # if the scriptname is an executable located on this machine
             if mpim.which(scriptname):
                 (returned_scriptname, mpi, found) = mpim.what_mpi(scriptname)
-                _testlogger.debug("%s, %s, %s", returned_scriptname, mpi, found)
+                LOGGER.debug("%s, %s, %s", returned_scriptname, mpi, found)
                 # if an mpi implementation was found
                 if mpi:
                     self.assertTrue(mpi in found)
@@ -70,69 +74,73 @@ class TestMPI(unittest.TestCase):
 
     def test_stripfake(self):
         """Test if stripfake actually removes the /bin/fake path in $PATH"""
-        _testlogger.debug("old path: %s", os.environ["PATH"])
+        LOGGER.debug("old path: %s", os.environ["PATH"])
         mpim.stripfake()
         newpath = os.environ["PATH"]
         self.assertFalse(("bin/%s" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath)
 
     def test_which(self):
+        """test if which returns a path that corresponds to unix which"""
         scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
         for scriptname in scriptnames:
-            mpimwhich = mpim.which(scriptname) +"\n"
-            ec, unixwhich = run_simple("which " + scriptname)
+            mpimwhich = mpim.which(scriptname) + "\n"
+            exitcode, unixwhich = run_simple("which " + scriptname)
+            if exitcode > 0:
+                LOGGER.raiseException("Something went wrong while trying to run `which`")
             self.assertEqual(mpimwhich, unixwhich, msg=("the return values of unix which and which() aren't the same: "
-                "%s != %s") % (mpimwhich, unixwhich))
+                                                        "%s != %s") % (mpimwhich, unixwhich))
 
     ###################
     ## MPI functions ##
     ###################
 
     def test_options(self):
-        """Bad options"""
-        m = MympirunOption()
-        m.args = ['echo', 'foo']
+        """running mympirun with bad options"""
+        optionparser = MympirunOption()
+        optionparser.args = ['echo', 'foo']
         # should not throw an error
         try:
-            mpi_instance = getinstance(mpim.MPI, Local, m)
+            mpi_instance = getinstance(mpim.MPI, Local, optionparser)
             mpi_instance.main()
         except Exception:
-            self.fail("mympirun raised an exception")
+            self.fail("mympirun raised an exception while running main()")
 
         optdict = mpi_instance.options
 
         # why isnt this a dict??
-        _testlogger.debug("MPI INSTANCE OPTIONS: %s, type %s", optdict, type(optdict))
+        LOGGER.debug("MPI INSTANCE OPTIONS: %s, type %s", optdict, type(optdict))
 
         # for opt in m.args:
         #    self.assertFalse(opt in mpi_instance.options)
 
     def test_is_mpirun_for(self):
-        m = MympirunOption()
-        implementations = [ OpenMPI, IntelMPI,MPICH2 ]
+        """test if _is_mpirun_for returns true when it is given the path of its executable"""
+        optionparser = MympirunOption()
+        implementations = [OpenMPI, IntelMPI, MPICH2]
         for implementation in implementations:
-            instance = getinstance(implementation, Local, m)
+            instance = getinstance(implementation, Local, optionparser)
             # only works with modules
             # self.assertTrue(instance._is_mpirun_for(mpim.which(instance._mpiscriptname_for[0])), msg="")
 
     def test_set_omp_threads(self):
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.set_omp_threads()
         self.assertTrue(getattr(mpi_instance.options, 'ompthreads', None) is not None)
-        self.assertEqual(os.environ["OMP_NUM_THREADS"],getattr(mpi_instance.options, 'ompthreads', None))
+        self.assertEqual(os.environ["OMP_NUM_THREADS"], getattr(mpi_instance.options, 'ompthreads', None))
 
     def test_set_netmask(self):
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.set_netmask()
         # matches "IP address / netmask"
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
-        for substr in string.split(mpi_instance.netmask,sep=":"):
+        for substr in string.split(mpi_instance.netmask, sep=":"):
             self.assertTrue(reg.match(substr))
 
     def test_select_device(self):
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.select_device()
         self.assertTrue(mpi_instance.device and mpi_instance.device is not None)
         self.assertTrue(mpi_instance.device in mpi_instance.DEVICE_MPIDEVICE_MAP.values())
@@ -140,8 +148,8 @@ class TestMPI(unittest.TestCase):
         self.assertTrue(mpi_instance.netmasktype in mpi_instance.NETMASK_TYPE_MAP.values())
 
     def test_make_node_file(self):
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.make_node_file()
         self.assertTrue(os.path.isfile(mpi_instance.mpiexec_node_filename))
 
@@ -149,33 +157,34 @@ class TestMPI(unittest.TestCase):
         with open(mpi_instance.mpiexec_node_filename) as f:
             for i, l in enumerate(f):
                 pass
-            self.assertEqual(len(mpi_instance.mpinodes),i+1)
+            self.assertEqual(len(mpi_instance.mpinodes), i+1)
 
     def test_make_mympirundir(self):
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.make_mympirundir()
         self.assertTrue(mpi_instance.mympirundir and mpi_instance.mympirundir is not None)
         self.assertTrue(os.path.isdir(mpi_instance.mympirundir))
 
     def test_make_mpdboot(self):
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.make_mpdboot()
         self.assertTrue(os.path.exists(os.path.expanduser('~/.mpd.conf')))
 
     def test_set_mpdboot_localhost_interface(self):
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.set_mpdboot_localhost_interface()
-        self.assertTrue(mpi_instance.mpdboot_localhost_interface and mpi_instance.mpdboot_localhost_interface is not None)
+        self.assertTrue(
+            mpi_instance.mpdboot_localhost_interface and mpi_instance.mpdboot_localhost_interface is not None)
 
     def test_get_localhosts(self):
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         res = mpi_instance.get_localhosts()
         _, out = run_simple("/sbin/ip -4 -o addr show")
-        for (nodename,interface) in res:
+        for (nodename, interface) in res:
             self.assertTrue(isinstance(nodename, basestring))
             self.assertTrue(isinstance(interface, basestring))
             self.assertTrue(nodename in mpi_instance.uniquenodes)
@@ -184,12 +193,11 @@ class TestMPI(unittest.TestCase):
     def test_MPI_local(self):
         """Test the MPI class with the local scheduler"""
         # options
-        m = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, m)
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.main()
 
         # check for correct .mpd.conf file
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
-        self.assertEqual(perms, 0400, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
-
+        self.assertEqual(perms, stat.S_IREAD, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
