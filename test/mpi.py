@@ -123,6 +123,7 @@ class TestMPI(unittest.TestCase):
             # self.assertTrue(instance._is_mpirun_for(mpim.which(instance._mpiscriptname_for[0])), msg="")
 
     def test_set_omp_threads(self):
+        """test if OMP_NUM_THREAD gets set correctly"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.set_omp_threads()
@@ -130,6 +131,7 @@ class TestMPI(unittest.TestCase):
         self.assertEqual(os.environ["OMP_NUM_THREADS"], getattr(mpi_instance.options, 'ompthreads', None))
 
     def test_set_netmask(self):
+        """test if netmask matches the layout of an ip adress"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.set_netmask()
@@ -139,65 +141,59 @@ class TestMPI(unittest.TestCase):
             self.assertTrue(reg.match(substr))
 
     def test_select_device(self):
+        """test if device and netmasktype are set and are picked from a list of options"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.select_device()
-        self.assertTrue(mpi_instance.device and mpi_instance.device is not None)
-        self.assertTrue(mpi_instance.device in mpi_instance.DEVICE_MPIDEVICE_MAP.values())
-        self.assertTrue(mpi_instance.netmasktype and mpi_instance.netmasktype is not None)
-        self.assertTrue(mpi_instance.netmasktype in mpi_instance.NETMASK_TYPE_MAP.values())
+        self.assertTrue(mpi_instance.device and mpi_instance.device in mpi_instance.DEVICE_MPIDEVICE_MAP.values())
+        self.assertTrue(mpi_instance.netmasktype and mpi_instance.netmasktype in mpi_instance.NETMASK_TYPE_MAP.values())
 
     def test_make_node_file(self):
+        """test if the nodefile is made and if it contains the same amount of nodas as mpinodes"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.make_node_file()
         self.assertTrue(os.path.isfile(mpi_instance.mpiexec_node_filename))
 
-        # test is amount of lines in nodefile matches amount of nodes
-        with open(mpi_instance.mpiexec_node_filename) as f:
-            for i, l in enumerate(f):
+        # test if amount of lines in nodefile matches amount of nodes
+        with open(mpi_instance.mpiexec_node_filename) as file:
+            index = 0
+            for index, _ in enumerate(file):
                 pass
-            self.assertEqual(len(mpi_instance.mpinodes), i+1)
+            self.assertEqual(len(mpi_instance.mpinodes), index+1)
 
     def test_make_mympirundir(self):
+        """test if the mympirundir is made"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.make_mympirundir()
-        self.assertTrue(mpi_instance.mympirundir and mpi_instance.mympirundir is not None)
-        self.assertTrue(os.path.isdir(mpi_instance.mympirundir))
+        self.assertTrue(mpi_instance.mympirundir and os.path.isdir(mpi_instance.mympirundir))
 
     def test_make_mpdboot(self):
+        """test if the mpdboot conffile is made and has the correct permissions"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.make_mpdboot()
-        self.assertTrue(os.path.exists(os.path.expanduser('~/.mpd.conf')))
+        mpdconffn = os.path.expanduser('~/.mpd.conf')
+        self.assertTrue(os.path.exists(mpdconffn))
+        perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
+        self.assertEqual(perms, stat.S_IREAD, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
 
     def test_set_mpdboot_localhost_interface(self):
+        """test if mpdboot_localhost_interface is set correctly"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.set_mpdboot_localhost_interface()
-        self.assertTrue(
-            mpi_instance.mpdboot_localhost_interface and mpi_instance.mpdboot_localhost_interface is not None)
+        (nodename, iface) = mpi_instance.mpdboot_localhost_interface
+        self.assertTrue(mpi_instance.mpdboot_localhost_interface and nodename and iface)
+        self.assertTrue((nodename, iface) in mpi_instance.get_localhosts())
 
     def test_get_localhosts(self):
+        """test if localhost returns a list containing that are sourced correctly"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         res = mpi_instance.get_localhosts()
         _, out = run_simple("/sbin/ip -4 -o addr show")
         for (nodename, interface) in res:
-            self.assertTrue(isinstance(nodename, basestring))
-            self.assertTrue(isinstance(interface, basestring))
             self.assertTrue(nodename in mpi_instance.uniquenodes)
             self.assertTrue(interface in out)
-
-    def test_MPI_local(self):
-        """Test the MPI class with the local scheduler"""
-        # options
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
-        mpi_instance.main()
-
-        # check for correct .mpd.conf file
-        mpdconffn = os.path.expanduser('~/.mpd.conf')
-        perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
-        self.assertEqual(perms, stat.S_IREAD, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
