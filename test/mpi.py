@@ -204,5 +204,17 @@ class TestMPI(unittest.TestCase):
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         mpi_instance.set_mpiexec_global_options()
         self.assertEqual(mpi_instance.mpiexec_global_options['MKL_NUM_THREADS'], "1")
-        for env_var in mpi_instance.MODULE_ENVIRONMENT_VARIABLES:
-            self.assertEqual(env_var in os.environ, env_var in mpi_instance.mpiexec_global_options)
+        if not mpi_instance.options.noenvmodules:
+            for env_var in mpi_instance.MODULE_ENVIRONMENT_VARIABLES:
+                self.assertEqual(env_var in os.environ, env_var in mpi_instance.mpiexec_global_options)
+
+    def test_set_mpiexec_opts_from_env(self):
+        """test if mpiexec_opts_from_env only contains environment variables that start with the given prefix"""
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance.set_mpiexec_opts_from_env()
+        prefixes = mpi_instance.OPTS_FROM_ENV_FLAVOR_PREFIX + mpi_instance.OPTS_FROM_ENV_BASE_PREFIX + mpi_instance.options.variablesprefix
+
+        for env_var in mpi_instance.mpiexec_opts_from_env:
+            self.assertTrue(env_var.startswith(tuple(prefixes)))
+            self.assertTrue(env_var in os.environ)
