@@ -224,7 +224,7 @@ class TestMPI(unittest.TestCase):
                     self.assertEqual(env_var in os.environ, env_var in mpi_instance.mpiexec_global_options,
                                      msg="%s is set in os.environ xor mpiexec_global_options, it should be set for both or set for neither" % env_var)
         else:
-            self.fail("mpi instance has no attribute set_mpiexec_global_options")
+            self.fail("mpi instance has no attribute set_mpiexec_global_options: %s" % dir(mpi_instance))
 
 
     # def test_set_mpiexec_opts_from_env(self):
