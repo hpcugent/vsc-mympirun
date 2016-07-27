@@ -32,9 +32,8 @@ import stat
 import unittest
 import re
 import string
-import subprocess
 
-from vsc.utils.fancylogger import getLogger, setLogLevelDebug
+from vsc.utils.fancylogger import getLogger
 from vsc.utils.run import run_simple
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
@@ -126,6 +125,7 @@ class TestMPI(unittest.TestCase):
         """test if OMP_NUM_THREAD gets set correctly"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        LOGGER.warn("mpi instance %s", mpi_instance)
         mpi_instance.set_omp_threads()
         self.assertTrue(getattr(mpi_instance.options, 'ompthreads') is not None, msg="ompthreads was not set")
         self.assertEqual(os.environ["OMP_NUM_THREADS"], getattr(mpi_instance.options, 'ompthreads', None),
@@ -135,6 +135,7 @@ class TestMPI(unittest.TestCase):
         """test if netmask matches the layout of an ip adress"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        LOGGER.warn("mpi instance %s", mpi_instance)
         mpi_instance.set_netmask()
         # matches "IP address / netmask"
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
@@ -146,7 +147,11 @@ class TestMPI(unittest.TestCase):
         """test if device and netmasktype are set and are picked from a list of options"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
-        mpi_instance.select_device()
+        if hasattr(mpi_instance, 'select_device'):
+            mpi_instance.select_device()
+        else:
+            LOGGER.warn("mpi instance has no attribute select_device, instance %s", mpi_instance)
+
         self.assertTrue(mpi_instance.device and mpi_instance.device in mpi_instance.DEVICE_MPIDEVICE_MAP.values(),
                         msg="%s is not a valid device type, possible values: %s" % (mpi_instance.device, mpi_instance.DEVICE_MPIDEVICE_MAP.values()))
         self.assertTrue(mpi_instance.netmasktype and mpi_instance.netmasktype in mpi_instance.NETMASK_TYPE_MAP.values(),
@@ -156,6 +161,7 @@ class TestMPI(unittest.TestCase):
         """test if the nodefile is made and if it contains the same amount of nodas as mpinodes"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        LOGGER.warn("mpi instance %s", mpi_instance)
         mpi_instance.make_node_file()
         self.assertTrue(os.path.isfile(mpi_instance.mpiexec_node_filename), msg="the nodefile has not been created")
 
@@ -171,6 +177,7 @@ class TestMPI(unittest.TestCase):
         """test if the mympirundir is made"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        LOGGER.warn("mpi instance %s", mpi_instance)
         mpi_instance.make_mympirundir()
         self.assertTrue(mpi_instance.mympirundir and os.path.isdir(mpi_instance.mympirundir), msg="mympirundir has not been set or has not been created")
 
@@ -178,6 +185,7 @@ class TestMPI(unittest.TestCase):
         """test if the mpdboot conffile is made and has the correct permissions"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        LOGGER.warn("mpi instance %s", mpi_instance)
         mpi_instance.make_mpdboot()
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         self.assertTrue(os.path.isfile(mpdconffn), msg="mpd.conf has not been created")
@@ -188,7 +196,10 @@ class TestMPI(unittest.TestCase):
         """test if mpdboot_localhost_interface is set correctly"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
-        mpi_instance.set_mpdboot_localhost_interface()
+        if hasattr(mpi_instance, 'set_mpdboot_localhost_interface'):
+            mpi_instance.set_mpdboot_localhost_interface()
+        else:
+            LOGGER.warn("mpi instance has no attribute set_mpdboot_localhost_interface, instance %s", mpi_instance)
         (nodename, iface) = mpi_instance.mpdboot_localhost_interface
         self.assertTrue(mpi_instance.mpdboot_localhost_interface and nodename and iface)
         self.assertTrue((nodename, iface) in mpi_instance.get_localhosts(), msg="mpdboot_localhost_interface is not a result from get_localhosts, nodename: %s, iface: %s, get_localhosts: %s")
@@ -197,6 +208,7 @@ class TestMPI(unittest.TestCase):
         """test if localhost returns a list containing that are sourced correctly"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        LOGGER.warn("mpi instance %s", mpi_instance)
         res = mpi_instance.get_localhosts()
         _, out = run_simple("/sbin/ip -4 -o addr show")
 
@@ -210,7 +222,10 @@ class TestMPI(unittest.TestCase):
         """test if set_mpiexec_global_options merges os.environ and mpiexec_global_options"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
-        mpi_instance.set_mpiexec_global_options()
+        if hasattr(mpi_instance, 'set_mpiexec_global_options'):
+            mpi_instance.set_mpiexec_global_options()
+        else:
+            LOGGER.warn("mpi instance has no attribute set_mpiexec_global_options, instance %s", mpi_instance)
         self.assertEqual(mpi_instance.mpiexec_global_options['MKL_NUM_THREADS'], "1", msg="MKL_NUM_THREADS is not equal to 1")
 
         LOGGER.debug("MODULE_ENVIRONMENT_VARIABLES: %s", mpi_instance.MODULE_ENVIRONMENT_VARIABLES)
@@ -224,7 +239,10 @@ class TestMPI(unittest.TestCase):
         """test if mpiexec_opts_from_env only contains environment variables that start with the given prefix"""
         optionparser = MympirunOption()
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
-        mpi_instance.set_mpiexec_opts_from_env()
+        if hasattr(mpi_instance, 'set_mpiexec_opts_from_env'):
+            mpi_instance.set_mpiexec_opts_from_env()
+        else:
+            LOGGER.warn("mpi instance has no attribute set_mpiexec_opts_from_env, instance %s", mpi_instance)
         prefixes = mpi_instance.OPTS_FROM_ENV_FLAVOR_PREFIX + mpi_instance.OPTS_FROM_ENV_BASE_PREFIX + mpi_instance.options.variablesprefix
 
         LOGGER.debug("opts_from_env: %s", mpi_instance.mpiexec_opts_from_env)
