@@ -170,12 +170,12 @@ class TestMPI(unittest.TestCase):
     #             pass
     #         self.assertEqual(len(mpi_instance.mpinodes), index+1, msg="mpinodes doesn't match the amount of nodes in the nodefile")
 
-    # def test_make_mympirundir(self):
-    #     """test if the mympirundir is made"""
-    #     optionparser = MympirunOption()
-    #     mpi_instance = getinstance(mpim.MPI, Local, optionparser)
-    #     mpi_instance.make_mympirundir()
-    #     self.assertTrue(mpi_instance.mympirundir and os.path.isdir(mpi_instance.mympirundir), msg="mympirundir has not been set or has not been created")
+    def test_make_mympirundir(self):
+        """test if the mympirundir is made"""
+        optionparser = MympirunOption()
+        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance.make_mympirundir()
+        self.assertTrue(mpi_instance.mympirundir and os.path.isdir(mpi_instance.mympirundir), msg="mympirundir has not been set or has not been created")
 
     # def test_make_mpdboot(self):
     #     """test if the mpdboot conffile is made and has the correct permissions"""
@@ -215,16 +215,17 @@ class TestMPI(unittest.TestCase):
         mpi_instance = getinstance(mpim.MPI, Local, optionparser)
         if hasattr(mpi_instance, 'set_mpiexec_global_options'):
             mpi_instance.set_mpiexec_global_options()
+            self.assertEqual(mpi_instance.mpiexec_global_options['MKL_NUM_THREADS'], "1", msg="MKL_NUM_THREADS is not equal to 1")
+
+            LOGGER.debug("MODULE_ENVIRONMENT_VARIABLES: %s", mpi_instance.MODULE_ENVIRONMENT_VARIABLES)
+
+            if not mpi_instance.options.noenvmodules:
+                for env_var in mpi_instance.MODULE_ENVIRONMENT_VARIABLES:
+                    self.assertEqual(env_var in os.environ, env_var in mpi_instance.mpiexec_global_options,
+                                     msg="%s is set in os.environ xor mpiexec_global_options, it should be set for both or set for neither" % env_var)
         else:
-            LOGGER.warn("mpi instance has no attribute set_mpiexec_global_options")
-        self.assertEqual(mpi_instance.mpiexec_global_options['MKL_NUM_THREADS'], "1", msg="MKL_NUM_THREADS is not equal to 1")
+            self.fail("mpi instance has no attribute set_mpiexec_global_options")
 
-        LOGGER.debug("MODULE_ENVIRONMENT_VARIABLES: %s", mpi_instance.MODULE_ENVIRONMENT_VARIABLES)
-
-        if not mpi_instance.options.noenvmodules:
-            for env_var in mpi_instance.MODULE_ENVIRONMENT_VARIABLES:
-                self.assertEqual(env_var in os.environ, env_var in mpi_instance.mpiexec_global_options,
-                                 msg="%s is set in os.environ xor mpiexec_global_options, it should be set for both or set for neither" % env_var)
 
     # def test_set_mpiexec_opts_from_env(self):
     #     """test if mpiexec_opts_from_env only contains environment variables that start with the given prefix"""
