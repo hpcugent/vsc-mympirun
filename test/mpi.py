@@ -32,8 +32,9 @@ import stat
 import unittest
 import re
 import string
+import subprocess
 
-from vsc.utils.fancylogger import getLogger
+from vsc.utils.fancylogger import getLogger, setLogLevelDebug
 from vsc.utils.run import run_simple
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
@@ -47,7 +48,6 @@ from vsc.mympirun.option import MympirunOption
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
 
 LOGGER = getLogger()
-
 
 class TestMPI(unittest.TestCase):
 
@@ -218,3 +218,23 @@ class TestMPI(unittest.TestCase):
         for env_var in mpi_instance.mpiexec_opts_from_env:
             self.assertTrue(env_var.startswith(tuple(prefixes)))
             self.assertTrue(env_var in os.environ)
+
+
+    def test_make_mpirun(self):
+        """test if make_mpirun correctly builds the complete mpirun command"""
+        optionparser = MympirunOption()
+
+        inst = getinstance(mpim.MPI, Local, optionparser)
+        inst.main()
+
+        argspool = ['mpirun']
+        argspool += inst.options.mpirunoptions if inst.options.mpirunoptions else []
+        LOGGER.debug("mpirunoptions: %s", inst.options.mpirunoptions)
+        argspool += inst.mpdboot_options
+        LOGGER.debug("mpdboot_options: %s", inst.mpdboot_options)
+        argspool += inst.mpiexec_options
+        LOGGER.debug("mpiexec_options: %s", inst.mpiexec_options)
+        argspool += inst.cmdargs
+        LOGGER.debug("cmdargs: %s", inst.cmdargs)
+        for arg in inst.mpirun_cmd:
+            self.assertTrue(arg in argspool, msg="arg: %s, pool: %s" % (arg, argspool))
