@@ -47,7 +47,6 @@ from vsc.mympirun.option import MympirunOption
 # we wish to use the mpirun we ship
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
 
-LOGGER = getLogger()
 
 class TestMPI(unittest.TestCase):
 
@@ -64,7 +63,7 @@ class TestMPI(unittest.TestCase):
             # if the scriptname is an executable located on this machine
             if mpim.which(scriptname):
                 (returned_scriptname, mpi, found) = mpim.what_mpi(scriptname)
-                LOGGER.debug("%s, %s, %s", returned_scriptname, mpi, found)
+                print("%s, %s, %s" % (returned_scriptname, mpi, found))
                 # if an mpi implementation was found
                 if mpi:
                     self.assertTrue(mpi in found, msg="returned mpi (%s) is not an element of found_mpi (%s)" % (mpi, found))
@@ -74,7 +73,7 @@ class TestMPI(unittest.TestCase):
 
     def test_stripfake(self):
         """Test if stripfake actually removes the /bin/fake path in $PATH"""
-        LOGGER.debug("old path: %s", os.environ["PATH"])
+        print("old path: %s" % os.environ["PATH"])
         mpim.stripfake()
         newpath = os.environ["PATH"]
         self.assertFalse(("bin/%s" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath, msg="the faked dir is still in $PATH")
@@ -108,7 +107,7 @@ class TestMPI(unittest.TestCase):
         optdict = mpi_instance.options
 
         # why isnt this a dict??
-        LOGGER.debug("MPI INSTANCE OPTIONS: %s, type %s", optdict, type(optdict))
+        print("MPI INSTANCE OPTIONS: %s, type %s" % (optdict, type(optdict)))
 
         # for opt in optionparser.args:
         #    self.assertFalse(opt in mpi_instance.options)
@@ -138,7 +137,7 @@ class TestMPI(unittest.TestCase):
         mpi_instance.set_netmask()
         # matches "IP address / netmask"
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
-        LOGGER.debug("netmask: %s", mpi_instance.netmask)
+        print("netmask: %s" % mpi_instance.netmask)
         for substr in string.split(mpi_instance.netmask, sep=":"):
             self.assertTrue(reg.match(substr), msg="%s does not seem to be a valid address" % substr)
 
@@ -161,7 +160,7 @@ class TestMPI(unittest.TestCase):
 
         # test if amount of lines in nodefile matches amount of nodes
         with open(mpi_instance.mpiexec_node_filename) as file:
-            LOGGER.debug("nodefile content: %s", file)
+            print("nodefile content: %s" % file)
             index = 0
             for index, _ in enumerate(file):
                 pass
@@ -200,7 +199,7 @@ class TestMPI(unittest.TestCase):
         res = mpi_instance.get_localhosts()
         _, out = run_simple("/sbin/ip -4 -o addr show")
 
-        LOGGER.debug("localhosts: %s", res)
+        print("localhosts: %s" % res)
 
         for (nodename, interface) in res:
             self.assertTrue(nodename in mpi_instance.uniquenodes, msg="%s is not a node from the uniquenodes list" % nodename)
@@ -213,7 +212,7 @@ class TestMPI(unittest.TestCase):
         mpi_instance.set_mpiexec_global_options()
         self.assertEqual(mpi_instance.mpiexec_global_options['MKL_NUM_THREADS'], "1", msg="MKL_NUM_THREADS is not equal to 1")
 
-        LOGGER.debug("MODULE_ENVIRONMENT_VARIABLES: %s", mpi_instance.MODULE_ENVIRONMENT_VARIABLES)
+        print("MODULE_ENVIRONMENT_VARIABLES: %s" % mpi_instance.MODULE_ENVIRONMENT_VARIABLES)
 
         if not mpi_instance.options.noenvmodules:
             for env_var in mpi_instance.MODULE_ENVIRONMENT_VARIABLES:
@@ -227,7 +226,7 @@ class TestMPI(unittest.TestCase):
         mpi_instance.set_mpiexec_opts_from_env()
         prefixes = mpi_instance.OPTS_FROM_ENV_FLAVOR_PREFIX + mpi_instance.OPTS_FROM_ENV_BASE_PREFIX + mpi_instance.options.variablesprefix
 
-        LOGGER.debug("opts_from_env: %s", mpi_instance.mpiexec_opts_from_env)
+        print("opts_from_env: %s" % mpi_instance.mpiexec_opts_from_env)
         for env_var in mpi_instance.mpiexec_opts_from_env:
             self.assertTrue(env_var.startswith(tuple(prefixes)), msg="%s does not start with a correct prefix, prefixes %s" % (env_var, prefixes))
             self.assertTrue(env_var in os.environ, msg="%s is not in os.environ, while it should be" % env_var)
@@ -242,12 +241,12 @@ class TestMPI(unittest.TestCase):
 
         argspool = ['mpirun']
         argspool += inst.options.mpirunoptions if inst.options.mpirunoptions else []
-        LOGGER.debug("mpirunoptions: %s", inst.options.mpirunoptions)
+        print("mpirunoptions: %s" % inst.options.mpirunoptions)
         argspool += inst.mpdboot_options
-        LOGGER.debug("mpdboot_options: %s", inst.mpdboot_options)
+        print("mpdboot_options: %s" % inst.mpdboot_options)
         argspool += inst.mpiexec_options
-        LOGGER.debug("mpiexec_options: %s", inst.mpiexec_options)
+        print("mpiexec_options: %s" % inst.mpiexec_options)
         argspool += inst.cmdargs
-        LOGGER.debug("cmdargs: %s", inst.cmdargs)
+        print("cmdargs: %s" % inst.cmdargs)
         for arg in inst.mpirun_cmd:
             self.assertTrue(arg in argspool, msg="arg: %s, pool: %s" % (arg, argspool))
