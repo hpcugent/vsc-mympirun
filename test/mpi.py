@@ -122,12 +122,33 @@ class TestMPI(unittest.TestCase):
         """test if _is_mpirun_for returns true when it is given the path of its executable"""
         optionparser = MympirunOption()
         implementations = [OpenMPI, IntelMPI, MPICH2]
+
         for implementation in implementations:
+            exitcode1, _ = run_simple("module purge")
+            exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster\
+            if exitcode1 + exitcode2 > 0:
+                raise Exception(("something went wrong while trying to reset loaded modules (this is expected if the "
+                                 "host doesnt't use modules)"))
+
+            exitcode, unixwhich = run_simple("module load " + implementation._mpirun_for)
+            if exitcode > 0:
+                print("no module for %s" % implementation._mpirun_for)
+                continue
+
             instance = getinstance(implementation, Local, optionparser)
-            print("implementation: %s, mpiscriptname: %s, path: %s, instance mpirun for: %s" % (implementation, instance._mpiscriptname_for, mpim.which(instance._mpiscriptname_for[0]), instance._mpirun_for))
+
+            print("implementation: %s, mpiscriptname: %s, path: %s, instance mpirun for: %s" %
+                  (implementation, instance._mpiscriptname_for, mpim.which(instance._mpiscriptname_for[0]),
+                   instance._mpirun_for))
             self.assertTrue(instance._is_mpirun_for(mpim.which(instance._mpiscriptname_for[0])),
                             msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for" %
                             implementation)
+
+        exitcode1, _ = run_simple("module purge")
+        exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster\
+        if exitcode1 + exitcode2 > 0:
+            raise Exception("something went wrong while trying to reset loaded modules")
+
 
     def test_set_omp_threads(self):
         """test if OMP_NUM_THREAD gets set correctly"""
