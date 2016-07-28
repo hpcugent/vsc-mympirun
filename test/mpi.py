@@ -85,12 +85,15 @@ class TestMPI(unittest.TestCase):
         """test if which returns a path that corresponds to unix which"""
         scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
         for scriptname in scriptnames:
-            mpimwhich = mpim.which(scriptname) + "\n"
+            mpiwhich = mpim.which(scriptname)
             exitcode, unixwhich = run_simple("which " + scriptname)
             if exitcode > 0:
                 raise Exception("Something went wrong while trying to run `which`")
-            self.assertEqual(mpimwhich, unixwhich, msg=("the return values of unix which and which() aren't the same: "
-                                                        "%s != %s") % (mpimwhich, unixwhich))
+
+            self.assertTrue(mpiwhich, msg="mpi which did not return anything, (unix which: %s" % unixwhich)
+            self.assertEqual(mpiwhich + "\n", unixwhich,
+                             msg="the return values of unix which and which() aren't"" the same: %s != %s" %
+                             (mpiwhich + "\n", unixwhich))
 
     ###################
     ## MPI functions ##
@@ -121,9 +124,10 @@ class TestMPI(unittest.TestCase):
         implementations = [OpenMPI, IntelMPI, MPICH2]
         for implementation in implementations:
             instance = getinstance(implementation, Local, optionparser)
+            print("implementation: %s, mpiscriptname: %s, path: %s, instance mpirun for: %s" % (implementation, instance._mpiscriptname_for, mpim.which(instance._mpiscriptname_for[0]), instance._mpirun_for))
             self.assertTrue(instance._is_mpirun_for(mpim.which(instance._mpiscriptname_for[0])),
-                            msg="%s is not an MPI flavor defined by %s according to _is_mpirun_for" %
-                            (instance, implementation))
+                            msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for" %
+                            implementation)
 
     def test_set_omp_threads(self):
         """test if OMP_NUM_THREAD gets set correctly"""
