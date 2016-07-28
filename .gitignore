@@ -32,3 +32,5 @@ pip-log.txt
 
 html
 test-reports
+
+testscripts/mpi_helloworld_mpicc
