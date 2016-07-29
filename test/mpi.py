@@ -102,7 +102,7 @@ class TestMPI(unittest.TestCase):
     def test_options(self):
         """running mympirun with bad options"""
         optionparser = MympirunOption()
-        optionparser.args = ['echo', 'foo']
+        optionparser.args = ['echo', 'foo', 'zever']
         # should not throw an error
         try:
             mpi_instance = getinstance(mpim.MPI, Local, optionparser)
@@ -110,38 +110,37 @@ class TestMPI(unittest.TestCase):
         except Exception:
             self.fail("mympirun raised an exception while running main()")
 
-        optdict = mpi_instance.options
+        optdict = mpi_instance.options.__dict__
 
-        # why isnt this a dict??
-        print("MPI INSTANCE OPTIONS: %s, type %s" % (optdict, type(optdict)))
+        print("args given to mympirunoption: %s, instance options: %s, " % (optionparser.args,optdict))
 
-        # for opt in optionparser.args:
-        #    self.assertFalse(opt in mpi_instance.options)
+        for opt in optionparser.args:
+            self.assertFalse(opt in optdict)
 
-    def test_is_mpirun_for(self):
-        """test if _is_mpirun_for returns true when it is given the path of its executable"""
-        optionparser = MympirunOption()
+    # def test_is_mpirun_for(self):
+    #     """test if _is_mpirun_for returns true when it is given the path of its executable"""
+    #     optionparser = MympirunOption()
 
 
-        exitcode1, _ = run_simple("module purge")
-        exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster
-        exitcode3, loadoutput = run_simple("module load " + OpenMPI._mpirun_for[0])
-        if exitcode1 + exitcode2 + exitcode3 > 0:
-            raise Exception("something went wrong while trying to load OpenMPI module: %s" % loadoutput)
+    #     exitcode1, _ = run_simple("module purge")
+    #     exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster
+    #     exitcode3, loadoutput = run_simple("module load " + OpenMPI._mpirun_for[0])
+    #     if exitcode1 + exitcode2 + exitcode3 > 0:
+    #         raise Exception("something went wrong while trying to load OpenMPI module: %s" % loadoutput)
 
-        instance = getinstance(OpenMPI, Local, optionparser)
+    #     instance = getinstance(OpenMPI, Local, optionparser)
 
-        print("mpiscriptname: %s, path: %s, instance mpirun for: %s" %
-              (instance._mpiscriptname_for, mpim.which('mpirun'),
-               instance._mpirun_for))
-        self.assertTrue(instance._is_mpirun_for(mpim.which('mpirun')),
-                        msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for, path: %s" %
-                        (OpenMPI, mpim.which('mpirun')))
+    #     print("mpiscriptname: %s, path: %s, instance mpirun for: %s" %
+    #           (instance._mpiscriptname_for, mpim.which('mpirun'),
+    #            instance._mpirun_for))
+    #     self.assertTrue(instance._is_mpirun_for(mpim.which('mpirun')),
+    #                     msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for, path: %s" %
+    #                     (OpenMPI, mpim.which('mpirun')))
 
-        exitcode1, _ = run_simple("module purge")
-        exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster\
-        if exitcode1 + exitcode2 > 0:
-            raise Exception("something went wrong while trying to reset loaded modules")
+    #     exitcode1, _ = run_simple("module purge")
+    #     exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster\
+    #     if exitcode1 + exitcode2 > 0:
+    #         raise Exception("something went wrong while trying to reset loaded modules")
 
 
     def test_set_omp_threads(self):
