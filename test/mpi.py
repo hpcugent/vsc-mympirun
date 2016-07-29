@@ -37,8 +37,6 @@ from vsc.utils.run import run_simple
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.mpi.openmpi import OpenMPI
-from vsc.mympirun.mpi.intelmpi import IntelMPI
-from vsc.mympirun.mpi.mpich import MPICH2
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
 
@@ -83,12 +81,14 @@ class TestMPI(unittest.TestCase):
 
     def test_which(self):
         """test if which returns a path that corresponds to unix which"""
-        scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
-        for scriptname in scriptnames:
+
+        testnames = ["python", "java"]
+
+        for scriptname in testnames:
             mpiwhich = mpim.which(scriptname)
             exitcode, unixwhich = run_simple("which " + scriptname)
             if exitcode > 0:
-                raise Exception("Something went wrong while trying to run `which`")
+                raise Exception("Something went wrong while trying to run `which`: %s" % unixwhich)
 
             self.assertTrue(mpiwhich, msg="mpi which did not return anything, (unix which: %s" % unixwhich)
             self.assertEqual(mpiwhich + "\n", unixwhich,
@@ -121,28 +121,22 @@ class TestMPI(unittest.TestCase):
     def test_is_mpirun_for(self):
         """test if _is_mpirun_for returns true when it is given the path of its executable"""
         optionparser = MympirunOption()
-        implementations = [OpenMPI, IntelMPI, MPICH2]
 
-        for implementation in implementations:
-            exitcode1, _ = run_simple("module purge")
-            exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster\
-            if exitcode1 + exitcode2 > 0:
-                raise Exception(("something went wrong while trying to reset loaded modules (this is expected if the "
-                                 "host doesnt't use modules)"))
 
-            exitcode, unixwhich = run_simple("module load " + implementation._mpirun_for)
-            if exitcode > 0:
-                print("no module for %s" % implementation._mpirun_for)
-                continue
+        exitcode1, _ = run_simple("module purge")
+        exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster
+        exitcode3, loadoutput = run_simple("module load " + OpenMPI._mpirun_for[0])
+        if exitcode1 + exitcode2 + exitcode3 > 0:
+            raise Exception("something went wrong while trying to load OpenMPI module: %s" % loadoutput)
 
-            instance = getinstance(implementation, Local, optionparser)
+        instance = getinstance(OpenMPI, Local, optionparser)
 
-            print("implementation: %s, mpiscriptname: %s, path: %s, instance mpirun for: %s" %
-                  (implementation, instance._mpiscriptname_for, mpim.which(instance._mpiscriptname_for[0]),
-                   instance._mpirun_for))
-            self.assertTrue(instance._is_mpirun_for(mpim.which(instance._mpiscriptname_for[0])),
-                            msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for" %
-                            implementation)
+        print("mpiscriptname: %s, path: %s, instance mpirun for: %s" %
+              (instance._mpiscriptname_for, mpim.which('mpirun'),
+               instance._mpirun_for))
+        self.assertTrue(instance._is_mpirun_for(mpim.which('mpirun')),
+                        msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for, path: %s" %
+                        (OpenMPI, mpim.which('mpirun')))
 
         exitcode1, _ = run_simple("module purge")
         exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster\
