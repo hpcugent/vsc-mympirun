@@ -70,6 +70,7 @@ def get_mpi_and_sched_and_options():
         optionparser.log.debug("mympirun will be executed by %s", setmpi)
 
     scriptname, mpi, found_mpi = mpim.what_mpi(setmpi)
+    optionparser.log.debug("Found MPI classes %s", found_mpi)
     found_mpi_names = [x.__name__ for x in found_mpi]
 
     if optionparser.options.showmpi:
@@ -79,6 +80,7 @@ def get_mpi_and_sched_and_options():
 
     # Select a Scheduler from the available schedulers
     sched, found_sched = schedm.what_sched(getattr(optionparser.options, 'setsched', None))
+    optionparser.log.debug("Found Sched classes %s", found_sched)
     found_sched_names = [x.__name__ for x in found_sched]
 
     if optionparser.options.showsched:

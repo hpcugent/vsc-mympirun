@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2016 Ghent University
+# Copyright 2012-2016 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -23,29 +23,26 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Factory for MPI instance, this will return a instance based on the given
-mpi and scheduler class
+Tests for the vsc.mympirun.mpi.sched module.
 
-@author: Stijn De Weirdt, Jens Timmerman
+@author: Jeroen De Clerck
 """
 
-from vsc.utils import fancylogger
+import unittest
 
-def getinstance(mpi, sched, options):
-    """
-    Make an instance of the relevant MPI class. Also set the RM instance
+import vsc.mympirun.rm.sched as schedm
+from vsc.mympirun.rm.local import Local
+from vsc.mympirun.rm.pbs import PBS
+from vsc.mympirun.rm.scoop import Scoop
 
-    @param mpi: a class subclassing from MPI (e.g. returned by whatMPI)
-    @param sched: a class subclassing from sched (e.g. returned by whatSched)
-    @param options: an instance of MympirunOption
+class TestSched(unittest.TestCase):
+    """tests for vsc.mympirun.mpi.sched functions"""
 
-    @return: an instance that is a subclass of the selected MPI and Scheduler
-    """
-
-    class Coupler(mpi, sched):
-        """Temporary class to couple MPI and local sched"""
-        def __init__(self, **kwargs):
-            self.log = fancylogger.getLogger("%s_%s" % (mpi.__name__, sched.__name__))
-            super(Coupler, self).__init__(**kwargs)
-
-    return Coupler(options=options.options, cmdargs=options.args)
+    def test_what_sched(self):
+        """ test dingen"""
+        schednames = {"local": Local, "pbs": PBS, "scoop": Scoop}
+        for key, val in schednames.iteritems():
+            sched, found_sched = schedm.what_sched(key)
+            print("key: %s, sched: %s, found_sched_: %s" % (key, sched, found_sched))
+            sched, found_sched = schedm.what_sched(key)
+            self.assertEqual(sched, val)

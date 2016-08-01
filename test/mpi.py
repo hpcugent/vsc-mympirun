@@ -23,7 +23,7 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Tests for the vsc.utils.missing module.
+Tests for the vsc.mympirun.mpi.mpi module.
 
 @author: Jeroen De Clerck
 """
@@ -36,7 +36,7 @@ import string
 from vsc.utils.run import run_simple
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
-from vsc.mympirun.mpi.openmpi import OpenMPI
+#from vsc.mympirun.mpi.openmpi import OpenMPI
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
 
@@ -59,7 +59,7 @@ class TestMPI(unittest.TestCase):
             # if the scriptname is an executable located on this machine
             if mpim.which(scriptname):
                 (returned_scriptname, mpi, found) = mpim.what_mpi(scriptname)
-                print("%s, %s, %s" % (returned_scriptname, mpi, found))
+                print("what mpi returns: %s, %s, %s" % (returned_scriptname, mpi, found))
                 # if an mpi implementation was found
                 if mpi:
                     self.assertTrue(mpi in found,
@@ -95,9 +95,9 @@ class TestMPI(unittest.TestCase):
                              msg="the return values of unix which and which() aren't"" the same: %s != %s" %
                              (mpiwhich + "\n", unixwhich))
 
-    ###################
-    ## MPI functions ##
-    ###################
+     ###################
+     ## MPI functions ##
+     ###################
 
     def test_options(self):
         """running mympirun with bad options"""
@@ -112,7 +112,7 @@ class TestMPI(unittest.TestCase):
 
         optdict = mpi_instance.options.__dict__
 
-        print("args given to mympirunoption: %s, instance options: %s, " % (optionparser.args,optdict))
+        print("args given to mympirunoption: %s, instance options: %s, " % (optionparser.args, optdict))
 
         for opt in optionparser.args:
             self.assertFalse(opt in optdict)
@@ -120,7 +120,6 @@ class TestMPI(unittest.TestCase):
     # def test_is_mpirun_for(self):
     #     """test if _is_mpirun_for returns true when it is given the path of its executable"""
     #     optionparser = MympirunOption()
-
 
     #     exitcode1, _ = run_simple("module purge")
     #     exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster
@@ -142,11 +141,9 @@ class TestMPI(unittest.TestCase):
     #     if exitcode1 + exitcode2 > 0:
     #         raise Exception("something went wrong while trying to reset loaded modules")
 
-
     def test_set_omp_threads(self):
         """test if OMP_NUM_THREAD gets set correctly"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.set_omp_threads()
         self.assertTrue(getattr(mpi_instance.options, 'ompthreads') is not None, msg="ompthreads was not set")
         self.assertEqual(os.environ["OMP_NUM_THREADS"], getattr(mpi_instance.options, 'ompthreads', None),
@@ -154,8 +151,7 @@ class TestMPI(unittest.TestCase):
 
     def test_set_netmask(self):
         """test if netmask matches the layout of an ip adress"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.set_netmask()
         # matches "IP address / netmask"
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
@@ -165,8 +161,7 @@ class TestMPI(unittest.TestCase):
 
     def test_select_device(self):
         """test if device and netmasktype are set and are picked from a list of options"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.select_device()
         self.assertTrue(mpi_instance.device and mpi_instance.device in mpi_instance.DEVICE_MPIDEVICE_MAP.values(),
                         msg="%s is not a valid device type, possible values: %s" %
@@ -177,8 +172,7 @@ class TestMPI(unittest.TestCase):
 
     def test_make_node_file(self):
         """test if the nodefile is made and if it contains the same amount of nodas as mpinodes"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.make_node_file()
         self.assertTrue(os.path.isfile(mpi_instance.mpiexec_node_filename), msg="the nodefile has not been created")
 
@@ -193,16 +187,14 @@ class TestMPI(unittest.TestCase):
 
     def test_make_mympirundir(self):
         """test if the mympirundir is made"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.make_mympirundir()
         self.assertTrue(mpi_instance.mympirundir and os.path.isdir(mpi_instance.mympirundir),
                         msg="mympirundir has not been set or has not been created")
 
     def test_make_mpdboot(self):
         """test if the mpdboot conffile is made and has the correct permissions"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.make_mpdboot()
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         self.assertTrue(os.path.isfile(mpdconffn), msg="mpd.conf has not been created")
@@ -211,8 +203,7 @@ class TestMPI(unittest.TestCase):
 
     def test_set_mpdboot_localhost_interface(self):
         """test if mpdboot_localhost_interface is set correctly"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.set_mpdboot_localhost_interface()
         (nodename, iface) = mpi_instance.mpdboot_localhost_interface
         self.assertTrue(mpi_instance.mpdboot_localhost_interface and nodename and iface)
@@ -222,8 +213,7 @@ class TestMPI(unittest.TestCase):
 
     def test_get_localhosts(self):
         """test if localhost returns a list containing that are sourced correctly"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         res = mpi_instance.get_localhosts()
         _, out = run_simple("/sbin/ip -4 -o addr show")
 
@@ -238,8 +228,7 @@ class TestMPI(unittest.TestCase):
 
     def test_set_mpiexec_global_options(self):
         """test if set_mpiexec_global_options merges os.environ and mpiexec_global_options"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.set_mpiexec_global_options()
         self.assertEqual(mpi_instance.mpiexec_global_options['MKL_NUM_THREADS'], "1",
                          msg="MKL_NUM_THREADS is not equal to 1")
@@ -254,8 +243,7 @@ class TestMPI(unittest.TestCase):
 
     def test_set_mpiexec_opts_from_env(self):
         """test if mpiexec_opts_from_env only contains environment variables that start with the given prefix"""
-        optionparser = MympirunOption()
-        mpi_instance = getinstance(mpim.MPI, Local, optionparser)
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.set_mpiexec_opts_from_env()
         prefixes = mpi_instance.OPTS_FROM_ENV_FLAVOR_PREFIX
         prefixes += mpi_instance.OPTS_FROM_ENV_BASE_PREFIX
@@ -267,12 +255,9 @@ class TestMPI(unittest.TestCase):
                             msg="%s does not start with a correct prefix, prefixes %s" % (env_var, prefixes))
             self.assertTrue(env_var in os.environ, msg="%s is not in os.environ, while it should be" % env_var)
 
-
     def test_make_mpirun(self):
         """test if make_mpirun correctly builds the complete mpirun command"""
-        optionparser = MympirunOption()
-
-        inst = getinstance(mpim.MPI, Local, optionparser)
+        inst = getinstance(mpim.MPI, Local, MympirunOption())
         inst.main()
 
         argspool = ['mpirun']
