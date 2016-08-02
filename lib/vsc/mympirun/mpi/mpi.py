@@ -826,7 +826,7 @@ class MPI(object):
         if self.pinning_override_type is not None:
             pin_override_cmd = self.pinning_override()
             if pin_override_cmd is None or not os.path.isfile(pin_override_cmd):
-                self.log.raiseException("make_mpirun: no valid pinning_overrride %s (see previous errors)" % pin_override_cmd)
+                self.log.raiseException("make_mpirun: no valid pinning_override %s (see previous errors)" % pin_override_cmd)
             else:
                 self.mpirun_cmd += [pin_override_cmd]
 

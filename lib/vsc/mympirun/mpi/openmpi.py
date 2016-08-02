@@ -76,3 +76,5 @@ class OpenMPI(MPI):
         else:
             self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
                                     self.pinning_override_type)
+
+        return cmd
