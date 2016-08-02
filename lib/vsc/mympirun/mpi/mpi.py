@@ -824,7 +824,7 @@ class MPI(object):
             self.log.debug("make_mpirun: added user provided options %s", self.options.mpirunoptions)
 
         if self.pinning_override_type is not None:
-            self.mpirun_cmd += self.pinning_override()
+            self.mpirun_cmd.append(self.pinning_override())
 
         # the executable
         # use undocumented subprocess API call to quote whitespace (executed with Popen(shell=True))
