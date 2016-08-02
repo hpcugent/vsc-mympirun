@@ -53,7 +53,7 @@ class MVAPICH2Hydra(MPI):
     def prepare(self):
         super(MVAPICH2Hydra, self).prepare()
 
-        if self.options.pinmpi:
+        if self.options.disablempipin:
             os.environ['MV2_ENABLE_AFFINITY'] = "1"
             os.environ['MV2_CPU_BINDING_POLICY'] = 'bunch'
         else:
@@ -126,7 +126,7 @@ class MPICH2Hydra(MVAPICH2Hydra):
     def get_mpiexec_global_options(self):
         # add pinning
         options = super(MPICH2Hydra, self).get_mpiexec_global_options()
-        if self.options.pinmpi:
+        if self.options.disablempipin:
             options.extend(['-binding', 'rr', '-topolib', 'hwloc'])
         return options
 
@@ -145,6 +145,6 @@ class MPICH2(MVAPICH2):
     def get_mpiexec_global_options(self):
         # add pinning
         options = super(MPICH2Hydra, self).get_mpiexec_global_options()
-        if self.options.pinmpi:
+        if self.options.disablempipin:
             options.extend(['-binding', 'rr', '-topolib', 'hwloc'])
         return options

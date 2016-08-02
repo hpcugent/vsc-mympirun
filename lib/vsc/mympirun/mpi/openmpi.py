@@ -57,3 +57,22 @@ class OpenMPI(MPI):
           - No mpdboot for openmpi
         """
         self.mpirun_cmd += self.mpiexec_options
+
+    def pinning_override(self):
+        """ pinning """
+
+        override_type = self.pinning_override_type
+
+        self.log.debug("pinning_override: type %s ", override_type)
+
+        cmd = ""
+        if override_type in ('packed', 'compact',):
+            cmd = "-rank-by core -bind-to core"
+        elif override_type in ('cycle',):
+            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
+                                    self.pinning_override_type)
+        elif override_type in ('spread',):
+            cmd = "-bind-to core"
+        else:
+            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
+                                    self.pinning_override_type)

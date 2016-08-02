@@ -95,7 +95,7 @@ class MympirunOption(GeneralOption):
             # legacy naming
 
             # don't set it by default. It will be set if needed (eg ipath)
-            "pinmpi": ("Disable MPI pinning", None, "store_false", None),
+            "disablempipin": ("Disable MPI pinning", None, "store_false", None),
 
             "rdma": ("Force rdma device", None, "store_true", None),
 
