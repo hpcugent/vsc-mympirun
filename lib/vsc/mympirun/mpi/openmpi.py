@@ -66,12 +66,9 @@ class OpenMPI(MPI):
         self.log.debug("pinning_override: type %s ", override_type)
 
         cmd = ""
-        if override_type in ('packed', 'compact',):
+        if override_type in ('packed', 'compact', 'bunch'):
             cmd = "-rank-by core -bind-to core"
-        elif override_type in ('cycle',):
-            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
-                                    self.pinning_override_type)
-        elif override_type in ('spread',):
+        elif override_type in ('spread', 'scatter'):
             cmd = "-bind-to core"
         else:
             self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %

@@ -186,122 +186,22 @@ class IntelMPI(MPI):
         return super(IntelMPI, self).mpirun_prepare_execution()
 
     def pinning_override(self):
-        """
-        Create own pinning
-          - using taskset or numactl?
-          - start the real executable with correct pinning
-
-        There are self.mpiprocesspernode number of processes to start on (self.nruniquenodes * self.ppn) requested slots
-        Each node has to accept self.mpiprocesspernode/self.ppn processes over self.ppn number of cpu slots
-
-        Do we assume heterogenous nodes (ie same cpu layout as current node?)
-          - We should but in reality we don't because of different cpusets!
-
-        What do we support?
-          - packed/compact : all together, ranks close to each other
-          - spread: as far away as possible from each other
-
-        Option:
-          - threaded (default yes): eg in hybrid, pin on all available cores or just one
-
-        When in this mode, one needs to disable default/native pinning
-
-        There seems no clean way to simply prefix the variables before the real exe
-          - some mpirun are binary, others are bash
-            - no clean way to pass the variable
-              - a simple bash script also resolves the csh problem?
-
-        Simple shell check. This is the login shell of the current user
-          - not necessarily the current shell
-            - but it is when multinode is used i think (eg startup with ssh)
-        """
-        variableexpression = "PMI_RANK"
-
-        self.log.debug("pinning_override: using variable expression %s as local node rank.", variableexpression)
-
-        rankname = 'MYMPIRUN_LOCALRANK'
-        rankmapname = 'MYMPIRUN_LOCALRANK_MAP'
-
-        wrappertxt = "#!/bin/bash\n%s=%s\n" % (rankname, variableexpression)
-
-        # number of local processors
-        # - eg numactl -s grep physcpubind
-        if not self.ppn == self.foundppn:
-            self.log.raiseException(("pinning_override: number of found procs %s is different from "
-                                     "requested ppn %s. Not yet supported.") % (self.foundppn, self.ppn))
+        """ pinning """
 
         override_type = self.pinning_override_type
-        multithread = True
-        if override_type.endswith('pin'):
-            override_type = override_type[:-3]
-            multithread = False
-        self.log.debug("pinning_override: type %s multithread %s", override_type, multithread)
 
-        # The whole method is very primitive
-        # - assume cpu layout on OS has correct numbering
-        # What about pinned threads of threaded apps?
-        # - eg use likwid to pin those threads too
+        self.log.debug("pinning_override: type %s ", override_type)
 
-        # cores per process
-        corespp = self.foundppn // self.mpiprocesspernode
-        corespp_rest = self.foundppn % self.mpiprocesspernode
-        if (corespp < 1) or (self.mpiprocesspernode == self.foundppn):
-            multi = False
-            self.log.debug(("pinning_override: exactly one or more than one process for each core: mpi processes: %s "
-                            "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.foundppn)
-        if corespp_rest > 0:
-            self.log.debug(("pinning_override: number of mpiprocesses (%s) is not an exact multiple of "
-                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.foundppn)
-
-        map_func = None
-        if override_type in ('packed', 'compact',):
-            if multi:
-                # consecutive domains
-                map_func = lambda x: "%s-%s" % (x * corespp, (x + 1) * corespp - 1)
-            else:
-                # consecutive cores
-                map_func = lambda x: x
-        elif override_type in ('cycle',):
-            # eg double with GAMESS
-            if multi:
-                self.log.raiseException(
-                    "pinning_override: trying to set pin type to 'cycle' with multithreading enabled: not supported")
-            else:
-                map_func = lambda x: (x % self.foundppn)
-        elif override_type in ('spread',):
-            if multi:
-                # spread domains
-                map_func = lambda x: "%s-%s" % (x * corespp, (x + 1) * corespp - 1)
-            else:
-                # spread cores
-                map_func = lambda x: (x * corespp)
+        cmd = ""
+        if override_type in ('packed', 'compact', 'bunch'):
+            cmd = "-env I_MPI_PIN_PROCESSOR_LIST=allcores:map=bunch"
+        elif override_type in ('spread', 'scatter'):
+            cmd = "-env I_MPI_PIN_PROCESSOR_LIST=allcores"
         else:
             self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
                                     self.pinning_override_type)
 
-        rankmap = [map_func(x) for x in range(self.mpiprocesspernode)]
-
-        wrappertxt += "%s=(%s)\n" % (rankmapname, ' '.join(rankmap))
-
-        pinning_exe = which(self.PINNING_OVERRIDE_METHOD)  # default numactl
-        if not pinning_exe:
-            self.log.raiseException("pinning_override: can't find executable %s" % self.PINNING_OVERRIDE_METHOD)
-
-        if self.PINNING_OVERRIDE_METHOD in ('numactl',):
-            pinning_exe += ' --physcpubind="${%s[$%s]}"' % (rankmapname, rankname)
-
-        wrappertxt += "%s $@" % pinning_exe
-        wrapperpath = os.path.join(self.jobdir, 'pinning_override_wrapper.sh')
-        try:
-            open(wrapperpath, 'w').write(wrappertxt)
-            os.chmod(wrapperpath, stat.S_IRWXU)
-            self.log.debug("pinning_override: wrote wrapper file %s:\n%s", wrapperpath, wrappertxt)
-        except IOError:
-            self.log.raiseException('pinning_override: failed to write wrapper file %s', wrapperpath)
-
-        self.log.debug("pinning_override: pinning_exe %s to wrapper %s", pinning_exe, wrapperpath)
-
-        return wrapperpath
+        return cmd
 
 
 class IntelHydraMPI(IntelMPI):
