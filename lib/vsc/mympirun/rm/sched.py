@@ -25,7 +25,6 @@
 """
 Main sched class
 """
-import pkgutil
 import os
 import time
 import random
@@ -42,13 +41,6 @@ def what_sched(requested):
 
     # The coupler is also a subclass of sched, but we don't want it
     found_sched = [x for x in get_subclasses(Sched) if x.__name__ != 'Coupler']
-    if not found_sched:
-        # import all modules in this dir: http://stackoverflow.com/a/16853487
-        for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
-            loader.find_module(modulename).load_module(modulename)
-            LOGGER.debug("loading module %s", modulename)
-        found_sched = [x for x in get_subclasses(Sched) if x.__name__ != 'Coupler']
-    LOGGER.debug("supported Schedulers: %s", found_sched)
 
     # first, try to use the scheduler that was requested
     if requested:
