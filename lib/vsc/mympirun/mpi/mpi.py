@@ -30,7 +30,6 @@ Base MPI class, all actual classes should inherit from this one
 """
 
 import os
-import pkgutil
 import random
 import re
 import resource
@@ -67,10 +66,6 @@ def what_mpi(name):
       - The corresponding python class of the MPI variant
       - The python classes of the supported MPI flavors (from the various .py files in mympirun/mpi)
     """
-
-    # import all modules in this dir: http://stackoverflow.com/a/16853487
-    for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
-        loader.find_module(modulename).load_module(modulename)
 
     supp_mpi_impl = get_subclasses(MPI)  # supported MPI implementations
 

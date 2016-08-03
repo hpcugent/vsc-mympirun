@@ -25,7 +25,6 @@
 """
 Main sched class
 """
-import pkgutil
 import os
 import time
 import random
@@ -39,10 +38,6 @@ LOGGER = getLogger()
 
 def what_sched(requested):
     """Return the scheduler class """
-
-    # import all modules in this dir: http://stackoverflow.com/a/16853487
-    for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
-        loader.find_module(modulename).load_module(modulename)
 
     found_sched = get_subclasses(Sched)
 
