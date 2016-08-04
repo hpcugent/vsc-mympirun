@@ -27,6 +27,7 @@ OpenMPI specific classes
 
 Documentation can be found at https://www.open-mpi.org/doc/
 """
+import os
 
 from vsc.mympirun.mpi.mpi import MPI
 
@@ -65,13 +66,39 @@ class OpenMPI(MPI):
 
         self.log.debug("pinning_override: type %s ", override_type)
 
-        cmd = ""
-        if override_type in ('packed', 'compact', 'bunch'):
-            cmd = "-rank-by core -bind-to core"
-        elif override_type in ('spread', 'scatter'):
-            cmd = "-bind-to core"
-        else:
-            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
-                                    self.pinning_override_type)
+        ranktxt = ""
+
+        sockets_per_node = 2
+
+        try:
+            rankfn = os.path.join(self.mympirundir, 'rankfile')
+
+            if override_type in ('packed', 'compact', 'bunch'):
+
+
+                ranktxt = "-rank-by core -bind-to core"
+            elif override_type in ('spread', 'scatter'):
+                if self.options.universe:
+                    for rank in range(self.options.universe):
+                        node = rank % self.nruniquenodes
+                        socket = (rank % self.ppn) % sockets_per_node
+                        slot = (rank % self.ppn) / sockets_per_node
+
+                        ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
+                        open(rankfn, 'w').write(ranktxt)
+                        self.log.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
+                        cmd = "-rf %s" % rankfn
+                else:
+                    cmd = "-bind-to core"
+
+            else:
+                self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
+                                        self.pinning_override_type)
+
+
+
+
+        except IOError:
+            self.log.raiseException('pinning_override: failed to write rankfile %s' % rankfn)
 
         return cmd
