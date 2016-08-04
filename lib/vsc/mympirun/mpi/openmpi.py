@@ -70,35 +70,50 @@ class OpenMPI(MPI):
 
         sockets_per_node = 2
 
-        try:
-            rankfn = os.path.join(self.mympirundir, 'rankfile')
-
-            if override_type in ('packed', 'compact', 'bunch'):
 
 
-                ranktxt = "-rank-by core -bind-to core"
-            elif override_type in ('spread', 'scatter'):
-                if self.options.universe:
+
+        if self.options.universe:
+            try:
+                rankfn = os.path.join(self.mympirundir, 'rankfile')
+
+                if override_type in ('packed', 'compact', 'bunch'):
+                    #spread ranks evenly across nodes, but put them on slots close to each other
+                    for rank in range(self.options.universe):
+                        node = rank / self.ppn
+                        socket = rank % (self.ppn / sockets_per_node)
+                        slot = (rank % self.ppn) / sockets_per_node
+                        ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
+
+                elif override_type in ('spread', 'scatter'):
+                    #spread ranks evenly across nodes, but also spread them across sockets
                     for rank in range(self.options.universe):
                         node = rank % self.nruniquenodes
                         socket = (rank % self.ppn) % sockets_per_node
                         slot = (rank % self.ppn) / sockets_per_node
-
                         ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
-                        open(rankfn, 'w').write(ranktxt)
-                        self.log.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
-                        cmd = "-rf %s" % rankfn
+
                 else:
-                    cmd = "-bind-to core"
+                    self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
+                                            self.pinning_override_type)
+
+                open(rankfn, 'w').write(ranktxt)
+                self.log.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
+                cmd = "-rf %s" % rankfn
+
+            except IOError:
+                self.log.raiseException('pinning_override: failed to write rankfile %s' % rankfn)
+
+        else:
+            if override_type in ('packed', 'compact', 'bunch'):
+                cmd = "-rank-by core -bind-to core"
+            elif override_type in ('spread', 'scatter'):
+                cmd = "-bind-to core"
 
             else:
                 self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
                                         self.pinning_override_type)
 
 
-
-
-        except IOError:
-            self.log.raiseException('pinning_override: failed to write rankfile %s' % rankfn)
 
         return cmd
