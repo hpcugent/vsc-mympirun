@@ -81,8 +81,8 @@ class OpenMPI(MPI):
                     #spread ranks evenly across nodes, but put them on slots close to each other
                     for rank in range(self.options.universe):
                         node = rank / self.ppn
-                        socket = rank % (self.ppn / sockets_per_node)
-                        slot = (rank % self.ppn) / sockets_per_node
+                        socket = rank / (self.ppn / sockets_per_node)
+                        slot = rank % (self.ppn / sockets_per_node)
                         ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
 
                 elif override_type in ('spread', 'scatter'):
