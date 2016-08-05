@@ -28,7 +28,6 @@ Optionparser for mympirun
 
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
-from vsc.utils.missing import get_subclasses
 
 # introduce usage / -u option. (original has -h for --hybrid)
 
