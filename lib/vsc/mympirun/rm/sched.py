@@ -98,8 +98,8 @@ class Sched(object):
         if not hasattr(self, 'options'):
             self.options = options
 
-        self.cores_on_node = None
-        self.set_cores_on_node()
+        self.cores_per_node = None
+        self.set_cores_per_node()
 
         self.sched_id = None
         self.set_sched_id()
@@ -162,15 +162,15 @@ class Sched(object):
                     self.log.raiseException("set_sched_id: failed to get id from environment variable %s" %
                                             self.SCHED_ENVIRON_ID)
 
-    def set_cores_on_node(self):
+    def set_cores_per_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""
 
         filename = '/proc/cpuinfo'
         regcores = re.compile(r"^processor\s*:\s*\d+\s*$", re.M)
 
-        self.cores_on_node = len(regcores.findall(open(filename).read()))
+        self.cores_per_node = len(regcores.findall(open(filename).read()))
 
-        self.log.debug("_cores_on_thisnode: found %s", self.cores_on_node)
+        self.log.debug("set_cores_per_node: found %s", self.cores_per_node)
 
     def set_cpus(self):
         """
@@ -187,8 +187,8 @@ class Sched(object):
             self.cpus = [idx for idx, cpu in enumerate(proc_affinity.cpus) if cpu == 1]
             self.log.debug("found cpus from affinity: %s", self.cpus)
         except Exception:
-            self.cpus = range(self.cores_on_node)
-            self.log.debug("could not find cpus from affinity, simulating with range(cores_on_node): %s", self.cpus)
+            self.cpus = range(self.cores_per_node)
+            self.log.debug("could not find cpus from affinity, simulating with range(cores_per_node): %s", self.cpus)
 
     def set_nodes(self):
         """get a list with the node of every requested processor/core"""
@@ -212,10 +212,7 @@ class Sched(object):
         else:
             # optimised
             # set in MPI, not in RM
-            default_rsh = getattr(self, 'DEFAULT_RSH', None)
-            if default_rsh is not None:
-                rsh = default_rsh
-            elif getattr(self, 'has_hydra', None):
+            if getattr(self, 'has_hydra', None):
                 rsh = 'ssh'  # default anyway
             elif self.is_large():
                 rsh = self.RSH_LARGE_CMD
@@ -229,7 +226,7 @@ class Sched(object):
         """Determine if this is a large job or not"""
 
         res = ((len(self.nodes) > self.RSH_LARGE_LIMIT) and
-               (self.ppn == self.cores_on_node))
+               (self.ppn == self.cores_per_node))
         self.log.debug("is_large returns %s", res)
         return res
 

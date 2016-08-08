@@ -167,8 +167,6 @@ class MPI(object):
 
     MPIRUN_LOCALHOSTNAME = 'localhost'
 
-    DEFAULT_RSH = None
-
     HYDRA = None
     HYDRA_LAUNCHER_NAME = "launcher"
 
@@ -179,7 +177,6 @@ class MPI(object):
     NETMASK_TYPE_MAP = {'ib': 'ib', 'det': 'eth', 'shm': 'eth', 'socket': 'eth'}
 
     PINNING_OVERRIDE_METHOD = 'numactl'
-    PINNING_OVERRIDE_TYPE_DEFAULT = None
 
     REMOTE_OPTION_TEMPLATE = "--rsh=%(rsh)s"
     MPDBOOT_OPTIONS = []
@@ -223,7 +220,7 @@ class MPI(object):
 
         self.mpirun_cmd = None
 
-        self.pinning_override_type = getattr(self.options, 'overridepin', self.PINNING_OVERRIDE_TYPE_DEFAULT)
+        self.pinning_override_type = getattr(self.options, 'overridepin', None)
 
         super(MPI, self).__init__(**kwargs)
 
@@ -321,9 +318,9 @@ class MPI(object):
 
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
-        if not self.cores_on_node == len(self.cpus):
+        if not self.cores_per_node == len(self.cpus):
             self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.cores_on_node, len(self.cpus))
+                          self.ppn, self.cores_per_node, len(self.cpus))
 
     def check_limit(self):
         """Check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error."""
@@ -629,10 +626,6 @@ class MPI(object):
         if self.options.universe is not None and self.options.universe > 0:
             self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus())
 
-        # add nr of unique nodes as totalnum if defined
-        if self.mpdboot_totalnum:
-            self.mpdboot_options.append("--totalnum=%s" % self.mpdboot_totalnum)
-
         # set verbosity
         if self.options.mpdbootverbose:
             self.mpdboot_options.append("--verbose")
@@ -899,9 +892,9 @@ class MPI(object):
 
         # number of local processors
         # - eg numactl -s grep physcpubind
-        if not self.ppn == self.cores_on_node:
+        if not self.ppn == self.cores_per_node:
             self.log.raiseException(("pinning_override: number of found procs %s is different from "
-                                     "requested ppn %s. Not yet supported.") % (self.cores_on_node, self.ppn))
+                                     "requested ppn %s. Not yet supported.") % (self.cores_per_node, self.ppn))
 
         override_type = self.pinning_override_type
         multithread = True
@@ -916,15 +909,15 @@ class MPI(object):
         # - eg use likwid to pin those threads too
 
         # cores per process
-        corespp = self.cores_on_node // self.mpiprocesspernode
-        corespp_rest = self.cores_on_node % self.mpiprocesspernode
-        if (corespp < 1) or (self.mpiprocesspernode == self.cores_on_node):
+        corespp = self.cores_per_node // self.mpiprocesspernode
+        corespp_rest = self.cores_per_node % self.mpiprocesspernode
+        if (corespp < 1) or (self.mpiprocesspernode == self.cores_per_node):
             multi = False
             self.log.debug(("pinning_override: exactly one or more than one process for each core: mpi processes: %s "
-                            "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.cores_on_node)
+                            "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.cores_per_node)
         if corespp_rest > 0:
             self.log.debug(("pinning_override: number of mpiprocesses (%s) is not an exact multiple of "
-                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.cores_on_node)
+                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.cores_per_node)
 
         map_func = None
         if override_type in ('packed', 'compact',):
@@ -940,7 +933,7 @@ class MPI(object):
                 self.log.raiseException(
                     "pinning_override: trying to set pin type to 'cycle' with multithreading enabled: not supported")
             else:
-                map_func = lambda x: (x % self.cores_on_node)
+                map_func = lambda x: (x % self.cores_per_node)
         elif override_type in ('spread',):
             if multi:
                 # spread domains
