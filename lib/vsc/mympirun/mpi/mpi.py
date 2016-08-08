@@ -504,8 +504,8 @@ class MPI(object):
 
         total_size = 0
         for dirpath, _, filenames in os.walk(self.mympirunbasedir):
-            for file in filenames:
-                total_size += os.path.getsize(os.path.join(dirpath, file))
+            for filename in filenames:
+                total_size += os.path.getsize(os.path.join(dirpath, filename))
 
         if total_size >= MYMPIRUNBASEDIR_ERROR_SIZE:
             self.log.raiseException("the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size))
