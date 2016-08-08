@@ -53,6 +53,10 @@ INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
 # also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
+# size of dir in bytes
+MYMPIRUNBASEDIR_WARN_SIZE = 100000
+MYMPIRUNBASEDIR_ERROR_SIZE = 100000000
+
 LOGGER = getLogger()
 
 
@@ -497,6 +501,18 @@ class MPI(object):
             self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
 
         self.mympirunbasedir = os.path.join(basepath, '.mympirun')
+
+        total_size = 0
+        for dirpath, _, filenames in os.walk(self.mympirunbasedir):
+            for file in filenames:
+                total_size += os.path.getsize(os.path.join(dirpath, file))
+
+        if total_size >= MYMPIRUNBASEDIR_ERROR_SIZE:
+            self.log.raiseException("the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size))
+        elif total_size >= MYMPIRUNBASEDIR_WARN_SIZE:
+            self.log.warn("the size of %s is currently %s ", self.mympirunbasedir, total_size)
+
+
         destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
         if not os.path.exists(destdir):
             try:
