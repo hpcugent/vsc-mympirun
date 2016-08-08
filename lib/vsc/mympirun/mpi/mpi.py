@@ -321,9 +321,9 @@ class MPI(object):
 
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
-        if not self.foundppn == len(self.cpus):
+        if not self.cores_on_node == len(self.cpus):
             self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.foundppn, len(self.cpus))
+                          self.ppn, self.cores_on_node, len(self.cpus))
 
     def check_limit(self):
         """Check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error."""
@@ -451,7 +451,7 @@ class MPI(object):
         self.make_mympirundir()
 
         if self.mpinodes is None:
-            self.make_node_list()
+            self.set_mpinodes()
 
         nodetxt = "\n".join(self.mpinodes + [''])
 
@@ -899,9 +899,9 @@ class MPI(object):
 
         # number of local processors
         # - eg numactl -s grep physcpubind
-        if not self.ppn == self.foundppn:
+        if not self.ppn == self.cores_on_node:
             self.log.raiseException(("pinning_override: number of found procs %s is different from "
-                                     "requested ppn %s. Not yet supported.") % (self.foundppn, self.ppn))
+                                     "requested ppn %s. Not yet supported.") % (self.cores_on_node, self.ppn))
 
         override_type = self.pinning_override_type
         multithread = True
@@ -916,15 +916,15 @@ class MPI(object):
         # - eg use likwid to pin those threads too
 
         # cores per process
-        corespp = self.foundppn // self.mpiprocesspernode
-        corespp_rest = self.foundppn % self.mpiprocesspernode
-        if (corespp < 1) or (self.mpiprocesspernode == self.foundppn):
+        corespp = self.cores_on_node // self.mpiprocesspernode
+        corespp_rest = self.cores_on_node % self.mpiprocesspernode
+        if (corespp < 1) or (self.mpiprocesspernode == self.cores_on_node):
             multi = False
             self.log.debug(("pinning_override: exactly one or more than one process for each core: mpi processes: %s "
-                            "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.foundppn)
+                            "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.cores_on_node)
         if corespp_rest > 0:
             self.log.debug(("pinning_override: number of mpiprocesses (%s) is not an exact multiple of "
-                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.foundppn)
+                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.cores_on_node)
 
         map_func = None
         if override_type in ('packed', 'compact',):
@@ -940,7 +940,7 @@ class MPI(object):
                 self.log.raiseException(
                     "pinning_override: trying to set pin type to 'cycle' with multithreading enabled: not supported")
             else:
-                map_func = lambda x: (x % self.foundppn)
+                map_func = lambda x: (x % self.cores_on_node)
         elif override_type in ('spread',):
             if multi:
                 # spread domains

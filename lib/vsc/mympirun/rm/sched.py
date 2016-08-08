@@ -98,26 +98,26 @@ class Sched(object):
         if not hasattr(self, 'options'):
             self.options = options
 
-        self.nodes = None
-
-        self.mpinodes = None
-        self.mpiprocesspernode = None
+        self.cores_on_node = None
+        self.set_cores_on_node()
 
         self.sched_id = None
-
-        self.foundppn = None
-        self.ppn = None
+        self.set_sched_id()
 
         self.cpus = []
+        self.set_cpus()
 
-        # collect data
-        self.get_id()
-        self._cores_on_this_node()
-        self.which_cpus()
-
+        self.nodes = None
         self.set_nodes()
 
+        self.ppn = None
         self.set_ppn()
+
+        self.mpiprocesspernode = None
+        self.set_mpiprocesspernode()
+
+        self.mpinodes = None
+        self.set_mpinodes()
 
         super(Sched, self).__init__(**kwargs)
 
@@ -145,7 +145,7 @@ class Sched(object):
         return False
 
     # other methods
-    def get_id(self):
+    def set_sched_id(self):
         """get a unique id for this scheduler"""
         if self.SCHED_ENVIRON_ID is not None:
             self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
@@ -153,26 +153,26 @@ class Sched(object):
         if self.sched_id is None:
             if self.SCHED_ENVIRON_ID is not None:
                 if self.AUTOGENERATE_JOBID:
-                    self.log.info("get_id: failed to get id from environment variable %s, will generate one.",
+                    self.log.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
                                   self.SCHED_ENVIRON_ID)
                     self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
                                                         random.randint(0, 10 ** 5 - 1))
-                    self.log.debug("get_id: using generated id %s", self.sched_id)
+                    self.log.debug("set_sched_id: using generated id %s", self.sched_id)
                 else:
-                    self.log.raiseException("get_id: failed to get id from environment variable %s" %
+                    self.log.raiseException("set_sched_id: failed to get id from environment variable %s" %
                                             self.SCHED_ENVIRON_ID)
 
-    def _cores_on_this_node(self):
+    def set_cores_on_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""
 
         filename = '/proc/cpuinfo'
         regcores = re.compile(r"^processor\s*:\s*\d+\s*$", re.M)
 
-        self.foundppn = len(regcores.findall(open(filename).read()))
+        self.cores_on_node = len(regcores.findall(open(filename).read()))
 
-        self.log.debug("_cores_on_thisnode: found %s", self.foundppn)
+        self.log.debug("_cores_on_thisnode: found %s", self.cores_on_node)
 
-    def which_cpus(self):
+    def set_cpus(self):
         """
         Determine which cpus on the node can be used
 
@@ -181,16 +181,14 @@ class Sched(object):
 
         stores local core ids in array
         """
-        if self.foundppn is None:
-            self._cores_on_this_node()
 
         try:
             proc_affinity = sched_getaffinity()  # get affinity for current proc
             self.cpus = [idx for idx, cpu in enumerate(proc_affinity.cpus) if cpu == 1]
             self.log.debug("found cpus from affinity: %s", self.cpus)
         except Exception:
-            self.cpus = range(self.foundppn)
-            self.log.debug("could not find cpus from affinity, simulating with range(foundppn): %s", self.cpus)
+            self.cpus = range(self.cores_on_node)
+            self.log.debug("could not find cpus from affinity, simulating with range(cores_on_node): %s", self.cpus)
 
     def set_nodes(self):
         """get a list with the node of every requested processor/core"""
@@ -198,8 +196,6 @@ class Sched(object):
 
     def set_ppn(self):
         """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
-        if self.nodes is None:
-            self.set_nodes()
 
         self.ppn = len(self.nodes) // len(nub(self.nodes))
 
@@ -231,27 +227,14 @@ class Sched(object):
 
     def is_large(self):
         """Determine if this is a large job or not"""
-        if self.nodes is None:
-            self.set_nodes()
-        if self.foundppn is None:
-            self.which_cpus()
 
         res = ((len(self.nodes) > self.RSH_LARGE_LIMIT) and
-               (self.ppn == self.foundppn))
+               (self.ppn == self.cores_on_node))
         self.log.debug("is_large returns %s", res)
         return res
 
-    def make_node_list(self):
-        """
-        Make a list of nodes that MPI should use
-
-        Calculates the amount of mpi processes based on the processors per node and options like double and hybrid
-        Will also make a list with nodes, where each entry is supposed to run an mpi process
-        """
-        if self.nodes is None:
-            self.set_nodes()
-        if self.ppn is None:
-            self.set_ppn()
+    def set_mpiprocesspernode(self):
+        """set mpiprocesspernode """
 
         # get the working mode from options
         hybrid = getattr(self.options, 'hybrid', None)
@@ -265,21 +248,31 @@ class Sched(object):
         else:
             multi = 1
 
-        self.log.debug("make_node_list: hybrid %s double %s multi %s", hybrid, double, multi)
+        self.log.debug("set_mpinodes: hybrid %s double %s multi %s", hybrid, double, multi)
 
-        res = []
         if double:
             self.mpiprocesspernode = self.ppn * multi
-            res = self.nodes * multi
         elif hybrid:
             # return multi unique nodes
             # mpiprocesspernode = 1 per node * multi
             self.mpiprocesspernode = multi
-            for uniquenode in nub(self.nodes):
-                res.extend([uniquenode] * multi)
         else:
             # default mode
             self.mpiprocesspernode = self.ppn * multi
+
+
+    def set_mpinodes(self):
+        """
+        Make a list of nodes that MPI should use
+
+        Calculates the amount of mpi processes based on the processors per node and options like double and hybrid
+        Will also make a list with nodes, where each entry is supposed to run an mpi process
+        """
+
+        res = []
+        if getattr(self.options, 'double', False):
+            res = self.nodes * 2
+        else:
             for uniquenode in nub(self.nodes):
                 res.extend([uniquenode] * self.mpiprocesspernode)
 
@@ -290,21 +283,21 @@ class Sched(object):
         ordermode = ordermode.split("_")
         if ordermode[0] in ('normal',):
             # do nothing
-            self.log.debug("make_node_list: no reordering (mode %s)", ordermode)
+            self.log.debug("set_mpinodes: no reordering (mode %s)", ordermode)
         elif ordermode[0] in ('random',):
             if len(ordermode) == 2:
                 seed = int(ordermode[1])
                 random.seed(seed)
-                self.log.debug("make_node_list: setting random seed %s", seed)
+                self.log.debug("set_mpinodes: setting random seed %s", seed)
             random.shuffle(res)
-            self.log.debug("make_node_list shuffled nodes (mode %s)" %
+            self.log.debug("set_mpinodes shuffled nodes (mode %s)" %
                            ordermode)
         elif ordermode[0] in ('sort',):
             res.sort()
-            self.log.debug("make_node_list sort nodes (mode %s)", ordermode)
+            self.log.debug("set_mpinodes sort nodes (mode %s)", ordermode)
         else:
-            self.log.raiseException("make_node_list unknown ordermode %s" % ordermode)
+            self.log.raiseException("set_mpinodes unknown ordermode %s" % ordermode)
 
-        self.log.debug("make_node_list: ordered node list %s (mpiprocesspernode %s)", res, self.mpiprocesspernode)
+        self.log.debug("set_mpinodes: ordered node list %s (mpiprocesspernode %s)", res, self.mpiprocesspernode)
 
         self.mpinodes = res
