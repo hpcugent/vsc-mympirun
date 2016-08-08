@@ -118,7 +118,7 @@ class IntelMPI(MPI):
             self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
                           self.ppn, self.foundppn, len(self.cpus))
 
-            if len(self.uniquenodes) > 1:
+            if len(nub(self.nodes)) > 1:
                 self.log.info(("check_usable_cpus: more then one unique node requested. "
                                "Not setting I_MPI_PIN_PROCESSOR_LIST."))
             else:
@@ -227,7 +227,7 @@ class IntelHydraMPI(IntelMPI):
         if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.mpiprocesspernode * len(self.uniquenodes)) > SCALABLE_PROGRESS_LOWER_THRESHOLD
+        scalable_progress = (self.mpiprocesspernode * len(nub(self.nodes))) > SCALABLE_PROGRESS_LOWER_THRESHOLD
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero(scalable_progress)
 
         if self.options.impi_daplud:

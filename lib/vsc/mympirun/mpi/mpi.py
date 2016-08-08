@@ -415,7 +415,7 @@ class MPI(object):
             for dev in self.DEVICE_ORDER:
                 if dev in ('shm',):
                     # only use shm if a single node is used
-                    if len(self.uniquenodes) > 1:
+                    if len(nub(self.nodes)) > 1:
                         continue
 
                 path = self.DEVICE_LOCATION_MAP[dev]
@@ -456,12 +456,12 @@ class MPI(object):
         nodetxt = "\n".join(self.mpinodes + [''])
 
         mpdboottxt = ""
-        for uniquenode in self.uniquenodes:
-            txt = uniquenode
+        for node in nub(self.nodes):
+            txt = node
             if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
                     txt += ":%s" % self.get_universe_ncpus()
-                txt += " ifhn=%s" % uniquenode
+                txt += " ifhn=%s" % node
 
             mpdboottxt += "%s\n" % txt
 
@@ -572,19 +572,19 @@ class MPI(object):
 
     def get_localhosts(self):
         """
-        Get the localhost interfaces, based on the hostnames from the nodes in self.uniquenodes.
+        Get the localhost interfaces, based on the hostnames from the nodes in nub(self.nodes).
 
         Raises Exception if no localhost interface was found.
 
-        @return: the list of interfaces that correspond to the list of uniquenodes
+        @return: the list of interfaces that correspond to the list of unique nodes
         """
         iface_prefix = ['eth', 'em', 'ib', 'wlan']
         reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
 
-        # iterate over uniquenodes and get their interfaces
+        # iterate over unique nodes and get their interfaces
         # add the found interface to res if it matches reg_iface
         res = []
-        for idx, nodename in enumerate(self.uniquenodes):
+        for idx, nodename in enumerate(nub(self.nodes)):
             ip = socket.gethostbyname(nodename)
             cmd = "/sbin/ip -4 -o addr show to %s/32" % ip
             exitcode, out = run_simple(cmd)
@@ -603,7 +603,7 @@ class MPI(object):
                 self.log.error("get_localhost idx %s: cmd %s failed with output %s", idx, cmd, out)
 
         if not res:
-            self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s" % self.uniquenodes)
+            self.log.raiseException("get_localhost: can't find localhost from nodes %s" % nub(self.nodes))
         return res
 
     def make_mpdboot_options(self):
@@ -689,7 +689,7 @@ class MPI(object):
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
         else:
-            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * len(self.uniquenodes)))
+            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * len(nub(self.nodes))))
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()

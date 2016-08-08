@@ -116,7 +116,6 @@ class Sched(object):
         self.which_cpus()
 
         self.set_nodes()
-        self.uniquenodes = nub(self.nodes)
 
         self.set_ppn()
 
@@ -249,7 +248,7 @@ class Sched(object):
         Calculates the amount of mpi processes based on the processors per node and options like double and hybrid
         Will also make a list with nodes, where each entry is supposed to run an mpi process
         """
-        if self.nodes is None or self.uniquenodes is None:
+        if self.nodes is None:
             self.set_nodes()
         if self.ppn is None:
             self.set_ppn()
@@ -276,12 +275,12 @@ class Sched(object):
             # return multi unique nodes
             # mpiprocesspernode = 1 per node * multi
             self.mpiprocesspernode = multi
-            for uniquenode in self.uniquenodes:
+            for uniquenode in nub(self.nodes):
                 res.extend([uniquenode] * multi)
         else:
             # default mode
             self.mpiprocesspernode = self.ppn * multi
-            for uniquenode in self.uniquenodes:
+            for uniquenode in nub(self.nodes):
                 res.extend([uniquenode] * self.mpiprocesspernode)
 
         # reorder
