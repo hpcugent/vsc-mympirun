@@ -83,8 +83,8 @@ class MympirunOption(GeneralOption):
             "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
                        None, "store_true", False),
 
-            "mpirunoutput": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
-                             "str", "store", None),
+            "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
+                       "str", "store", None),
 
             "logtofile": ("redirect the logging of mympirun to a file (instead of stdout/stderr)",
                           "str", "store", None),
@@ -172,10 +172,11 @@ class MympirunOption(GeneralOption):
         GeneralOption.parseoptions(self, newopts)
 
         # set error logging to file as soon as possible
-        if self.options.error:
-            if os.path.exists(self.options.error):
-                os.remove(self.options.error)
-            fancylogger.logToFile(self.options.error)
+        if self.options.logtofile:
+            print("logtofile %s" % self.options.logtofile)
+            if os.path.exists(self.options.logtofile):
+                os.remove(self.options.logtofile)
+            fancylogger.logToFile(self.options.logtofile)
 
     def postprocess(self):
         """Some additional processing"""
