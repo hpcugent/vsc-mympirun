@@ -55,6 +55,7 @@ class MympirunOption(GeneralOption):
         GeneralOption.__init__(self)
 
     def make_init(self):
+        """ add all the options to generaloption, so it can correctly parse the command line arguments """
 
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {

@@ -197,6 +197,9 @@ class IntelMPI(MPI):
 
 
 class IntelHydraMPI(IntelMPI):
+
+    """An implementation of the MPI class for IntelMPI, with hydra """
+
     _mpiscriptname_for = ['ihmpirun']
 
     _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("4.1.0.0"))
