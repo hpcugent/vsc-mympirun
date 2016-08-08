@@ -99,20 +99,14 @@ class Sched(object):
             self.options = options
 
         self.nodes = None
-        self.nrnodes = None
-
-        self.uniquenodes = None
-        self.nruniquenodes = None
 
         self.mpinodes = None
-        self.nrmpinodes = None
         self.mpiprocesspernode = None
 
         self.sched_id = None
 
         self.foundppn = None
         self.ppn = None
-        self.totalppn = None
 
         self.cpus = []
 
@@ -121,8 +115,9 @@ class Sched(object):
         self._cores_on_this_node()
         self.which_cpus()
 
-        self.get_node_list()
-        self.get_unique_nodes()
+        self.set_nodes()
+        self.uniquenodes = nub(self.nodes)
+
         self.set_ppn()
 
         super(Sched, self).__init__(**kwargs)
@@ -198,33 +193,18 @@ class Sched(object):
             self.cpus = range(self.foundppn)
             self.log.debug("could not find cpus from affinity, simulating with range(foundppn): %s", self.cpus)
 
-    def get_node_list(self):
+    def set_nodes(self):
         """get a list with the node of every requested processor/core"""
-        self.log.raiseException("get_node_list not implemented")
-
-    def get_unique_nodes(self, nodes=None):
-        """Get a list of unique nodes from self.nodes"""
-        if nodes is None:
-            nodes = self.nodes
-
-        # don't use set(), preserve order!
-        self.uniquenodes = nub(nodes)
-        self.nruniquenodes = len(self.uniquenodes)
-
-        self.log.debug("get_unique_nodes: %s uniquenodes: %s from %s", self.nruniquenodes, self.uniquenodes, nodes)
+        self.log.raiseException("set_nodes not implemented")
 
     def set_ppn(self):
         """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
-        if self.nrnodes is None:
-            self.get_node_list()
-        if self.nruniquenodes is None:
-            self.get_unique_nodes()
+        if self.nodes is None:
+            self.set_nodes()
 
-        self.ppn = self.nrnodes // self.nruniquenodes
-        # set default
-        self.totalppn = self.ppn
+        self.ppn = len(self.nodes) // len(nub(self.nodes))
 
-        self.log.debug("Set ppn to %s (totalppn %s)", self.ppn, self.totalppn)
+        self.log.debug("Set ppn to %s", self.ppn)
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -252,12 +232,12 @@ class Sched(object):
 
     def is_large(self):
         """Determine if this is a large job or not"""
-        if self.nrnodes is None:
-            self.get_node_list()
+        if self.nodes is None:
+            self.set_nodes()
         if self.foundppn is None:
             self.which_cpus()
 
-        res = ((self.nrnodes > self.RSH_LARGE_LIMIT) and
+        res = ((len(self.nodes) > self.RSH_LARGE_LIMIT) and
                (self.ppn == self.foundppn))
         self.log.debug("is_large returns %s", res)
         return res
@@ -269,12 +249,10 @@ class Sched(object):
         Calculates the amount of mpi processes based on the processors per node and options like double and hybrid
         Will also make a list with nodes, where each entry is supposed to run an mpi process
         """
-        if self.nodes is None:
-            self.get_node_list()
-        if self.totalppn is None or self.ppn is None:
+        if self.nodes is None or self.uniquenodes is None:
+            self.set_nodes()
+        if self.ppn is None:
             self.set_ppn()
-        if self.uniquenodes is None:
-            self.get_unique_nodes()
 
         # get the working mode from options
         hybrid = getattr(self.options, 'hybrid', None)
@@ -331,4 +309,3 @@ class Sched(object):
         self.log.debug("make_node_list: ordered node list %s (mpiprocesspernode %s)", res, self.mpiprocesspernode)
 
         self.mpinodes = res
-        self.nrmpinodes = len(res)

@@ -83,7 +83,7 @@ class IntelMPI(MPI):
 
     def get_universe_ncpus(self):
         """Return ppn for universe"""
-        return self.nrnodes
+        return len(self.nodes)
 
     def get_pinning_override_variable(self):
         return 'PMI_RANK'
@@ -118,7 +118,7 @@ class IntelMPI(MPI):
             self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
                           self.ppn, self.foundppn, len(self.cpus))
 
-            if self.nruniquenodes > 1:
+            if len(self.uniquenodes) > 1:
                 self.log.info(("check_usable_cpus: more then one unique node requested. "
                                "Not setting I_MPI_PIN_PROCESSOR_LIST."))
             else:
@@ -173,7 +173,7 @@ class IntelMPI(MPI):
             elif not os.path.exists('/etc/tmi.conf'):
                 self.log.debug("No TMI_CONFIG and no /etc/tmi.conf found, creating one")
                 # make the psm tmi config
-                tmicfg = os.path.join(self.mympirunbasedir, 'intelmpi.tmi.conf')
+                tmicfg = os.path.join(self.mympirundir, 'intelmpi.tmi.conf')
                 if not os.path.exists(tmicfg):
                     open(tmicfg, 'w').write('psm 1.0 libtmip_psm.so " "\n')
                 self.mpiexec_global_options['TMI_CONFIG'] = tmicfg
@@ -227,7 +227,7 @@ class IntelHydraMPI(IntelMPI):
         if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.mpiprocesspernode * self.nruniquenodes) > SCALABLE_PROGRESS_LOWER_THRESHOLD
+        scalable_progress = (self.mpiprocesspernode * len(self.uniquenodes)) > SCALABLE_PROGRESS_LOWER_THRESHOLD
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero(scalable_progress)
 
         if self.options.impi_daplud:

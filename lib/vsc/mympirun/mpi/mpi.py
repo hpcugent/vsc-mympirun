@@ -209,7 +209,6 @@ class MPI(object):
         self.netmasktype = None
         self.netmask = None
 
-        self.mympirunbasedir = None
         self.mympirundir = None
 
         self.mpdboot_node_filename = None
@@ -416,7 +415,7 @@ class MPI(object):
             for dev in self.DEVICE_ORDER:
                 if dev in ('shm',):
                     # only use shm if a single node is used
-                    if self.nruniquenodes > 1:
+                    if len(self.uniquenodes) > 1:
                         continue
 
                 path = self.DEVICE_LOCATION_MAP[dev]
@@ -496,8 +495,8 @@ class MPI(object):
         if not os.path.exists(basepath):
             self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
 
-        self.mympirunbasedir = os.path.join(basepath, '.mympirun')
-        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
+        basedir = os.path.join(basepath, '.mympirun')
+        destdir = os.path.join(basedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
         if not os.path.exists(destdir):
             try:
                 os.makedirs(destdir)
@@ -690,7 +689,7 @@ class MPI(object):
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
         else:
-            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * self.nruniquenodes))
+            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * len(self.uniquenodes)))
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()
