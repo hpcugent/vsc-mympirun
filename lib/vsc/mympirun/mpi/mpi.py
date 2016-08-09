@@ -54,8 +54,8 @@ INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
 # size of dir in bytes
-MYMPIRUNBASEDIR_WARN_SIZE = 100000
-MYMPIRUNBASEDIR_ERROR_SIZE = 1000000
+TEMPDIR_WARN_SIZE = 100000
+TEMPDIR_ERROR_SIZE = 1000000
 
 LOGGER = getLogger()
 
@@ -507,9 +507,9 @@ class MPI(object):
             for filename in filenames:
                 total_size += os.path.getsize(os.path.join(dirpath, filename))
 
-        if total_size >= MYMPIRUNBASEDIR_ERROR_SIZE:
+        if total_size >= TEMPDIR_ERROR_SIZE:
             self.log.raiseException("the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size))
-        elif total_size >= MYMPIRUNBASEDIR_WARN_SIZE:
+        elif total_size >= TEMPDIR_WARN_SIZE:
             self.log.warn("the size of %s is currently %s ", self.mympirunbasedir, total_size)
 
 
