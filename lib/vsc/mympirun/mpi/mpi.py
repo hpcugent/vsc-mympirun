@@ -839,7 +839,7 @@ class MPI(object):
 
     def pinning_override(self):
         """overriding the pinning method has to be handled by the flavor"""
-        self.log.raiseException("get_pinning_override_variable: not implemented.")
+        self.log.raiseException("pinning_override: not implemented.")
 
     def mpirun_prepare_execution(self):
         """
