@@ -45,7 +45,7 @@ from IPy import IP
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import run_simple, run_async_to_stdout, run_to_file
+from vsc.utils.run import run_simple, run_to_file
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -295,18 +295,19 @@ class MPI(object):
 
         self.make_mpirun()
 
+        if self.options.output is None:
+            self.options.output = os.path.join(self.mympirundir, "output")
+
         # actual execution
-        for runfunc, cmd in self.mpirun_prepare_execution():
-            self.log.debug("main: going to execute cmd %s", " ".join(cmd))
-            if self.options.output:
-                self.log.info("writing mpirun output to %s", self.log.output)
-            exitcode, _ = runfunc(cmd)
-            if exitcode > 0:
-                self.cleanup()
-                self.log.raiseException("main: exitcode %s > 0; cmd %s" % (exitcode, cmd))
-                break
+        self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
+        self.log.info("writing mpirun output to %s", self.options.output)
+        exitcode, _ = run_to_file(self.mpirun_cmd, filename=self.options.output)
+        with open(self.options.output, 'r') as fin:
+            print(fin.read())
 
         self.cleanup()
+        if exitcode > 0:
+            self.log.raiseException("main: exitcode %s > 0; cmd %s" % (exitcode, self.mpirun_cmd))
 
     ### BEGIN prepare ###
     def prepare(self):
@@ -1003,12 +1004,10 @@ class MPI(object):
 
         def main_runfunc(cmd):
             """The function that will run mpirun"""
-            if self.options.output is not None:
-                return run_to_file(cmd, filename=self.options.output)
-            else:
-                return run_async_to_stdout(cmd)
+            return run_to_file(cmd, filename=self.options.output)
 
-        return [(main_runfunc, self.mpirun_cmd)]
+
+        return [(run_to_file(cmd, filename=self.options.output), self.mpirun_cmd)]
 
     def cleanup(self):
         """Remove temporary directory (mympirundir)"""
