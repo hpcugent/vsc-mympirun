@@ -27,18 +27,18 @@ Tests for the vsc.mympirun.mpi.mpi module.
 
 @author: Jeroen De Clerck
 """
+from IPy import IP
 import os
-import stat
-import unittest
 import re
+import stat
 import string
+import unittest
 
-from vsc.utils.run import run_simple
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
-#from vsc.mympirun.mpi.openmpi import OpenMPI
-from vsc.mympirun.rm.local import Local
 from vsc.mympirun.option import MympirunOption
+from vsc.mympirun.rm.local import Local
+from vsc.utils.run import run_simple
 
 # we wish to use the mpirun we ship
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
@@ -68,8 +68,8 @@ class TestMPI(unittest.TestCase):
                                     msg="returned scriptname (%s) doesn't match actual scriptname (%s)" %
                                     (returned_scriptname, scriptname))
                 else:
-                    self.assertTrue(returned_scriptname.endswith("mpirun"),
-                                    msg="no mpi found, scriptname should be the path to mpirun but is %s" %
+                    self.assertTrue(returned_scriptname.endswith("mpirun") or returned_scriptname is None,
+                                    msg="no mpi found, scriptname should be the path to mpirun or None, but is %s" %
                                     returned_scriptname)
 
     def test_stripfake(self):
@@ -77,12 +77,12 @@ class TestMPI(unittest.TestCase):
         print("old path: %s" % os.environ["PATH"])
         mpim.stripfake()
         newpath = os.environ["PATH"]
-        self.assertFalse(("bin/%s" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath, msg="the faked dir is still in $PATH")
+        self.assertFalse(("bin/%s/mpirun" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath, msg="the faked dir is still in $PATH")
 
     def test_which(self):
         """test if which returns a path that corresponds to unix which"""
 
-        testnames = ["python", "java"]
+        testnames = ["python", "head", "tail", "cat"]
 
         for scriptname in testnames:
             mpiwhich = mpim.which(scriptname)
@@ -91,9 +91,9 @@ class TestMPI(unittest.TestCase):
                 raise Exception("Something went wrong while trying to run `which`: %s" % unixwhich)
 
             self.assertTrue(mpiwhich, msg="mpi which did not return anything, (unix which: %s" % unixwhich)
-            self.assertEqual(mpiwhich + "\n", unixwhich,
+            self.assertEqual(mpiwhich, string.strip(unixwhich),
                              msg="the return values of unix which and which() aren't"" the same: %s != %s" %
-                             (mpiwhich + "\n", unixwhich))
+                             (mpiwhich, string.strip(unixwhich)))
 
      ###################
      ## MPI functions ##
@@ -157,7 +157,10 @@ class TestMPI(unittest.TestCase):
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
         print("netmask: %s" % mpi_instance.netmask)
         for substr in string.split(mpi_instance.netmask, sep=":"):
-            self.assertTrue(reg.match(substr), msg="%s does not seem to be a valid address" % substr)
+            try:
+                IP(substr)
+            except ValueError:
+                self.fail()
 
     def test_select_device(self):
         """test if device and netmasktype are set and are picked from a list of options"""
