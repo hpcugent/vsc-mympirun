@@ -298,6 +298,8 @@ class MPI(object):
         # actual execution
         for runfunc, cmd in self.mpirun_prepare_execution():
             self.log.debug("main: going to execute cmd %s", " ".join(cmd))
+            if self.options.output:
+                self.log.info("writing mpirun output to %s", self.log.output)
             exitcode, _ = runfunc(cmd)
             if exitcode > 0:
                 self.cleanup()
