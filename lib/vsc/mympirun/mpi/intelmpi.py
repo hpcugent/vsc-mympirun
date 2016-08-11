@@ -188,14 +188,12 @@ class IntelMPI(MPI):
     def pinning_override(self):
         """ pinning """
 
-        override_type = self.pinning_override_type
-
-        self.log.debug("pinning_override: type %s ", override_type)
+        self.log.debug("pinning_override: type %s ", self.pinning_override_type)
 
         cmd = ""
-        if override_type in ('packed', 'compact', 'bunch'):
+        if self.pinning_override_type in ('packed', 'compact', 'bunch'):
             cmd = "-env I_MPI_PIN_PROCESSOR_LIST=allcores:map=bunch"
-        elif override_type in ('spread', 'scatter'):
+        elif self.pinning_override_type in ('spread', 'scatter'):
             cmd = "-env I_MPI_PIN_PROCESSOR_LIST=allcores"
         else:
             self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
