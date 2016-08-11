@@ -995,20 +995,6 @@ class MPI(object):
         """
         self.log.raiseException("get_pinning_override_variable: not implemented.")
 
-    def mpirun_prepare_execution(self):
-        """
-        Make a function that runs mpirun with all arguments correctly set
-
-        @return: a tuple containing the final function and the final command
-        """
-
-        def main_runfunc(cmd):
-            """The function that will run mpirun"""
-            return run_to_file(cmd, filename=self.options.output)
-
-
-        return [(run_to_file(cmd, filename=self.options.output), self.mpirun_cmd)]
-
     def cleanup(self):
         """Remove temporary directory (mympirundir)"""
         try:
