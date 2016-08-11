@@ -38,7 +38,6 @@ import vsc.mympirun.rm.sched as schedm
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
 from vsc.mympirun.rm.scoop import Scoop
-from vsc.utils.affinity import sched_getaffinity
 
 SCHEDDICT = {
     "local": Local,
@@ -56,7 +55,6 @@ class TestSched(unittest.TestCase):
         for key, val in SCHEDDICT.iteritems():
             sched, found_sched = schedm.what_sched(key)
             print("key: %s, sched: %s, found_sched_: %s" % (key, sched, found_sched))
-            sched, found_sched = schedm.what_sched(key)
             self.assertEqual(sched, val)
 
     def test_get_id(self):
