@@ -124,7 +124,7 @@ class TestMPI(unittest.TestCase):
         optionparser = MympirunOption()
 
         mpidict = {
-            IntelMPI: "apps/gent/SL6/sandybridge/software/impi/5.1.3.181-iccifort-2016.3.210-GCC-5.4.0-2.26/bin64/mpirun",
+            IntelMPI: "/apps/gent/SL6/sandybridge/software/impi/3.2.2.006/bin64/mpirun",
             OpenMPI: "apps/gent/SL6/sandybridge/software/OpenMPI/1.8.8-GNU-4.9.3-2.25/bin/mpirun",
         }
 

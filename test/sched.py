@@ -29,6 +29,7 @@ Tests for the vsc.mympirun.mpi.sched module.
 """
 
 import os
+import tempfile
 import unittest
 
 from vsc.mympirun.factory import getinstance
@@ -38,13 +39,20 @@ import vsc.mympirun.rm.sched as schedm
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
 from vsc.mympirun.rm.scoop import Scoop
+from vsc.utils import fancylogger
 
 SCHEDDICT = {
     "local": Local,
-    #"pbs": PBS, #doesn't work locally
+    "pbs": PBS, #doesn't work locally
     "scoop": Scoop,
     }
 
+os.environ['PBS_JOBID'] = "1"
+
+PBSNODEFILE = tempfile.NamedTemporaryFile(delete=False)
+PBSNODEFILE.write("localhost\nlocalhost\n")
+PBSNODEFILE.close()
+os.environ['PBS_NODEFILE'] = PBSNODEFILE.name
 
 class TestSched(unittest.TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""
