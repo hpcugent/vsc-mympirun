@@ -36,6 +36,8 @@ import unittest
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
+from vsc.mympirun.mpi.openmpi import OpenMPI
+from vsc.mympirun.mpi.intelmpi import IntelMPI
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.local import Local
 from vsc.utils.run import run_simple
@@ -117,29 +119,24 @@ class TestMPI(unittest.TestCase):
         for opt in optionparser.args:
             self.assertFalse(opt in optdict)
 
-    # def test_is_mpirun_for(self):
-    #     """test if _is_mpirun_for returns true when it is given the path of its executable"""
-    #     optionparser = MympirunOption()
+    def test_is_mpirun_for(self):
+        """test if _is_mpirun_for returns true when it is given the path of its executable"""
+        optionparser = MympirunOption()
 
-    #     exitcode1, _ = run_simple("module purge")
-    #     exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster
-    #     exitcode3, loadoutput = run_simple("module load " + OpenMPI._mpirun_for[0])
-    #     if exitcode1 + exitcode2 + exitcode3 > 0:
-    #         raise Exception("something went wrong while trying to load OpenMPI module: %s" % loadoutput)
+        mpidict = {
+            IntelMPI: "apps/gent/SL6/sandybridge/software/impi/5.1.3.181-iccifort-2016.3.210-GCC-5.4.0-2.26/bin64/mpirun",
+            OpenMPI: "apps/gent/SL6/sandybridge/software/OpenMPI/1.8.8-GNU-4.9.3-2.25/bin/mpirun",
+        }
 
-    #     instance = getinstance(OpenMPI, Local, optionparser)
+        for key, val in mpidict.iteritems():
+            instance = getinstance(key, Local, optionparser)
 
-    #     print("mpiscriptname: %s, path: %s, instance mpirun for: %s" %
-    #           (instance._mpiscriptname_for, mpim.which('mpirun'),
-    #            instance._mpirun_for))
-    #     self.assertTrue(instance._is_mpirun_for(mpim.which('mpirun')),
-    #                     msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for, path: %s" %
-    #                     (OpenMPI, mpim.which('mpirun')))
-
-    #     exitcode1, _ = run_simple("module purge")
-    #     exitcode2, _ = run_simple("module load cluster/delcatty") # load default cluster\
-    #     if exitcode1 + exitcode2 > 0:
-    #         raise Exception("something went wrong while trying to reset loaded modules")
+            print("mpiscriptname: %s, path: %s, instance mpirun for: %s" %
+                  (instance._mpiscriptname_for, val,
+                   instance._mpirun_for))
+            self.assertTrue(instance._is_mpirun_for(val),
+                            msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for, path: %s" %
+                            (key, val))
 
     def test_set_omp_threads(self):
         """test if OMP_NUM_THREAD gets set correctly"""

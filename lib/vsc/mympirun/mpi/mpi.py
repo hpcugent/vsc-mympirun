@@ -251,9 +251,11 @@ class MPI(object):
 
         if reg_match:
             if cls._mpirun_version is None:
+                LOGGER.debug("no mpirun version provided, skipping version check")
                 return True
             else:
                 # do version check (reg_match.group(1) is the version number)
+                LOGGER.debug("checking if mpirun version is equal or greater than required")
                 return cls._mpirun_version(reg_match.group(1))
         else:
             return False
