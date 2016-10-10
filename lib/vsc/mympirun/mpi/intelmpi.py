@@ -34,8 +34,18 @@ import socket
 import tempfile
 
 from vsc.mympirun.mpi.mpi import MPI, which
+from vsc.utils.missing import nub
 
 SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
+
+
+def _enable_disable(boolvalue):
+    """Return enable/disable for boolean value"""
+    return {True: 'enable', False: 'disable'}.get(bool(boolvalue))
+
+def _one_zero(boolvalue):
+    """Return enable/disable for boolean value"""
+    return int(bool(boolvalue))
 
 
 class IntelMPI(MPI):
@@ -44,8 +54,7 @@ class IntelMPI(MPI):
 
     _mpiscriptname_for = ['impirun']
     _mpirun_for = ['impi']
-    _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("4.1.0.0")
-    _mpirun_version = staticmethod(_mpirun_version)
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) < LooseVersion("4.1.0.0"))
 
     RUNTIMEOPTION = {
         'options': {
@@ -75,26 +84,9 @@ class IntelMPI(MPI):
         else:
             return super(IntelMPI, self)._has_hydra()
 
-    def _pin_flavour(self, mp=None):
-        if self.options.hybrid is not None and self.options.hybrid in (4,):
-            mp = True
-        self.log.debug("_pin_flavour: return %s", mp)
-        return mp
-
     def get_universe_ncpus(self):
         """Return ppn for universe"""
-        return self.nrnodes
-
-    def get_pinning_override_variable(self):
-        return 'PMI_RANK'
-
-    def _enable_disable(self, boolvalue):
-        """Return enable/disable for boolean value"""
-        return {True: 'enable', False: 'disable'}.get(bool(boolvalue))
-
-    def _one_zero(self, boolvalue):
-        """Return enable/disable for boolean value"""
-        return int(bool(boolvalue))
+        return len(self.nodes)
 
     def make_mpdboot_options(self):
         """
@@ -113,12 +105,12 @@ class IntelMPI(MPI):
         Check and act on fact of non-standard cpus (eg due to cpusets)
           - default: do nothing more then log
         """
-        if not self.foundppn == len(self.cpus):
+        if not self.cores_per_node == len(self.cpus):
             # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
             self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.foundppn, len(self.cpus))
+                          self.ppn, self.cores_per_node, len(self.cpus))
 
-            if self.nruniquenodes > 1:
+            if len(nub(self.nodes)) > 1:
                 self.log.info(("check_usable_cpus: more then one unique node requested. "
                                "Not setting I_MPI_PIN_PROCESSOR_LIST."))
             else:
@@ -141,7 +133,7 @@ class IntelMPI(MPI):
         if self.options.stats > 0:
             self.mpiexec_global_options['I_MPI_STATS'] = self.options.stats
 
-        self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = self._one_zero(self.options.impi_fallback)
+        self.mpiexec_global_options['I_MPI_FALLBACK_DEVICE'] = _one_zero(self.options.impi_fallback)
 
         if self.device == 'det':
             self.mpiexec_global_options['I_MPI_DAT_LIBRARY'] = "libdatdet.so"
@@ -153,7 +145,7 @@ class IntelMPI(MPI):
         if self.netmask:
             self.mpiexec_global_options['I_MPI_NETMASK'] = self.netmask
 
-        self.mpiexec_global_options['I_MPI_PIN'] = self._one_zero(self.options.pinmpi)
+        self.mpiexec_global_options['I_MPI_PIN'] = _one_zero(self.options.pinmpi)
 
         if self.options.hybrid is not None and self.options.hybrid > 1:
             self.mpiexec_global_options["I_MPI_CPUINFO"] = "auto"
@@ -173,7 +165,7 @@ class IntelMPI(MPI):
             elif not os.path.exists('/etc/tmi.conf'):
                 self.log.debug("No TMI_CONFIG and no /etc/tmi.conf found, creating one")
                 # make the psm tmi config
-                tmicfg = os.path.join(self.mympirunbasedir, 'intelmpi.tmi.conf')
+                tmicfg = os.path.join(self.mympirundir, '..', 'intelmpi.tmi.conf')
                 if not os.path.exists(tmicfg):
                     open(tmicfg, 'w').write('psm 1.0 libtmip_psm.so " "\n')
                 self.mpiexec_global_options['TMI_CONFIG'] = tmicfg
@@ -194,12 +186,30 @@ class IntelMPI(MPI):
 
         return super(IntelMPI, self).mpirun_prepare_execution()
 
+    def pinning_override(self):
+        """ pinning """
+
+        self.log.debug("pinning_override: type %s ", self.pinning_override_type)
+
+        cmd = ""
+        if self.pinning_override_type in ('packed', 'compact', 'bunch'):
+            cmd = "-env I_MPI_PIN_PROCESSOR_LIST=allcores:map=bunch"
+        elif self.pinning_override_type in ('spread', 'scatter'):
+            cmd = "-env I_MPI_PIN_PROCESSOR_LIST=allcores"
+        else:
+            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
+                                    self.pinning_override_type)
+
+        return cmd
+
 
 class IntelHydraMPI(IntelMPI):
+
+    """An implementation of the MPI class for IntelMPI, with hydra """
+
     _mpiscriptname_for = ['ihmpirun']
 
-    _mpirun_version = lambda x: LooseVersion(x) >= LooseVersion("4.1.0.0")
-    _mpirun_version = staticmethod(_mpirun_version)
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("4.1.0.0"))
 
     HYDRA = True
     HYDRA_LAUNCHER_NAME = "bootstrap"
@@ -214,26 +224,26 @@ class IntelHydraMPI(IntelMPI):
     }
 
     def make_mpiexec_hydra_options(self):
-        super(IntelMPI, self).make_mpiexec_hydra_options()
+        super(IntelHydraMPI, self).make_mpiexec_hydra_options()
         self.mpiexec_options.append("-perhost %d" % self.mpiprocesspernode)
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
         super(IntelHydraMPI, self).set_mpiexec_global_options()
-        self.mpiexec_global_options['I_MPI_FALLBACK'] = self._enable_disable(self.options.impi_fallback)
+        self.mpiexec_global_options['I_MPI_FALLBACK'] = _enable_disable(self.options.impi_fallback)
 
         if 'I_MPI_DEVICE' in self.mpiexec_global_options:
             del self.mpiexec_global_options['I_MPI_DEVICE']
         if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.mpiprocesspernode * self.nruniquenodes) > SCALABLE_PROGRESS_LOWER_THRESHOLD
-        self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = self._one_zero(scalable_progress)
+        scalable_progress = (self.mpiprocesspernode * len(nub(self.nodes))) > SCALABLE_PROGRESS_LOWER_THRESHOLD
+        self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = _one_zero(scalable_progress)
 
         if self.options.impi_daplud:
             if self.options.impi_xrc:
                 self.log.warning('Ignoring XRC setting when also requesting UD')
-            self.mpiexec_global_options['I_MPI_DAPL_UD'] = self._enable_disable(self.options.impi_daplud)
+            self.mpiexec_global_options['I_MPI_DAPL_UD'] = _enable_disable(self.options.impi_daplud)
             if 'I_MPI_DAPL_UD_PROVIDER' not in os.environ:
                 self.mpiexec_global_options['I_MPI_DAPL_UD_PROVIDER'] = 'ofa-v2-mlx4_0-1u'
         elif self.options.impi_xrc:

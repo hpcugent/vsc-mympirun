@@ -37,6 +37,7 @@ v4 cleanup 5/11/2013
 """
 
 import os
+import pkgutil
 import sys
 
 import vsc.mympirun.mpi.mpi as mpim
@@ -52,6 +53,10 @@ def get_mpi_and_sched_and_options():
 
     @return: A triplet containing the chosen mpi flavor, chosen scheduler and the MympirunOption class.
     """
+
+    # import all modules in this dir: http://stackoverflow.com/a/16853487
+    for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(schedm.__file__), os.path.dirname(mpim.__file__)]):
+        loader.find_module(modulename).load_module(modulename)
 
     scriptname = os.path.basename(os.path.abspath(sys.argv[0]))
     # if the scriptname is 'mpirun', its means that mympirun was called through the faked mpirun path
@@ -70,6 +75,7 @@ def get_mpi_and_sched_and_options():
         optionparser.log.debug("mympirun will be executed by %s", setmpi)
 
     scriptname, mpi, found_mpi = mpim.what_mpi(setmpi)
+    optionparser.log.debug("Found MPI classes %s", found_mpi)
     found_mpi_names = [x.__name__ for x in found_mpi]
 
     if optionparser.options.showmpi:
@@ -79,6 +85,7 @@ def get_mpi_and_sched_and_options():
 
     # Select a Scheduler from the available schedulers
     sched, found_sched = schedm.what_sched(getattr(optionparser.options, 'setsched', None))
+    optionparser.log.debug("Found Sched classes %s", found_sched)
     found_sched_names = [x.__name__ for x in found_sched]
 
     if optionparser.options.showsched:

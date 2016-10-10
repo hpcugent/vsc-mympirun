@@ -42,10 +42,10 @@ def getinstance(mpi, sched, options):
     @return: an instance that is a subclass of the selected MPI and Scheduler
     """
 
-    class M(mpi, sched):
+    class Coupler(mpi, sched):
         """Temporary class to couple MPI and local sched"""
         def __init__(self, **kwargs):
             self.log = fancylogger.getLogger("%s_%s" % (mpi.__name__, sched.__name__))
-            super(M, self).__init__(**kwargs)
+            super(Coupler, self).__init__(**kwargs)
 
-    return M(options=options.options, cmdargs=options.args)
+    return Coupler(options=options.options, cmdargs=options.args)
