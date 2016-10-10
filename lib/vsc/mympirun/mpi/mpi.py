@@ -30,7 +30,6 @@ Base MPI class, all actual classes should inherit from this one
 """
 
 import os
-import pkgutil
 import random
 import re
 import resource
@@ -68,11 +67,8 @@ def what_mpi(name):
       - The python classes of the supported MPI flavors (from the various .py files in mympirun/mpi)
     """
 
-    # import all modules in this dir: http://stackoverflow.com/a/16853487
-    for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(__file__)]):
-        loader.find_module(modulename).load_module(modulename)
-
-    supp_mpi_impl = get_subclasses(MPI)  # supported MPI implementations
+    # The coupler is also a subclass of MPI, but it isn't and MPI implementation
+    supp_mpi_impl = [x for x in get_subclasses(MPI) if x.__name__ != 'Coupler']  # supported MPI implementations
 
     # remove fake mpirun from $PATH
     stripfake()
@@ -255,9 +251,11 @@ class MPI(object):
 
         if reg_match:
             if cls._mpirun_version is None:
+                LOGGER.debug("no mpirun version provided, skipping version check")
                 return True
             else:
                 # do version check (reg_match.group(1) is the version number)
+                LOGGER.debug("checking if mpirun version is equal or greater than required")
                 return cls._mpirun_version(reg_match.group(1))
         else:
             return False
