@@ -25,8 +25,10 @@
 """
 Optionparser for mympirun
 """
+import os
 
 from vsc.mympirun.mpi.mpi import MPI
+from vsc.utils import fancylogger
 from vsc.utils.generaloption import GeneralOption
 from vsc.utils.missing import nub
 # introduce usage / -u option. (original has -h for --hybrid)
@@ -57,7 +59,6 @@ class MympirunOption(GeneralOption):
     def make_init(self):
         """ add all the options to generaloption, so it can correctly parse the command line arguments """
 
-        # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
             # long option: (description, type, action, default, short option)
             "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
@@ -83,7 +84,11 @@ class MympirunOption(GeneralOption):
             "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
                        None, "store_true", False),
 
-            "output": ("filename to write stdout/stderr directly to (instead of stdout)", "str", "store", None),
+            "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
+                       "str", "store", None),
+
+            "logtofile": ("redirect the logging of mympirun to a file (instead of stdout/stderr)",
+                          "str", "store", None),
 
             "ssh": ("Force ssh for mpd startup (will try to use optimised  method by default)",
                     None, "store_false", True),
@@ -166,6 +171,13 @@ class MympirunOption(GeneralOption):
                     continue
 
         GeneralOption.parseoptions(self, newopts)
+
+        # set error logging to file as soon as possible
+        if self.options.logtofile:
+            print("logtofile %s" % self.options.logtofile)
+            if os.path.exists(self.options.logtofile):
+                os.remove(self.options.logtofile)
+            fancylogger.logToFile(self.options.logtofile)
 
     def postprocess(self):
         """Some additional processing"""
