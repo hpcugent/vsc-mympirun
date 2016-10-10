@@ -54,8 +54,7 @@ class OpenMPI(MPI):
     def _make_final_mpirun_cmd(self):
         """
         Create the acual mpirun command
-          - add it to self.mpirun_cmd
-          - No mpdboot for openmpi
+        OpenMPI doesn't need mpdboot options
         """
         self.mpirun_cmd += self.mpiexec_options
 

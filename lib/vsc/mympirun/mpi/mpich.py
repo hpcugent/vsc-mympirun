@@ -33,7 +33,7 @@ from distutils.version import LooseVersion
 
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.run import run_simple
-
+from vsc.utils.missing import nub
 
 class MVAPICH2Hydra(MPI):
 
@@ -41,8 +41,7 @@ class MVAPICH2Hydra(MPI):
 
     _mpiscriptname_for = ['mhmpirun']
     _mpirun_for = ['MVAPICH2']
-    _mpirun_version = lambda x: LooseVersion(x) >= LooseVersion("1.6.0")
-    _mpirun_version = staticmethod(_mpirun_version)
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("1.6.0"))
 
     HYDRA = True
 
@@ -53,7 +52,7 @@ class MVAPICH2Hydra(MPI):
     def prepare(self):
         super(MVAPICH2Hydra, self).prepare()
 
-        if self.options.disablempipin:
+        if self.options.pinmpi:
             os.environ['MV2_ENABLE_AFFINITY'] = "1"
             os.environ['MV2_CPU_BINDING_POLICY'] = 'bunch'
         else:
@@ -69,8 +68,7 @@ class MVAPICH2Hydra(MPI):
     def _make_final_mpirun_cmd(self):
         """
         Create the acual mpirun command
-          - add it to self.mpirun_cmd
-          - No mpdboot for openmpi
+        MVAPICH2Hydra doesn't need mpdboot options
         """
         self.mpirun_cmd += self.mpiexec_options
 
@@ -83,8 +81,7 @@ class MVAPICH2(MVAPICH2Hydra):
     """
     _mpiscriptname_for = ['mmpirun']
     _mpirun_for = ['MVAPICH2']
-    _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("1.6.0")
-    _mpirun_version = staticmethod(_mpirun_version)
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) < LooseVersion("1.6.0"))
 
     HYDRA = False
 
@@ -92,7 +89,8 @@ class MVAPICH2(MVAPICH2Hydra):
 
     def make_mpdboot_options(self):
         """Small fix"""
-        self.mpdboot_totalnum = self.nruniquenodes
+
+        self.mpdboot_options.append("--totalnum=%s" % len(nub(self.nodes)))
 
         super(MVAPICH2, self).make_mpdboot_options()
 
@@ -118,15 +116,14 @@ class MPICH2Hydra(MVAPICH2Hydra):
 
     _mpiscriptname_for = ['m2hmpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
-    _mpirun_version = lambda x: LooseVersion(x) >= LooseVersion("1.4.0")
-    _mpirun_version = staticmethod(_mpirun_version)
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("1.4.0"))
 
     OPTS_FROM_ENV_FLAVOR_PREFIX = ['MPICH']
 
     def get_mpiexec_global_options(self):
         # add pinning
         options = super(MPICH2Hydra, self).get_mpiexec_global_options()
-        if self.options.disablempipin:
+        if self.options.pinmpi:
             options.extend(['-binding', 'rr', '-topolib', 'hwloc'])
         return options
 
@@ -137,14 +134,13 @@ class MPICH2(MVAPICH2):
 
     _mpiscriptname_for = ['m2mpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
-    _mpirun_version = lambda x: LooseVersion(x) < LooseVersion("1.4.0")
-    _mpirun_version = staticmethod(_mpirun_version)
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) < LooseVersion("1.4.0"))
 
     OPTS_FROM_ENV_FLAVOR_PREFIX = ['MPICH']
 
     def get_mpiexec_global_options(self):
         # add pinning
-        options = super(MPICH2Hydra, self).get_mpiexec_global_options()
-        if self.options.disablempipin:
+        options = super(MPICH2, self).get_mpiexec_global_options()
+        if self.options.pinmpi:
             options.extend(['-binding', 'rr', '-topolib', 'hwloc'])
         return options

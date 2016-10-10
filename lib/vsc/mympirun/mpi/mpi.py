@@ -67,7 +67,8 @@ def what_mpi(name):
       - The python classes of the supported MPI flavors (from the various .py files in mympirun/mpi)
     """
 
-    supp_mpi_impl = get_subclasses(MPI)  # supported MPI implementations
+    # The coupler is also a subclass of MPI, but it isn't and MPI implementation
+    supp_mpi_impl = [x for x in get_subclasses(MPI) if x.__name__ != 'Coupler']  # supported MPI implementations
 
     # remove fake mpirun from $PATH
     stripfake()
@@ -162,8 +163,6 @@ class MPI(object):
 
     MPIRUN_LOCALHOSTNAME = 'localhost'
 
-    DEFAULT_RSH = None
-
     HYDRA = None
     HYDRA_LAUNCHER_NAME = "launcher"
 
@@ -174,7 +173,6 @@ class MPI(object):
     NETMASK_TYPE_MAP = {'ib': 'ib', 'det': 'eth', 'shm': 'eth', 'socket': 'eth'}
 
     PINNING_OVERRIDE_METHOD = 'numactl'
-    PINNING_OVERRIDE_TYPE_DEFAULT = None
 
     REMOTE_OPTION_TEMPLATE = "--rsh=%(rsh)s"
     MPDBOOT_OPTIONS = []
@@ -204,7 +202,6 @@ class MPI(object):
         self.netmasktype = None
         self.netmask = None
 
-        self.mympirunbasedir = None
         self.mympirundir = None
 
         self.mpdboot_node_filename = None
@@ -219,7 +216,7 @@ class MPI(object):
 
         self.mpirun_cmd = None
 
-        self.pinning_override_type = getattr(self.options, 'overridepin', self.PINNING_OVERRIDE_TYPE_DEFAULT)
+        self.pinning_override_type = getattr(self.options, 'overridepin', None)
 
         super(MPI, self).__init__(**kwargs)
 
@@ -250,9 +247,11 @@ class MPI(object):
 
         if reg_match:
             if cls._mpirun_version is None:
+                LOGGER.debug("no mpirun version provided, skipping version check")
                 return True
             else:
                 # do version check (reg_match.group(1) is the version number)
+                LOGGER.debug("checking if mpirun version is equal or greater than required")
                 return cls._mpirun_version(reg_match.group(1))
         else:
             return False
@@ -317,9 +316,9 @@ class MPI(object):
 
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
-        if not self.foundppn == len(self.cpus):
+        if not self.cores_per_node == len(self.cpus):
             self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.foundppn, len(self.cpus))
+                          self.ppn, self.cores_per_node, len(self.cpus))
 
     def check_limit(self):
         """Check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error."""
@@ -411,7 +410,7 @@ class MPI(object):
             for dev in self.DEVICE_ORDER:
                 if dev in ('shm',):
                     # only use shm if a single node is used
-                    if self.nruniquenodes > 1:
+                    if len(nub(self.nodes)) > 1:
                         continue
 
                 path = self.DEVICE_LOCATION_MAP[dev]
@@ -447,17 +446,17 @@ class MPI(object):
         self.make_mympirundir()
 
         if self.mpinodes is None:
-            self.make_node_list()
+            self.set_mpinodes()
 
         nodetxt = "\n".join(self.mpinodes + [''])
 
         mpdboottxt = ""
-        for uniquenode in self.uniquenodes:
-            txt = uniquenode
+        for node in nub(self.nodes):
+            txt = node
             if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
                     txt += ":%s" % self.get_universe_ncpus()
-                txt += " ifhn=%s" % uniquenode
+                txt += " ifhn=%s" % node
 
             mpdboottxt += "%s\n" % txt
 
@@ -491,8 +490,8 @@ class MPI(object):
         if not os.path.exists(basepath):
             self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
 
-        self.mympirunbasedir = os.path.join(basepath, '.mympirun')
-        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
+        basedir = os.path.join(basepath, '.mympirun')
+        destdir = os.path.join(basedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
         if not os.path.exists(destdir):
             try:
                 os.makedirs(destdir)
@@ -505,20 +504,20 @@ class MPI(object):
     ### BEGIN pinning ###
     def set_pinning(self):
         """
-        set disablempipin to True or False depending on the command line options 'disablempipin' and 'overridepin'
+        set pinmpi to True or False depending on the command line options 'pinmpi' and 'overridepin'
 
         When set to True, will disable the MPI flavor's native pinning method
         """
 
-        # short circuit the call for self.options.disablempipin
-        if not hasattr(self.options, 'disablempipin') or self.options.disablempipin is None:
-            setattr(self.options, 'disablempipin', True)
+        # short circuit the call for self.options.pinmpi
+        if not hasattr(self.options, 'pinmpi') or self.options.pinmpi is None:
+            setattr(self.options, 'pinmpi', True)
 
         if self.pinning_override_type is not None:
-            self.log.debug("set_pinning: overriding pin type to %s, disablempipin set to False", self.pinning_override_type)
-            self.options.disablempipin = False
+            self.log.debug("set_pinning: overriding pin type to %s, pinmpi set to False", self.pinning_override_type)
+            self.options.pinmpi = False
         else:
-            self.log.debug("set_pinning: disablempipin %s", self.options.disablempipin)
+            self.log.debug("set_pinning: pinmpi %s", self.options.pinmpi)
 
     ### BEGIN mpdboot ###
     def make_mpdboot(self):
@@ -557,19 +556,19 @@ class MPI(object):
 
     def get_localhosts(self):
         """
-        Get the localhost interfaces, based on the hostnames from the nodes in self.uniquenodes.
+        Get the localhost interfaces, based on the hostnames from the nodes in nub(self.nodes).
 
         Raises Exception if no localhost interface was found.
 
-        @return: the list of interfaces that correspond to the list of uniquenodes
+        @return: the list of interfaces that correspond to the list of unique nodes
         """
         iface_prefix = ['eth', 'em', 'ib', 'wlan']
         reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
 
-        # iterate over uniquenodes and get their interfaces
+        # iterate over unique nodes and get their interfaces
         # add the found interface to res if it matches reg_iface
         res = []
-        for idx, nodename in enumerate(self.uniquenodes):
+        for idx, nodename in enumerate(nub(self.nodes)):
             ip = socket.gethostbyname(nodename)
             cmd = "/sbin/ip -4 -o addr show to %s/32" % ip
             exitcode, out = run_simple(cmd)
@@ -588,7 +587,7 @@ class MPI(object):
                 self.log.error("get_localhost idx %s: cmd %s failed with output %s", idx, cmd, out)
 
         if not res:
-            self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s" % self.uniquenodes)
+            self.log.raiseException("get_localhost: can't find localhost from nodes %s" % nub(self.nodes))
         return res
 
     def make_mpdboot_options(self):
@@ -613,10 +612,6 @@ class MPI(object):
         # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0:
             self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus())
-
-        # add nr of unique nodes as totalnum if defined
-        if self.mpdboot_totalnum:
-            self.mpdboot_options.append("--totalnum=%s" % self.mpdboot_totalnum)
 
         # set verbosity
         if self.options.mpdbootverbose:
@@ -674,7 +669,7 @@ class MPI(object):
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
         else:
-            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * self.nruniquenodes))
+            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * len(nub(self.nodes))))
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()
