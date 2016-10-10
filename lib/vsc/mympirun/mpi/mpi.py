@@ -163,8 +163,6 @@ class MPI(object):
 
     MPIRUN_LOCALHOSTNAME = 'localhost'
 
-    DEFAULT_RSH = None
-
     HYDRA = None
     HYDRA_LAUNCHER_NAME = "launcher"
 
@@ -175,7 +173,6 @@ class MPI(object):
     NETMASK_TYPE_MAP = {'ib': 'ib', 'det': 'eth', 'shm': 'eth', 'socket': 'eth'}
 
     PINNING_OVERRIDE_METHOD = 'numactl'
-    PINNING_OVERRIDE_TYPE_DEFAULT = None
 
     REMOTE_OPTION_TEMPLATE = "--rsh=%(rsh)s"
     MPDBOOT_OPTIONS = []
@@ -205,7 +202,6 @@ class MPI(object):
         self.netmasktype = None
         self.netmask = None
 
-        self.mympirunbasedir = None
         self.mympirundir = None
 
         self.mpdboot_node_filename = None
@@ -220,7 +216,7 @@ class MPI(object):
 
         self.mpirun_cmd = None
 
-        self.pinning_override_type = getattr(self.options, 'overridepin', self.PINNING_OVERRIDE_TYPE_DEFAULT)
+        self.pinning_override_type = getattr(self.options, 'overridepin', None)
 
         super(MPI, self).__init__(**kwargs)
 
@@ -320,9 +316,9 @@ class MPI(object):
 
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
-        if not self.foundppn == len(self.cpus):
+        if not self.cores_per_node == len(self.cpus):
             self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.foundppn, len(self.cpus))
+                          self.ppn, self.cores_per_node, len(self.cpus))
 
     def check_limit(self):
         """Check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error."""
@@ -414,7 +410,7 @@ class MPI(object):
             for dev in self.DEVICE_ORDER:
                 if dev in ('shm',):
                     # only use shm if a single node is used
-                    if self.nruniquenodes > 1:
+                    if len(nub(self.nodes)) > 1:
                         continue
 
                 path = self.DEVICE_LOCATION_MAP[dev]
@@ -450,17 +446,17 @@ class MPI(object):
         self.make_mympirundir()
 
         if self.mpinodes is None:
-            self.make_node_list()
+            self.set_mpinodes()
 
         nodetxt = "\n".join(self.mpinodes + [''])
 
         mpdboottxt = ""
-        for uniquenode in self.uniquenodes:
-            txt = uniquenode
+        for node in nub(self.nodes):
+            txt = node
             if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
                     txt += ":%s" % self.get_universe_ncpus()
-                txt += " ifhn=%s" % uniquenode
+                txt += " ifhn=%s" % node
 
             mpdboottxt += "%s\n" % txt
 
@@ -494,8 +490,8 @@ class MPI(object):
         if not os.path.exists(basepath):
             self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
 
-        self.mympirunbasedir = os.path.join(basepath, '.mympirun')
-        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
+        basedir = os.path.join(basepath, '.mympirun')
+        destdir = os.path.join(basedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
         if not os.path.exists(destdir):
             try:
                 os.makedirs(destdir)
@@ -571,19 +567,19 @@ class MPI(object):
 
     def get_localhosts(self):
         """
-        Get the localhost interfaces, based on the hostnames from the nodes in self.uniquenodes.
+        Get the localhost interfaces, based on the hostnames from the nodes in nub(self.nodes).
 
         Raises Exception if no localhost interface was found.
 
-        @return: the list of interfaces that correspond to the list of uniquenodes
+        @return: the list of interfaces that correspond to the list of unique nodes
         """
         iface_prefix = ['eth', 'em', 'ib', 'wlan']
         reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
 
-        # iterate over uniquenodes and get their interfaces
+        # iterate over unique nodes and get their interfaces
         # add the found interface to res if it matches reg_iface
         res = []
-        for idx, nodename in enumerate(self.uniquenodes):
+        for idx, nodename in enumerate(nub(self.nodes)):
             ip = socket.gethostbyname(nodename)
             cmd = "/sbin/ip -4 -o addr show to %s/32" % ip
             exitcode, out = run_simple(cmd)
@@ -602,7 +598,7 @@ class MPI(object):
                 self.log.error("get_localhost idx %s: cmd %s failed with output %s", idx, cmd, out)
 
         if not res:
-            self.log.raiseException("get_localhost: can't find localhost from uniq nodes %s" % self.uniquenodes)
+            self.log.raiseException("get_localhost: can't find localhost from nodes %s" % nub(self.nodes))
         return res
 
     def make_mpdboot_options(self):
@@ -627,10 +623,6 @@ class MPI(object):
         # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0:
             self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus())
-
-        # add nr of unique nodes as totalnum if defined
-        if self.mpdboot_totalnum:
-            self.mpdboot_options.append("--totalnum=%s" % self.mpdboot_totalnum)
 
         # set verbosity
         if self.options.mpdbootverbose:
@@ -688,7 +680,7 @@ class MPI(object):
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
         else:
-            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * self.nruniquenodes))
+            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * len(nub(self.nodes))))
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()
@@ -898,9 +890,9 @@ class MPI(object):
 
         # number of local processors
         # - eg numactl -s grep physcpubind
-        if not self.ppn == self.foundppn:
+        if not self.ppn == self.cores_per_node:
             self.log.raiseException(("pinning_override: number of found procs %s is different from "
-                                     "requested ppn %s. Not yet supported.") % (self.foundppn, self.ppn))
+                                     "requested ppn %s. Not yet supported.") % (self.cores_per_node, self.ppn))
 
         override_type = self.pinning_override_type
         multithread = True
@@ -915,15 +907,15 @@ class MPI(object):
         # - eg use likwid to pin those threads too
 
         # cores per process
-        corespp = self.foundppn // self.mpiprocesspernode
-        corespp_rest = self.foundppn % self.mpiprocesspernode
-        if (corespp < 1) or (self.mpiprocesspernode == self.foundppn):
+        corespp = self.cores_per_node // self.mpiprocesspernode
+        corespp_rest = self.cores_per_node % self.mpiprocesspernode
+        if (corespp < 1) or (self.mpiprocesspernode == self.cores_per_node):
             multi = False
             self.log.debug(("pinning_override: exactly one or more than one process for each core: mpi processes: %s "
-                            "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.foundppn)
+                            "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.cores_per_node)
         if corespp_rest > 0:
             self.log.debug(("pinning_override: number of mpiprocesses (%s) is not an exact multiple of "
-                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.foundppn)
+                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.cores_per_node)
 
         map_func = None
         if override_type in ('packed', 'compact',):
@@ -939,7 +931,7 @@ class MPI(object):
                 self.log.raiseException(
                     "pinning_override: trying to set pin type to 'cycle' with multithreading enabled: not supported")
             else:
-                map_func = lambda x: (x % self.foundppn)
+                map_func = lambda x: (x % self.cores_per_node)
         elif override_type in ('spread',):
             if multi:
                 # spread domains
