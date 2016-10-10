@@ -28,7 +28,7 @@ Optionparser for mympirun
 
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.generaloption import GeneralOption
-
+from vsc.utils.missing import nub
 # introduce usage / -u option. (original has -h for --hybrid)
 
 
@@ -55,6 +55,7 @@ class MympirunOption(GeneralOption):
         GeneralOption.__init__(self)
 
     def make_init(self):
+        """ add all the options to generaloption, so it can correctly parse the command line arguments """
 
         # "walltime":("Job walltime in hours", 'float', 'store', 48, 'l'),
         opts = {
@@ -95,7 +96,7 @@ class MympirunOption(GeneralOption):
             # legacy naming
 
             # don't set it by default. It will be set if needed (eg ipath)
-            "pinmpi": ("Disable MPI pinning", None, "store_false", None),
+            "pinmpi": ("Disable MPI pinning", None, "store_true", True),
 
             "rdma": ("Force rdma device", None, "store_true", None),
 
@@ -129,7 +130,7 @@ class MympirunOption(GeneralOption):
         self.add_group_parser(opts, descr, prefix=prefix)
 
         # for all MPI classes, get the additional options
-        for mpi in MPI.__subclasses__():
+        for mpi in nub(MPI.__subclasses__()):
             if not mpi.RUNTIMEOPTION is None:
                 opts = mpi.RUNTIMEOPTION['options']
                 descr = mpi.RUNTIMEOPTION['description']
