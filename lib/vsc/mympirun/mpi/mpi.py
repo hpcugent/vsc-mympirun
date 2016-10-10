@@ -502,33 +502,22 @@ class MPI(object):
         self.mympirundir = destdir
 
     ### BEGIN pinning ###
-    def set_pinning(self, mp=None):
-        if not hasattr(self.options, 'pinmpi'):
-            setattr(self.options, 'pinmpi', None)
+    def set_pinning(self):
+        """
+        set pinmpi to True or False depending on the command line options 'pinmpi' and 'overridepin'
 
-        mp = self._pin_flavour(mp)
+        When set to True, will disable the MPI flavor's native pinning method
+        """
 
-        if isinstance(mp, bool):
-            self.log.debug("set_pinning: setting pin_flavour %s", mp)
-            self.options.pinmpi = mp
-
-        if not isinstance(self.options.pinmpi, bool):
-            if self.options.hybrid is not None:
-                # always pin!
-                self.options.pinmpi = True
-            else:
-                # always pin!
-                self.options.pinmpi = True
+        # short circuit the call for self.options.pinmpi
+        if not hasattr(self.options, 'pinmpi') or self.options.pinmpi is None:
+            setattr(self.options, 'pinmpi', True)
 
         if self.pinning_override_type is not None:
-            self.log.debug("set_pinning: previous pinning %s;  will be overwritten, pinning_override_type set to %s",
-                           self.options.pinmpi, self.pinning_override_type)
+            self.log.debug("set_pinning: overriding pin type to %s, pinmpi set to False", self.pinning_override_type)
             self.options.pinmpi = False
         else:
             self.log.debug("set_pinning: pinmpi %s", self.options.pinmpi)
-
-    def _pin_flavour(self, mp=None):
-        return mp
 
     ### BEGIN mpdboot ###
     def make_mpdboot(self):
@@ -825,11 +814,7 @@ class MPI(object):
             self.log.debug("make_mpirun: added user provided options %s", self.options.mpirunoptions)
 
         if self.pinning_override_type is not None:
-            p_o = self.pinning_override()
-            if p_o is None or not os.path.isfile(p_o):
-                self.log.raiseException("make_mpirun: no valid pinning_overrride %s (see previous errors)" % p_o)
-            else:
-                self.mpirun_cmd += [p_o]
+            self.mpirun_cmd.append(self.pinning_override())
 
         # the executable
         # use undocumented subprocess API call to quote whitespace (executed with Popen(shell=True))
@@ -848,139 +833,8 @@ class MPI(object):
         self.mpirun_cmd += self.mpiexec_options
 
     def pinning_override(self):
-        """
-        Create own pinning
-          - using taskset or numactl?
-          - start the real executable with correct pinning
-
-        There are self.mpiprocesspernode number of processes to start on (self.nruniquenodes * self.ppn) requested slots
-        Each node has to accept self.mpiprocesspernode/self.ppn processes over self.ppn number of cpu slots
-
-        Do we assume heterogenous nodes (ie same cpu layout as current node?)
-          - We should but in reality we don't because of different cpusets!
-
-        What do we support?
-          - packed/compact : all together, ranks close to each other
-          - spread: as far away as possible from each other
-
-        Option:
-          - threaded (default yes): eg in hybrid, pin on all available cores or just one
-
-        When in this mode, one needs to disable default/native pinning
-
-        There seems no clean way to simply prefix the variables before the real exe
-          - some mpirun are binary, others are bash
-            - no clean way to pass the variable
-              - a simple bash script also resolves the csh problem?
-
-        Simple shell check. This is the login shell of the current user
-          - not necessarily the current shell
-            - but it is when multinode is used i think (eg startup with ssh)
-        """
-        variableexpression = self.get_pinning_override_variable()
-        if variableexpression is None:
-            self.log.raiseException("pinning_override: no variable name found/set.")
-
-        self.log.debug("pinning_override: using variable expression %s as local node rank.", variableexpression)
-
-        rankname = 'MYMPIRUN_LOCALRANK'
-        rankmapname = 'MYMPIRUN_LOCALRANK_MAP'
-
-        wrappertxt = "#!/bin/bash\n%s=%s\n" % (rankname, variableexpression)
-
-        # number of local processors
-        # - eg numactl -s grep physcpubind
-        if not self.ppn == self.cores_per_node:
-            self.log.raiseException(("pinning_override: number of found procs %s is different from "
-                                     "requested ppn %s. Not yet supported.") % (self.cores_per_node, self.ppn))
-
-        override_type = self.pinning_override_type
-        multithread = True
-        if override_type.endswith('pin'):
-            override_type = override_type[:-3]
-            multithread = False
-        self.log.debug("pinning_override: type %s multithread %s", override_type, multithread)
-
-        # The whole method is very primitive
-        # - assume cpu layout on OS has correct numbering
-        # What about pinned threads of threaded apps?
-        # - eg use likwid to pin those threads too
-
-        # cores per process
-        corespp = self.cores_per_node // self.mpiprocesspernode
-        corespp_rest = self.cores_per_node % self.mpiprocesspernode
-        if (corespp < 1) or (self.mpiprocesspernode == self.cores_per_node):
-            multi = False
-            self.log.debug(("pinning_override: exactly one or more than one process for each core: mpi processes: %s "
-                            "ppn: %s. Multithreading is disabled."), self.mpiprocesspernode, self.cores_per_node)
-        if corespp_rest > 0:
-            self.log.debug(("pinning_override: number of mpiprocesses (%s) is not an exact multiple of "
-                            "number of procs (%s). Ignoring rest."), self.mpiprocesspernode, self.cores_per_node)
-
-        map_func = None
-        if override_type in ('packed', 'compact',):
-            if multi:
-                # consecutive domains
-                map_func = lambda x: "%s-%s" % (x * corespp, (x + 1) * corespp - 1)
-            else:
-                # consecutive cores
-                map_func = lambda x: x
-        elif override_type in ('cycle',):
-            # eg double with GAMESS
-            if multi:
-                self.log.raiseException(
-                    "pinning_override: trying to set pin type to 'cycle' with multithreading enabled: not supported")
-            else:
-                map_func = lambda x: (x % self.cores_per_node)
-        elif override_type in ('spread',):
-            if multi:
-                # spread domains
-                map_func = lambda x: "%s-%s" % (x * corespp, (x + 1) * corespp - 1)
-            else:
-                # spread cores
-                map_func = lambda x: (x * corespp)
-        else:
-            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
-                                    self.pinning_override_type)
-
-        rankmap = [map_func(x) for x in range(self.mpiprocesspernode)]
-
-        wrappertxt += "%s=(%s)\n" % (rankmapname, ' '.join(rankmap))
-
-        pinning_exe = which(self.PINNING_OVERRIDE_METHOD)  # default numactl
-        if not pinning_exe:
-            self.log.raiseException("pinning_override: can't find executable %s" % self.PINNING_OVERRIDE_METHOD)
-
-        if self.PINNING_OVERRIDE_METHOD in ('numactl',):
-            pinning_exe += ' --physcpubind="${%s[$%s]}"' % (rankmapname, rankname)
-
-        wrappertxt += "%s $@" % pinning_exe
-        wrapperpath = os.path.join(self.jobdir, 'pinning_override_wrapper.sh')
-        try:
-            open(wrapperpath, 'w').write(wrappertxt)
-            os.chmod(wrapperpath, stat.S_IRWXU)
-            self.log.debug("pinning_override: wrote wrapper file %s:\n%s", wrapperpath, wrappertxt)
-        except IOError:
-            self.log.raiseException('pinning_override: failed to write wrapper file %s', wrapperpath)
-
-        self.log.debug("pinning_override: pinning_exe %s to wrapper %s", pinning_exe, wrapperpath)
-
-        return wrapperpath
-
-    def get_pinning_override_variable(self):
-        """
-        Key element is that one needs to know the rank or something similar of each process
-          - preferably in environment
-            - eg QLogic PSC_MPI_NODE_RANK: this instance is the nth local rank.
-          - alternative is small c mpi program with bash wrapper
-            - see also likwid-mpirun for alternative example
-              - mentions similar OMPI_COMM_WORLD_RANK for OpenMPI and PMI_RANK for IntelMPI
-                - local_rank is remainder of myrank diveded by number of nodes?
-
-        This is a bash expression.
-          - eg $((x/y)) is also fine
-        """
-        self.log.raiseException("get_pinning_override_variable: not implemented.")
+        """overriding the pinning method has to be handled by the flavor"""
+        self.log.raiseException("pinning_override: not implemented.")
 
     def mpirun_prepare_execution(self):
         """

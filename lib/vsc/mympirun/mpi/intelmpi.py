@@ -84,18 +84,9 @@ class IntelMPI(MPI):
         else:
             return super(IntelMPI, self)._has_hydra()
 
-    def _pin_flavour(self, mp=None):
-        if self.options.hybrid is not None and self.options.hybrid in (4,):
-            mp = True
-        self.log.debug("_pin_flavour: return %s", mp)
-        return mp
-
     def get_universe_ncpus(self):
         """Return ppn for universe"""
         return len(self.nodes)
-
-    def get_pinning_override_variable(self):
-        return 'PMI_RANK'
 
     def make_mpdboot_options(self):
         """
@@ -194,6 +185,22 @@ class IntelMPI(MPI):
         os.environ['PBS_ENVIRONMENT'] = 'PBS_BATCH_MPI'
 
         return super(IntelMPI, self).mpirun_prepare_execution()
+
+    def pinning_override(self):
+        """ pinning """
+
+        self.log.debug("pinning_override: type %s ", self.pinning_override_type)
+
+        cmd = ""
+        if self.pinning_override_type in ('packed', 'compact', 'bunch'):
+            cmd = "-env I_MPI_PIN_PROCESSOR_LIST=allcores:map=bunch"
+        elif self.pinning_override_type in ('spread', 'scatter'):
+            cmd = "-env I_MPI_PIN_PROCESSOR_LIST=allcores"
+        else:
+            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
+                                    self.pinning_override_type)
+
+        return cmd
 
 
 class IntelHydraMPI(IntelMPI):

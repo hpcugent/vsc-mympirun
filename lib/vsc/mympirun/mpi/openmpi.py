@@ -27,6 +27,7 @@ OpenMPI specific classes
 
 Documentation can be found at https://www.open-mpi.org/doc/
 """
+import os
 
 from vsc.mympirun.mpi.mpi import MPI
 
@@ -56,3 +57,46 @@ class OpenMPI(MPI):
         OpenMPI doesn't need mpdboot options
         """
         self.mpirun_cmd += self.mpiexec_options
+
+    def pinning_override(self):
+        """ pinning """
+
+        override_type = self.pinning_override_type
+
+        self.log.debug("pinning_override: type %s ", override_type)
+
+        ranktxt = ""
+        sockets_per_node = 2
+        universe = self.options.universe if self.options.universe else (self.mpiprocesspernode * self.nruniquenodes)
+
+        try:
+            rankfn = os.path.join(self.mympirundir, 'rankfile')
+
+            if override_type in ('packed', 'compact', 'bunch'):
+                # pack ranks, filling every consecutive slot on every consecutive node
+                for rank in range(universe):
+                    node = rank / self.ppn
+                    socket = rank / (self.ppn / sockets_per_node)
+                    slot = rank % (self.ppn / sockets_per_node)
+                    ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
+
+            elif override_type in ('spread', 'scatter'):
+                #spread ranks evenly across nodes, but also spread them across sockets
+                for rank in range(universe):
+                    node = rank % self.nruniquenodes
+                    socket = (rank % self.ppn) % sockets_per_node
+                    slot = (rank % self.ppn) / sockets_per_node
+                    ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
+
+            else:
+                self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
+                                        self.pinning_override_type)
+
+            open(rankfn, 'w').write(ranktxt)
+            self.log.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
+            cmd = "-rf %s" % rankfn
+
+        except IOError:
+            self.log.raiseException('pinning_override: failed to write rankfile %s' % rankfn)
+
+        return cmd
