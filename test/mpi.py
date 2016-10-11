@@ -36,7 +36,7 @@ import stat
 import string
 import unittest
 from vsc.utils.run import run_simple
-from vsc.utils.missing import get_subclasses
+from vsc.utils.missing import get_subclasses, nub
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
@@ -288,4 +288,4 @@ class TestMPI(unittest.TestCase):
         for mpiclass in get_subclasses(mpim.MPI):
             mympirun_aliases.extend(mpiclass._mpiscriptname_for)
 
-        self.assertEqual(MYMPIRUN_ALIASES, sorted(mympirun_aliases))
+        self.assertEqual(MYMPIRUN_ALIASES, nub(sorted(mympirun_aliases)))
