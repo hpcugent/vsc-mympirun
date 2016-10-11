@@ -30,7 +30,7 @@ import os
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils import fancylogger
 from vsc.utils.generaloption import GeneralOption
-from vsc.utils.missing import get_subclasses, nub
+from vsc.utils.missing import get_subclasses
 # introduce usage / -u option. (original has -h for --hybrid)
 
 
