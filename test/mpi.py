@@ -280,10 +280,8 @@ class TestMPI(unittest.TestCase):
         from setup import MYMPIRUN_ALIASES
 
         # make sure all modules in vsc.mympirun.mpi are imported
-        topdir = os.path.dirname(os.path.dirname(os.path.dirname(mpim.__file__)))
-        for loader, modname, _ in pkgutil.walk_packages([topdir]):
-            if modname.startswith('vsc.mympirun.mpi'):
-                loader.find_module(modname).load_module(modname)
+        for loader, modname, _ in pkgutil.walk_packages([os.path.dirname(mpim.__file__)]):
+            loader.find_module(modname).load_module(modname)
 
         # determine actual list of mympirun aliases
         mympirun_aliases = ['myscoop']
