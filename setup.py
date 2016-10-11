@@ -46,7 +46,6 @@ PACKAGE = {
         'vsc-install >= 0.10.9', # for modified subclassing
         'IPy',
     ],
-    'name': 'vsc-mympirun',
     'version': '3.4.4',
     'author': [sdw],
     'maintainer': [sdw],
