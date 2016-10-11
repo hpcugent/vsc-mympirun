@@ -26,9 +26,11 @@
 Tests for the vsc.mympirun.mpi.mpi module.
 
 @author: Jeroen De Clerck
+@author: Kenneth Hoste (HPC-UGent)
 """
 from IPy import IP
 import os
+import pkgutil
 import re
 import stat
 import string
@@ -271,3 +273,18 @@ class TestMPI(unittest.TestCase):
         print("cmdargs: %s" % inst.cmdargs)
         for arg in inst.mpirun_cmd:
             self.assertTrue(arg in argspool, msg="arg: %s, pool: %s" % (arg, argspool))
+
+    def test_mympirun_aliases_setup(self):
+        """Make sure that list of mympirun aliases included in setup.py is synced"""
+        from setup import MYMPIRUN_ALIASES
+
+        # make sure all modules in vsc.mympirun.mpi are imported
+        for loader, modname, _ in pkgutil.walk_packages([os.path.dirname(mpim.__file__)]):
+            loader.find_module(modname).load_module(modname)
+
+        # determine actual list of mympirun aliases
+        mympirun_aliases = []
+        for mpiclass in get_subclasses(mpim.MPI):
+            mympirun_aliases.extend(mpiclass._mpiscriptname_for)
+
+        self.assertEqual(MYMPIRUN_ALIASES, sorted(mympirun_aliases))
