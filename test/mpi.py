@@ -289,3 +289,8 @@ class TestMPI(unittest.TestCase):
             mympirun_aliases.extend(mpiclass._mpiscriptname_for)
 
         self.assertEqual(MYMPIRUN_ALIASES, nub(sorted(mympirun_aliases)))
+
+    def test_fake_dirname(self):
+        """Make sure dirname for 'fake' subdir is the same in both setup.py and vsc.mympirun.mpi.mpi"""
+        from setup import FAKE_SUBDIRECTORY_NAME
+        self.assertEqual(mpim.FAKE_SUBDIRECTORY_NAME, FAKE_SUBDIRECTORY_NAME)

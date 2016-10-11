@@ -35,6 +35,7 @@ import sys
 import vsc.install.shared_setup as shared_setup
 from vsc.install.shared_setup import vsc_setup, log, sdw
 
+FAKE_SUBDIRECTORY_NAME = 'fake'
 
 # hardcoded list, to avoid ugly hacks in order to be able to import from vsc.mympirun in setup.py...
 # this list is checked to be synced via a dedicated unit test
@@ -66,11 +67,6 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
         the fake mpirun
         """
 
-        # import all modules in this dir: http://stackoverflow.com/a/16853487
-        for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(mpim.__file__)]):
-            loader.find_module(modulename).load_module(modulename)
-
-        log.info("mympirun_vsc_install_scripts %s", mpim)
         # old-style class
         vsc_setup.vsc_install_scripts.run(self)
 
@@ -99,7 +95,7 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
 
                 # create a directory for faking mpirun
                 os.chdir(previous_pwd)
-                abs_fakepath = os.path.join(self.install_dir, mpim.FAKE_SUBDIRECTORY_NAME)
+                abs_fakepath = os.path.join(self.install_dir, FAKE_SUBDIRECTORY_NAME)
                 if not os.path.isdir(abs_fakepath):
                     log.info("creating abs_fakepath %s", abs_fakepath)
                     os.mkdir(abs_fakepath)
@@ -141,10 +137,10 @@ try:
             res = orig_func(txt)
             if txt == 'scripts':
                 log.debug('mympirun easy_install.install_egg_scripts scripts res %s', res)
-                if mpim.FAKE_SUBDIRECTORY_NAME in res:
-                    idx = res.index(mpim.FAKE_SUBDIRECTORY_NAME)
+                if FAKE_SUBDIRECTORY_NAME in res:
+                    idx = res.index(FAKE_SUBDIRECTORY_NAME)
                     if idx >= 0:
-                        res[idx] = '%s/mpirun' % mpim.FAKE_SUBDIRECTORY_NAME
+                        res[idx] = '%s/mpirun' % FAKE_SUBDIRECTORY_NAME
             return res
         dist.metadata_listdir = new_func
         _orig_install_egg_scripts(self, dist)
