@@ -38,7 +38,7 @@ from vsc.install.shared_setup import vsc_setup, log, sdw
 
 # hardcoded list, to avoid ugly hacks in order to be able to import from vsc.mympirun in setup.py...
 # this list is checked to be synced via a dedicated unit test
-MYMPIRUN_ALIASES = ['ihmpirun', 'impirun', 'm2hmpirun', 'm2mpirun', 'mhmpirun', 'mmpirun', 'ompirun']
+MYMPIRUN_ALIASES = ['ihmpirun', 'impirun', 'm2hmpirun', 'm2mpirun', 'mhmpirun', 'mmpirun', 'myscoop', 'ompirun']
 
 PACKAGE = {
     'install_requires': [

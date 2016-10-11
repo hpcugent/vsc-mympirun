@@ -284,7 +284,7 @@ class TestMPI(unittest.TestCase):
             loader.find_module(modname).load_module(modname)
 
         # determine actual list of mympirun aliases
-        mympirun_aliases = []
+        mympirun_aliases = ['myscoop']
         for mpiclass in get_subclasses(mpim.MPI):
             mympirun_aliases.extend(mpiclass._mpiscriptname_for)
 
