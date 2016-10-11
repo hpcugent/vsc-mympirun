@@ -32,6 +32,9 @@ Setup for mympirun
 import os
 import pkgutil
 import sys
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'lib'))
+
 import vsc.install.shared_setup as shared_setup
 from vsc.install.shared_setup import vsc_setup, log, sdw
 import vsc.mympirun.mpi.mpi as mpim
