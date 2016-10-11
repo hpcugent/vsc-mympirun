@@ -34,8 +34,11 @@ import pkgutil
 import sys
 import vsc.install.shared_setup as shared_setup
 from vsc.install.shared_setup import vsc_setup, log, sdw
-import vsc.mympirun.mpi.mpi as mpim
-from vsc.utils.missing import get_subclasses
+
+
+# hardcoded list, to avoid ugly hacks in order to be able to import from vsc.mympirun in setup.py...
+# this list is checked to be synced via a dedicated unit test
+MYMPIRUN_ALIASES = ['ihmpirun', 'impirun', 'm2hmpirun', 'm2mpirun', 'mhmpirun', 'mmpirun', 'myscoop', 'ompirun']
 
 PACKAGE = {
     'install_requires': [
@@ -67,14 +70,6 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
         for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(mpim.__file__)]):
             loader.find_module(modulename).load_module(modulename)
 
-        mympirun_aliases = []
-
-        for mpiclass in get_subclasses(mpim.MPI):
-            mympirun_aliases += mpiclass._mpiscriptname_for
-
-        mympirun_aliases += ['myscoop']
-
-
         log.info("mympirun_vsc_install_scripts %s", mpim)
         # old-style class
         vsc_setup.vsc_install_scripts.run(self)
@@ -94,7 +89,7 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
                 os.chdir(rel_script_dir)
 
                 # create symlinks that point to mympirun for all mpirun aliases
-                for sym_name in mympirun_aliases:
+                for sym_name in MYMPIRUN_ALIASES:
                     if os.path.exists(sym_name):
                         os.remove(sym_name)
                     os.symlink(rel_script, sym_name)

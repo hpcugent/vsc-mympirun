@@ -26,13 +26,17 @@
 Tests for the vsc.mympirun.mpi.mpi module.
 
 @author: Jeroen De Clerck
+@author: Kenneth Hoste (HPC-UGent)
 """
 from IPy import IP
 import os
+import pkgutil
 import re
 import stat
 import string
 import unittest
+from vsc.utils.run import run_simple
+from vsc.utils.missing import get_subclasses, nub
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
@@ -40,7 +44,6 @@ from vsc.mympirun.mpi.openmpi import OpenMPI
 from vsc.mympirun.mpi.intelmpi import IntelMPI
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.local import Local
-from vsc.utils.run import run_simple
 
 # we wish to use the mpirun we ship
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
@@ -220,8 +223,8 @@ class TestMPI(unittest.TestCase):
         print("localhosts: %s" % res)
 
         for (nodename, interface) in res:
-            self.assertTrue(nodename in mpi_instance.uniquenodes,
-                            msg="%s is not a node from the uniquenodes list" % nodename)
+            self.assertTrue(nodename in mpi_instance.nodes,
+                            msg="%s is not a node from the nodes list" % nodename)
             self.assertTrue(interface in out,
                             msg="%s can not be found in the output of `/sbin/ip -4 -o addr show`, output: %s" %
                             (interface, out))
@@ -271,3 +274,18 @@ class TestMPI(unittest.TestCase):
         print("cmdargs: %s" % inst.cmdargs)
         for arg in inst.mpirun_cmd:
             self.assertTrue(arg in argspool, msg="arg: %s, pool: %s" % (arg, argspool))
+
+    def test_mympirun_aliases_setup(self):
+        """Make sure that list of mympirun aliases included in setup.py is synced"""
+        from setup import MYMPIRUN_ALIASES
+
+        # make sure all modules in vsc.mympirun.mpi are imported
+        for loader, modname, _ in pkgutil.walk_packages([os.path.dirname(mpim.__file__)]):
+            loader.find_module(modname).load_module(modname)
+
+        # determine actual list of mympirun aliases
+        mympirun_aliases = ['myscoop']
+        for mpiclass in get_subclasses(mpim.MPI):
+            mympirun_aliases.extend(mpiclass._mpiscriptname_for)
+
+        self.assertEqual(MYMPIRUN_ALIASES, nub(sorted(mympirun_aliases)))
