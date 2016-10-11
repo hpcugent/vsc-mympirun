@@ -35,6 +35,8 @@ import re
 import stat
 import string
 import unittest
+from vsc.utils.run import run_simple
+from vsc.utils.missing import get_subclasses
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
@@ -42,7 +44,6 @@ from vsc.mympirun.mpi.openmpi import OpenMPI
 from vsc.mympirun.mpi.intelmpi import IntelMPI
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.local import Local
-from vsc.utils.run import run_simple
 
 # we wish to use the mpirun we ship
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
