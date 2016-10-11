@@ -30,7 +30,7 @@ import os
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils import fancylogger
 from vsc.utils.generaloption import GeneralOption
-from vsc.utils.missing import nub
+from vsc.utils.missing import get_subclasses, nub
 # introduce usage / -u option. (original has -h for --hybrid)
 
 
@@ -135,14 +135,16 @@ class MympirunOption(GeneralOption):
         self.add_group_parser(opts, descr, prefix=prefix)
 
         # for all MPI classes, get the additional options
-        for mpi in nub(MPI.__subclasses__()):
-            if not mpi.RUNTIMEOPTION is None:
-                opts = mpi.RUNTIMEOPTION['options']
-                descr = mpi.RUNTIMEOPTION['description']
+        for mpi in get_subclasses(MPI):
+            if mpi.RUNTIMEOPTION is not None:
+                # don't try to add the same set of options twice (based on prefix)
                 prefix = mpi.RUNTIMEOPTION['prefix']
-                self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s",
-                               mpi.__name__, prefix, descr, opts)
-                self.add_group_parser(opts, descr, prefix=prefix)
+                if prefix not in self.dict_by_prefix():
+                    opts = mpi.RUNTIMEOPTION['options']
+                    descr = mpi.RUNTIMEOPTION['description']
+                    self.log.debug("Add MPI subclass %s option parser prefix %s descr %s opts %s",
+                                   mpi.__name__, prefix, descr, opts)
+                    self.add_group_parser(opts, descr, prefix=prefix)
 
     def parseoptions(self, options_list=None):
         """
