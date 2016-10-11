@@ -223,8 +223,8 @@ class TestMPI(unittest.TestCase):
         print("localhosts: %s" % res)
 
         for (nodename, interface) in res:
-            self.assertTrue(nodename in mpi_instance.uniquenodes,
-                            msg="%s is not a node from the uniquenodes list" % nodename)
+            self.assertTrue(nodename in mpi_instance.nodes,
+                            msg="%s is not a node from the nodes list" % nodename)
             self.assertTrue(interface in out,
                             msg="%s can not be found in the output of `/sbin/ip -4 -o addr show`, output: %s" %
                             (interface, out))

@@ -78,13 +78,13 @@ class TestSched(unittest.TestCase):
 
     def test_core_on_this_node(self):
         """
-        test if core_on_this_node() sets foundppn to an integer
+        test if core_on_this_node() sets cores_per_node to an integer
 
         core_on_this_node() gets called by the __init__ of getinstance()
         """
         for _, val in SCHEDDICT.iteritems():
             inst = getinstance(mpim.MPI, val, MympirunOption())
-            self.assertTrue(isinstance(inst.foundppn, int))
+            self.assertTrue(isinstance(inst.cores_per_node, int))
 
     def test_which_cpus(self):
         """
@@ -104,15 +104,4 @@ class TestSched(unittest.TestCase):
         """
         inst = getinstance(mpim.MPI, Local, MympirunOption())
         self.assertEqual(set(inst.nodes), set(['localhost']))
-        self.assertEqual(len(inst.cpus), inst.nrnodes)
-
-    def test_get_unique_nodes(self):
-        """
-        test if get_unique_nodes() sets uniquenodes to the unique elements of nodes
-
-        get_unique_nodes() gets called by the __init__ of getinstance()
-        """
-        for _, val in SCHEDDICT.iteritems():
-            inst = getinstance(mpim.MPI, val, MympirunOption())
-            self.assertEqual(set(inst.uniquenodes), set(inst.nodes))
-            self.assertEqual(inst.nruniquenodes, len(set(inst.nodes)))
+        self.assertEqual(len(inst.cpus), len(inst.nodes))
