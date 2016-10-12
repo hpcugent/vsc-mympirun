@@ -70,7 +70,7 @@ class MympirunOption(GeneralOption):
 
             "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
 
-            "setsched": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
+            "sched": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
                          "str", "store", None, "S"),
 
             "debuglvl": ("Specify debug level", "int", "store", 0),
