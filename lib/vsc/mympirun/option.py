@@ -61,71 +61,73 @@ class MympirunOption(GeneralOption):
 
         opts = {
             # long option: (description, type, action, default, short option)
-            "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
 
-            "setmpi": ("Specify MPI flavor (eg mpich2, openmpi...; will try to guess by default).",
-                       "str", "store", None, "M"),
+            "basepath": ("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
+                         "str", "store", None),
 
-            "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
-
-            "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
-
-            "sched": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
-                         "str", "store", None, "S"),
+            'branchcount': ("Set the hydra branchcount", "int", "store", None),
 
             "debuglvl": ("Specify debug level", "int", "store", 0),
 
-            "mpdbootverbose": ("Run verbose mpdboot", None, "store_true", False),
-
-            "stats": ("Set MPI statistics level", "int", "store", 0),
-
-            "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
+            "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
 
             "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
                        None, "store_true", False),
 
-            "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
-                       "str", "store", None),
+            "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
 
             "logtofile": ("redirect the logging of mympirun to a file (instead of stdout/stderr)",
                           "str", "store", None),
 
-            "ssh": ("Force ssh for mpd startup (will try to use optimised  method by default)",
-                    None, "store_false", True),
+            "mpdbootverbose": ("Run verbose mpdboot", None, "store_true", False),
+
+            "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate command)",
+                              "str", "store", None),
+
+            "noenvmodules": ("Don't pass the environment modules variables",
+                             None, "store_true", False),
 
             "order": ("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])",
                       "str", "store", None),
 
-            "basepath": ("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
-                         "str", "store", None),
-            # legacy naming
+            "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
+                       "str", "store", None),
+
+            "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
+                             "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
+                             "e.g. 'cyclepin')."), "str", "store", None),
 
             # don't set it by default. It will be set if needed (eg ipath)
             "pinmpi": ("Disable MPI pinning", None, "store_true", True),
 
             "rdma": ("Force rdma device", None, "store_true", None),
 
+            "sched": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
+                      "str", "store", None, "S"),
+
+            "setmpi": ("Specify MPI flavor (eg mpich2, openmpi...; will try to guess by default).",
+                       "str", "store", None, "M"),
+
+            "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
+
+            "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
+
+
             "socket": ("Force socket device", None, "store_true", None),
+
+            "ssh": ("Force ssh for mpd startup (will try to use optimised  method by default)",
+                    None, "store_false", True),
+
+            "stats": ("Set MPI statistics level", "int", "store", 0),
 
             "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
                           "universe is all requested processes.)"), "int", "store", None),
 
-            "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
-                             "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
-                             "e.g. 'cyclepin')."), "str", "store", None),
+            'use_psm': ("Use Performance Scaled Messaging", None, "store_true", None),
 
             "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
                                  "(<prefix>_ should match) to pass through."), "string", "extend", []),
 
-            "noenvmodules": ("Don't pass the environment modules variables",
-                             None, "store_true", False),
-
-            "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate command)",
-                              "str", "store", None),
-
-            'branchcount': ("Set the hydra branchcount", "int", "store", None),
-
-            'use_psm': ("Use Performance Scaled Messaging", None, "store_true", None),
         }
 
         descr = ["mympirun options", "General advanced mympirun options"]
