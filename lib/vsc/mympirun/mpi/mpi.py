@@ -293,15 +293,18 @@ class MPI(object):
 
         self.make_mpirun()
 
+        std_out = False
         if self.options.output is None:
+            std_out = True
             self.options.output = os.path.join(self.mympirundir, "output")
 
         # actual execution
         self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
         self.log.info("writing mpirun output to %s", self.options.output)
         exitcode, _ = run_to_file(self.mpirun_cmd, filename=self.options.output)
-        with open(self.options.output, 'r') as fin:
-            print(fin.read())
+        if std_out:
+            with open(self.options.output, 'r') as fin:
+                print(fin.read())
 
         self.cleanup()
         if exitcode > 0:
