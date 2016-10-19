@@ -201,7 +201,6 @@ class MPI(object):
         self.device = None
 
         self.hydra_info = None
-        self.has_hydra = self._has_hydra()
 
         self.netmasktype = None
         self.netmask = None
@@ -223,6 +222,7 @@ class MPI(object):
         self.pinning_override_type = getattr(self.options, 'overridepin', None)
 
         super(MPI, self).__init__(**kwargs)
+        self.has_hydra = self._has_hydra()
 
         # sanity checks
         if getattr(self, 'sched_id', None) is None:
