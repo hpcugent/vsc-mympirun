@@ -31,6 +31,13 @@ mpi and scheduler class
 
 from vsc.utils import fancylogger
 
+
+_coupler_class_cache = {}
+
+
+_log = fancylogger.getLogger('mympirun.factory', fname=False)
+
+
 def getinstance(mpi, sched, options):
     """
     Make an instance of the relevant MPI class. Also set the RM instance
@@ -41,11 +48,19 @@ def getinstance(mpi, sched, options):
 
     @return: an instance that is a subclass of the selected MPI and Scheduler
     """
+    cache_key = (mpi, sched)
 
-    class Coupler(mpi, sched):
-        """Temporary class to couple MPI and local sched"""
-        def __init__(self, **kwargs):
-            self.log = fancylogger.getLogger("%s_%s" % (mpi.__name__, sched.__name__))
-            super(Coupler, self).__init__(**kwargs)
+    if cache_key not in _coupler_class_cache:
+        class Coupler(mpi, sched):
+            """Temporary class to couple MPI and local sched"""
+            def __init__(self, **kwargs):
+                self.log = fancylogger.getLogger("%s_%s" % (mpi.__name__, sched.__name__))
+                super(Coupler, self).__init__(**kwargs)
 
-    return Coupler(options=options.options, cmdargs=options.args)
+        _coupler_class_cache[cache_key] = Coupler
+        _log.debug("Created new 'Coupler' class for %s: %s", cache_key, id(Coupler))
+
+    coupler_class = _coupler_class_cache[cache_key]
+    _log.debug("Fetched Coupler class from cache %s: %s", cache_key, id(coupler_class))
+
+    return coupler_class(options=options.options, cmdargs=options.args)
