@@ -34,6 +34,7 @@ import os
 import re
 import shutil
 import stat
+import sys
 import tempfile
 import unittest
 from vsc.utils.run import run_simple
@@ -66,7 +67,7 @@ class TestEnd2End(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp()
 
         # make sure we're using the right mympirun installation...
-        ec, out = run_simple("python -c 'import vsc.mympirun; print vsc.mympirun.__file__'")
+        ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
         expected_path = os.path.join(topdir, 'lib', 'vsc', 'mympirun')
         self.assertTrue(os.path.samefile(os.path.dirname(out.strip()), expected_path))
 
@@ -80,7 +81,7 @@ class TestEnd2End(unittest.TestCase):
         print os.environ['PATH']
 
         install_fake_mpirun('mpirun', self.tmpdir)
-        ec, out = run_simple("mympirun.py --setmpi impirun hostname")
+        ec, out = run_simple("%s mympirun.py --setmpi impirun hostname" % sys.executable)
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
         regex = re.compile("^fake mpirun called with args: .*hostname$")
         self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
@@ -94,7 +95,7 @@ class TestEnd2End(unittest.TestCase):
             'ompirun': "--mca btl sm,.*self",
         }
         for key in testcases:
-            ec, out = run_simple("mympirun.py --setmpi %s --sched local hostname" % key)
+            ec, out = run_simple("%s mympirun.py --setmpi %s --sched local hostname" % (sys.executable, key))
             self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
             regex = re.compile(regex_tmpl % testcases[key])
             self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
