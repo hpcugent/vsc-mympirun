@@ -41,14 +41,12 @@ from vsc.utils.run import run_simple
 
 FAKE_MPIRUN = """#!/bin/bash
 echo 'fake mpirun called with args:' $@
-
->&2 echo "fake mpirun error"
 """
 
-def install_fake_mpirun(cmdname, path):
+def install_fake_mpirun(txt, cmdname, path):
     """Install fake mpirun command with given name in specified location"""
     fake_mpirun = os.path.join(path, cmdname)
-    open(fake_mpirun, 'w').write(FAKE_MPIRUN)
+    open(fake_mpirun, 'w').write(txt)
     os.chmod(fake_mpirun, stat.S_IRUSR|stat.S_IXUSR)
     os.environ['PATH'] = '%s:%s' % (path, os.getenv('PATH', ''))
 
@@ -81,16 +79,16 @@ class TestEnd2End(unittest.TestCase):
         """Test running of a serial command via mympirun."""
         print os.environ['PATH']
 
-        install_fake_mpirun('mpirun', self.tmpdir)
-        ec, out = run_simple("mympirun.py --setmpi impirun hostname")
+        install_fake_mpirun(FAKE_MPIRUN, 'mpirun', self.tmpdir)
+        ec, out = run_simple("mympirun.py --setmpi impirun hostname$")
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
         regex = re.compile("^fake mpirun called with args: .*hostname")
         self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
 
     def test_sched(self):
         """ Test --sched(type) option """
-        install_fake_mpirun('mpirun', self.tmpdir)
-        regex_tmpl = "^fake mpirun called with args: .*%s.* hostname"
+        install_fake_mpirun(FAKE_MPIRUN, 'mpirun', self.tmpdir)
+        regex_tmpl = "^fake mpirun called with args: .*%s.* hostname$"
         testcases = {
             'impirun': "-genv I_MPI_DEVICE shm",
             'ompirun': "--mca btl sm,.*self",
@@ -103,7 +101,13 @@ class TestEnd2End(unittest.TestCase):
 
     def test_output(self):
         """ Test --output option """
-        install_fake_mpirun('mpirun', self.tmpdir)
+        mpirun_error = """#!/bin/bash
+                          echo 'fake mpirun called with args:' $@
+
+                          >&2 echo 'fake mpirun error'
+                       """
+
+        install_fake_mpirun(mpirun_error, 'mpirun', self.tmpdir)
         f_out = os.path.join(self.tmpdir, "temp.out")
 
         ec, out = run_simple("mympirun.py --setmpi impirun --output %s hostname" % f_out)
@@ -113,9 +117,11 @@ class TestEnd2End(unittest.TestCase):
         self.assertFalse(out, "Found output in stdout/stderr: %s" % out)
 
         regexes = [
-            re.compile("^fake mpirun called with args: .*%s.* hostname$" % out),
-            re.compile("fake mpirun error"),
+            re.compile("^fake mpirun called with args: .* hostname\nfake mpirun error$"),
         ]
 
         with open(f_out, 'r') as output:
-            print output
+            text = output.read()
+            for regex in regexes:
+                self.assertTrue(regex.match(text), "Pattern '%s' found in: %s" % (regex.pattern, text))
+
