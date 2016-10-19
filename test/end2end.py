@@ -82,7 +82,7 @@ class TestEnd2End(unittest.TestCase):
 
         install_fake_mpirun('mpirun', self.tmpdir)
         ec, out = run_simple("mympirun.py --setmpi impirun hostname")
-        self.assertEqual(ec, 0)
+        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
         self.assertTrue(out.strip().endswith('hostname'))
 
     def test_sched(self):
@@ -97,6 +97,6 @@ class TestEnd2End(unittest.TestCase):
 
         for i in range(0, len(mpi_set)):
             ec, out = run_simple("mympirun.py --setmpi %s --sched local hostname" % mpi_set[i])
-            self.assertEqual(ec, 0)
+            self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
             self.assertTrue(out.strip().endswith('hostname'))
             self.assertTrue(any(n in out for n in mpi_out[i]))
