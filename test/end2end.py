@@ -31,6 +31,7 @@ End-to-end tests for mympirun (with mocking of real 'mpirun' command).
 """
 import copy
 import os
+import re
 import shutil
 import stat
 import tempfile
@@ -40,6 +41,7 @@ from vsc.utils.run import run_simple
 
 FAKE_MPIRUN = """#!/bin/bash
 echo 'fake mpirun'
+echo $@
 """
 
 def install_fake_mpirun(cmdname, path):
@@ -81,3 +83,20 @@ class TestEnd2End(unittest.TestCase):
         install_fake_mpirun('mpirun', self.tmpdir)
         ec, out = run_simple("mympirun.py --setmpi impirun hostname")
         self.assertEqual(ec, 0)
+        self.assertTrue(out.strip().endswith('hostname'))
+
+    def test_sched(self):
+        """ Test --sched(type) option """
+        install_fake_mpirun('mpirun', self.tmpdir)
+        mpi_set = ['impirun', 'ompirun']
+        mpi_out = [
+            # local, cluster
+            ['-genv I_MPI_DEVICE shm', "-genv I_MPI_FABRICS 'shm:dapl'"],
+            ['--mca btl sm,self', "--mca btl 'sm,openib,self'"],
+        ]
+
+        for i in range(0, len(mpi_set)):
+            ec, out = run_simple("mympirun.py --setmpi %s --sched local hostname" % mpi_set[i])
+            self.assertEqual(ec, 0)
+            self.assertTrue(out.strip().endswith('hostname'))
+            self.assertTrue(any(n in out for n in mpi_out[i]))
