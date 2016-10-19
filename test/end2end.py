@@ -60,15 +60,14 @@ class TestEnd2End(unittest.TestCase):
         self.orig_environ = copy.deepcopy(os.environ)
 
         # add /bin to $PATH, /lib to $PYTHONPATH
-        topdir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        os.environ['PATH'] = '%s:%s' % (os.path.join(topdir, 'bin'), os.getenv('PATH', ''))
-        os.environ['PYTHONPATH'] = '%s:%s' % (os.path.join(topdir, 'lib'), os.getenv('PYTHONPATH', ''))
+        self.topdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        os.environ['PYTHONPATH'] = '%s:%s' % (os.path.join(self.topdir, 'lib'), os.getenv('PYTHONPATH', ''))
 
         self.tmpdir = tempfile.mkdtemp()
 
         # make sure we're using the right mympirun installation...
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
-        expected_path = os.path.join(topdir, 'lib', 'vsc', 'mympirun')
+        expected_path = os.path.join(self.topdir, 'lib', 'vsc', 'mympirun')
         self.assertTrue(os.path.samefile(os.path.dirname(out.strip()), expected_path))
 
     def tearDown(self):
@@ -81,7 +80,8 @@ class TestEnd2End(unittest.TestCase):
         print os.environ['PATH']
 
         install_fake_mpirun('mpirun', self.tmpdir)
-        ec, out = run_simple("%s mympirun.py --setmpi impirun hostname" % sys.executable)
+        script = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
+        ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, script))
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
         regex = re.compile("^fake mpirun called with args: .*hostname$")
         self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
@@ -95,7 +95,8 @@ class TestEnd2End(unittest.TestCase):
             'ompirun': "--mca btl sm,.*self",
         }
         for key in testcases:
-            ec, out = run_simple("%s mympirun.py --setmpi %s --sched local hostname" % (sys.executable, key))
+            script = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
+            ec, out = run_simple("%s %s --setmpi %s --sched local hostname" % (sys.executable, script, key))
             self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
             regex = re.compile(regex_tmpl % testcases[key])
             self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
