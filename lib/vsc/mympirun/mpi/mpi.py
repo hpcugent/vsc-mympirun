@@ -44,7 +44,7 @@ from IPy import IP
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import run_simple, run_to_file
+from vsc.utils.run import RunFile, RunLoop, run_simple
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -55,6 +55,8 @@ FAKE_SUBDIRECTORY_NAME = 'fake'
 # size of dir in bytes
 TEMPDIR_WARN_SIZE = 100000
 TEMPDIR_ERROR_SIZE = 1000000
+
+TIME_TRESHHOLD = 3 # 300 = 5 minutes TODO: do this with options
 
 LOGGER = getLogger()
 
@@ -149,6 +151,22 @@ def which(cmd):
             return cmd_path
     LOGGER.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
     return None
+
+
+class RunFileLoopMPI(RunFile, RunLoop):
+    """
+    RunFile specific for MPI because intel doesn't feel like fixing their shit
+    """
+
+    def _loop_process_output(self, output):
+        """
+        check if process is generating any output at all; if not, warn the user after a set amount of time
+        """
+
+        time_passed = self._loop_count * self.LOOP_TIMEOUT_MAIN
+        if time_passed > TIME_TRESHHOLD:
+            print "no output yet?"
+
 
 
 class MPI(object):
@@ -299,7 +317,7 @@ class MPI(object):
         # actual execution
         self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
         self.log.info("writing mpirun output to %s", self.options.output)
-        exitcode, _ = run_to_file(self.mpirun_cmd, filename=self.options.output)
+        exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, filename=self.options.output)
         with open(self.options.output, 'r') as fin:
             print(fin.read())
 
