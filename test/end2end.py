@@ -63,6 +63,7 @@ class TestEnd2End(unittest.TestCase):
 
         # add /bin to $PATH, /lib to $PYTHONPATH
         self.topdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.mympiscript = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
         os.environ['PYTHONPATH'] = '%s:%s' % (os.path.join(self.topdir, 'lib'), os.getenv('PYTHONPATH', ''))
 
         self.tmpdir = tempfile.mkdtemp()
@@ -82,8 +83,7 @@ class TestEnd2End(unittest.TestCase):
         print os.environ['PATH']
 
         install_fake_mpirun('mpirun', self.tmpdir)
-        script = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
-        ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, script))
+        ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
         regex = re.compile("^fake mpirun called with args: .*hostname$")
 
@@ -98,8 +98,7 @@ class TestEnd2End(unittest.TestCase):
             'ompirun': "--mca btl sm,.*self",
         }
         for key in testcases:
-            script = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
-            ec, out = run_simple("%s %s --setmpi %s --sched local hostname" % (sys.executable, script, key))
+            ec, out = run_simple("%s %s --setmpi %s --sched local hostname" % (sys.executable, self.mympiscript, key))
             self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
             regex = re.compile(regex_tmpl % testcases[key])
             self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
@@ -110,7 +109,7 @@ class TestEnd2End(unittest.TestCase):
         install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN + "\necho 'fake mpirun error' >&2")
         f_out = os.path.join(self.tmpdir, "temp.out")
 
-        ec, out = run_simple("mympirun.py --setmpi impirun --output %s hostname" % f_out)
+        ec, out = run_simple("%s %s --setmpi impirun --output %s hostname" % (sys.executable, self.mympiscript, f_out))
 
         self.assertTrue(os.path.isfile(f_out))
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
