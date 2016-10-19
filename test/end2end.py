@@ -40,8 +40,7 @@ from vsc.utils.run import run_simple
 
 
 FAKE_MPIRUN = """#!/bin/bash
-echo 'fake mpirun'
-echo $@
+echo 'fake mpirun called with args:' $@
 """
 
 def install_fake_mpirun(cmdname, path):
@@ -83,20 +82,19 @@ class TestEnd2End(unittest.TestCase):
         install_fake_mpirun('mpirun', self.tmpdir)
         ec, out = run_simple("mympirun.py --setmpi impirun hostname")
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
-        self.assertTrue(out.strip().endswith('hostname'))
+        regex = re.compile("^fake mpirun called with args: .*hostname$")
+        self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
 
     def test_sched(self):
         """ Test --sched(type) option """
         install_fake_mpirun('mpirun', self.tmpdir)
-        mpi_set = ['impirun', 'ompirun']
-        mpi_out = [
-            # local, cluster
-            ['-genv I_MPI_DEVICE shm', "-genv I_MPI_FABRICS 'shm:dapl'"],
-            ['--mca btl sm,self', "--mca btl 'sm,openib,self'"],
-        ]
-
-        for i in range(0, len(mpi_set)):
-            ec, out = run_simple("mympirun.py --setmpi %s --sched local hostname" % mpi_set[i])
+        regex_tmpl = "^fake mpirun called with args: .*%s.* hostname$"
+        testcases = {
+            'impirun': "-genv I_MPI_DEVICE shm",
+            'ompirun': "--mca btl sm,.*self",
+        }
+        for key in testcases:
+            ec, out = run_simple("mympirun.py --setmpi %s --sched local hostname" % key)
             self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
-            self.assertTrue(out.strip().endswith('hostname'))
-            self.assertTrue(any(n in out for n in mpi_out[i]))
+            regex = re.compile(regex_tmpl % testcases[key])
+            self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
