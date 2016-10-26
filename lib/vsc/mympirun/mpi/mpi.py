@@ -56,8 +56,6 @@ FAKE_SUBDIRECTORY_NAME = 'fake'
 TEMPDIR_WARN_SIZE = 100000
 TEMPDIR_ERROR_SIZE = 1000000
 
-TIME_TRESHHOLD = 3 # 300 = 5 minutes TODO: do this with options
-
 LOGGER = getLogger()
 
 
@@ -157,20 +155,33 @@ class RunFileLoopMPI(RunFile, RunLoop):
     """
     RunFile specific for MPI because intel doesn't feel like fixing their shit
     """
+    def __init__(self, cmd, **kwargs):
+        self.options = kwargs.pop('options', None)
+        self.counter = 1
+        super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
+        self.readsize = -1
+        self.seen_output = False
 
     def _loop_process_output(self, output):
         """
         check if process is generating any output at all; if not, warn the user after a set amount of time
         """
+        del output
+        if not self.seen_output:
+            self.readfile = open(self.filename, 'r')
+            with open(self.options.output, 'r') as fin:
+                if len(fin.read())>0:
+                    self.seen_output = True
 
-        time_passed = self._loop_count * self.LOOP_TIMEOUT_MAIN
-        if time_passed > TIME_TRESHHOLD:
-            print "no output yet?"
-
+            time_passed = self._loop_count * self.LOOP_TIMEOUT_MAIN
+            if time_passed > self.options.timeout * self.counter and not self.seen_output:
+                print '\n'.join(["WARNING: mympirun has been running for %s seconds without any output." % time_passed,
+                "This means your program may be hanging. Please check if this is normal.",
+                "If not, check your SSH key permissions? (private key should be protected)"])
+                self.counter = self.counter + 1
 
 
 class MPI(object):
-
     """
     Base MPI class to generate the mpirun command line.
 
@@ -319,9 +330,10 @@ class MPI(object):
         # actual execution
         self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
         self.log.info("writing mpirun output to %s", self.options.output)
-        exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, filename=self.options.output)
-        with open(self.options.output, 'r') as fin:
-            print(fin.read())
+        exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, options=self.options, filename=self.options.output)
+        if print_output:
+            with open(self.options.output, 'r') as fin:
+                print(fin.read())
 
         self.cleanup()
         if exitcode > 0:

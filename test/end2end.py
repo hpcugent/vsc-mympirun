@@ -120,3 +120,28 @@ class TestEnd2End(unittest.TestCase):
         with open(f_out, 'r') as output:
             text = output.read()
             self.assertTrue(regex.match(text), "Pattern '%s' found in: %s" % (regex.pattern, text))
+
+
+    def test_hanging(self):
+        """ Test --timeout option when program has no output"""
+        no_output_mpirun = '\n'.join([
+            "#!/bin/bash",
+            "sleep 4", # sleep for 3 seconds
+            "echo 'some output'",
+            "sleep 3"
+        ])
+
+        install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
+        ec, out = run_simple("%s %s --setmpi impirun --timeout 2 hostname" % (sys.executable, self.mympiscript))
+        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+
+        warning = "WARNING: mympirun has been running for %s seconds without any output."
+
+        regex = re.compile(warning % 3)
+        self.assertTrue(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+        # should not warn again when there has been some output
+        regex = re.compile(warning % 5)
+        self.assertFalse(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+

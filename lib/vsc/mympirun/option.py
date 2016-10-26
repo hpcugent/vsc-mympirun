@@ -120,7 +120,7 @@ class MympirunOption(GeneralOption):
 
             "stats": ("Set MPI statistics level", "int", "store", 0),
 
-            "timeout": ("Set timeout to check for output", "int", "store", 0)
+            "timeout": ("Set timeout to check for output (seconds)", "int", "store", 600),
 
             "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
                           "universe is all requested processes.)"), "int", "store", None),
