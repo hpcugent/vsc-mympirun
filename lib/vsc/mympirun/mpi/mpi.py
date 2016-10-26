@@ -311,7 +311,9 @@ class MPI(object):
 
         self.make_mpirun()
 
+        print_output = False
         if self.options.output is None:
+            print_output = True
             self.options.output = os.path.join(self.mympirundir, "output")
 
         # actual execution
