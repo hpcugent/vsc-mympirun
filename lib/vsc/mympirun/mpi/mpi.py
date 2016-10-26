@@ -163,10 +163,17 @@ class RunFileLoopMPI(RunFile, RunLoop):
         """
         self.filename = kwargs.get('filename', None)
         self.output_timeout = kwargs.pop('output_timeout', None)
+
+        # check timeout
+        try:
+            self.output_timeout = int(self.output_timeout)
+        except ValueError:
+            LOGGER.raiseException("Invalid timeout value: %s (should be integer)" % self.output_timeout)
+
         super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
 
         self.timeout_cnt = 1
-        self.seen_output = False
+        self.seen_output = self.output_timeout<0 #no check when output_timeout is negative
 
     def _loop_process_output(self, output):
         """
