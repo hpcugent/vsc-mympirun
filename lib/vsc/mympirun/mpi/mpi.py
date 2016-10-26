@@ -173,7 +173,7 @@ class RunFileLoopMPI(RunFile, RunLoop):
         super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
 
         self.timeout_cnt = 1
-        self.seen_output = self.output_timeout<0 #no check when output_timeout is negative
+        self.seen_output = self.output_timeout < 0 #no check when output_timeout is negative
 
     def _loop_process_output(self, output):
         """
@@ -184,22 +184,21 @@ class RunFileLoopMPI(RunFile, RunLoop):
 
         if self.seen_output:
             return
-        else:
-            with open(self.filename, 'r') as fin:
-                if fin.read():
-                    self.seen_output = True
+        with open(self.filename, 'r') as fin:
+            if fin.read():
+                self.seen_output = True
 
-            time_passed = self._loop_count * self.LOOP_TIMEOUT_MAIN
-            if time_passed > self.output_timeout * self.timeout_cnt and not self.seen_output:
-                warning_msg = '\n'.join([
-                "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
-                "This may mean that your program is hanging, please check and make sure that is not the case!",
-                '',
-                "If this warning is printed too soon and the program is doing useful work without producing any output,",
-                "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % self.output_timeout,
-                ])
-                sys.stderr.write(warning_msg + '\n')
-                self.timeout_cnt = self.timeout_cnt + 1
+        time_passed = self._loop_count * self.LOOP_TIMEOUT_MAIN
+        if time_passed > self.output_timeout * self.timeout_cnt and not self.seen_output:
+            warning_msg = '\n'.join([
+            "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
+            "This may mean that your program is hanging, please check and make sure that is not the case!",
+            '',
+            "If this warning is printed too soon and the program is doing useful work without producing any output,",
+            "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % self.output_timeout,
+            ])
+            sys.stderr.write(warning_msg + '\n')
+            self.timeout_cnt = self.timeout_cnt + 1
 
 
 class MPI(object):
