@@ -126,22 +126,16 @@ class TestEnd2End(unittest.TestCase):
         """ Test --timeout option when program has no output"""
         no_output_mpirun = '\n'.join([
             "#!/bin/bash",
-            "sleep 4", # sleep for 3 seconds
+            "sleep 4", # sleep for 4 seconds
             "echo 'some output'",
             "sleep 3"
         ])
 
         install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
-        ec, out = run_simple("%s %s --setmpi impirun --timeout 2 hostname" % (sys.executable, self.mympiscript))
+        ec, out = run_simple("%s %s --setmpi impirun --output-check-timeout 2 hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        warning = "WARNING: mympirun has been running for %s seconds without any output."
+        regex = re.compile("WARNING: mympirun has been running for [1-9] seconds without seeing any output.")
 
-        regex = re.compile(warning % 3)
-        self.assertTrue(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
-
-        # should not warn again when there has been some output
-        regex = re.compile(warning % 5)
-        self.assertFalse(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
-
+        self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
 

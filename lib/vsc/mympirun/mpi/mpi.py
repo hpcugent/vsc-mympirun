@@ -38,6 +38,7 @@ import socket
 import stat
 import string
 import subprocess
+import sys
 import time
 
 from IPy import IP
@@ -153,32 +154,43 @@ def which(cmd):
 
 class RunFileLoopMPI(RunFile, RunLoop):
     """
-    RunFile specific for MPI because intel doesn't feel like fixing their shit
+    Combination of RunFile and RunLoop to support output to file,
+    while also checking whether any output has been produced after a specified amount of time.
     """
     def __init__(self, cmd, **kwargs):
-        self.options = kwargs.pop('options', None)
-        self.counter = 1
+
+        self.filename = kwargs.get('filename', None)
+        self.output_timeout = kwargs.pop('output_timeout', None)
         super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
-        self.readsize = -1
+
+        self.timeout_cnt = 1
         self.seen_output = False
 
     def _loop_process_output(self, output):
         """
         check if process is generating any output at all; if not, warn the user after a set amount of time
         """
-        del output
-        if not self.seen_output:
-            self.readfile = open(self.filename, 'r')
-            with open(self.options.output, 'r') as fin:
-                if len(fin.read())>0:
+        if output:
+            print "Output was found using RunFile:\n%s\n This means something went horribly wrong." % output
+
+        if self.seen_output:
+            return
+        else:
+            with open(self.filename, 'r') as fin:
+                if fin.read():
                     self.seen_output = True
 
             time_passed = self._loop_count * self.LOOP_TIMEOUT_MAIN
-            if time_passed > self.options.timeout * self.counter and not self.seen_output:
-                print '\n'.join(["WARNING: mympirun has been running for %s seconds without any output." % time_passed,
-                "This means your program may be hanging. Please check if this is normal.",
-                "If not, check your SSH key permissions? (private key should be protected)"])
-                self.counter = self.counter + 1
+            if time_passed > self.output_timeout * self.timeout_cnt and not self.seen_output:
+                warning_msg = '\n'.join([
+                "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
+                "This may mean that your program is hanging, please check and make sure that is not the case!",
+                '',
+                "If this warning is printed too soon and the program is doing useful work without producing any output,",
+                "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % self.output_timeout,
+                ])
+                sys.stderr.write(warning_msg + '\n')
+                self.timeout_cnt = self.timeout_cnt + 1
 
 
 class MPI(object):
@@ -330,7 +342,7 @@ class MPI(object):
         # actual execution
         self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
         self.log.info("writing mpirun output to %s", self.options.output)
-        exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, options=self.options, filename=self.options.output)
+        exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout, filename=self.options.output)
         if print_output:
             with open(self.options.output, 'r') as fin:
                 print(fin.read())

@@ -93,6 +93,9 @@ class MympirunOption(GeneralOption):
             "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
                        "str", "store", None),
 
+            "output-check-timeout": ("Set timeout threshold to print warning if no output has been produced yet (sec)",
+                                     "int", "store", 600),
+
             "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
                              "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
                              "e.g. 'cyclepin')."), "str", "store", None),
@@ -119,8 +122,6 @@ class MympirunOption(GeneralOption):
                     None, "store_false", True),
 
             "stats": ("Set MPI statistics level", "int", "store", 0),
-
-            "timeout": ("Set timeout to check for output (seconds)", "int", "store", 600),
 
             "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
                           "universe is all requested processes.)"), "int", "store", None),
