@@ -44,7 +44,7 @@ from IPy import IP
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import run_simple, run_to_file
+from vsc.utils.run import RunFile, RunLoop, run_simple
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -151,8 +151,55 @@ def which(cmd):
     return None
 
 
-class MPI(object):
+class RunFileLoopMPI(RunFile, RunLoop):
+    """
+    Combination of RunFile and RunLoop to support output to file,
+    while also checking whether any output has been produced after a specified amount of time.
+    """
+    def __init__(self, cmd, **kwargs):
+        """
+        handle initialisation: get filename and output timeout from arguments
+        """
+        self.output_timeout = kwargs.pop('output_timeout', None)
 
+        # check timeout
+        try:
+            self.output_timeout = int(self.output_timeout)
+        except ValueError as err:
+            raise ValueError("Invalid timeout value: %s (should be integer): %s" % (self.output_timeout, err))
+
+        super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
+
+        self.seen_output = self.output_timeout < 0 #no check when output_timeout is negative
+
+    def _loop_process_output(self, output):
+        """
+        check if process is generating any output at all; if not, warn the user after a set amount of time
+        """
+        if output:
+            raise ValueError("Output was found using RunFile:\n%s\n This means something went horribly wrong." % output)
+
+        if self.seen_output:
+            return
+        try:
+            self.seen_output = self.filehandle.tell() > 0
+        except IOError as err:
+            raise IOError("Couldn't check file size; %s" % err)
+
+        time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
+        if time_passed > self.output_timeout and not self.seen_output:
+            warning_msg = '\n'.join([
+            "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
+            "This may mean that your program is hanging, please check and make sure that is not the case!",
+            '',
+            "If this warning is printed too soon and the program is doing useful work without producing any output,",
+            "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % self.output_timeout,
+            ])
+            self.log.error(warning_msg + '\n')
+            self.seen_output = True
+
+
+class MPI(object):
     """
     Base MPI class to generate the mpirun command line.
 
@@ -301,7 +348,8 @@ class MPI(object):
         # actual execution
         self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
         self.log.info("writing mpirun output to %s", self.options.output)
-        exitcode, _ = run_to_file(self.mpirun_cmd, filename=self.options.output)
+        exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout,
+                                         filename=self.options.output)
         if print_output:
             with open(self.options.output, 'r') as fin:
                 print(fin.read())
