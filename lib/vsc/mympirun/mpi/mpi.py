@@ -158,7 +158,9 @@ class RunFileLoopMPI(RunFile, RunLoop):
     while also checking whether any output has been produced after a specified amount of time.
     """
     def __init__(self, cmd, **kwargs):
-
+        """
+        handle initialisation: get filename and output timeout from arguments
+        """
         self.filename = kwargs.get('filename', None)
         self.output_timeout = kwargs.pop('output_timeout', None)
         super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
