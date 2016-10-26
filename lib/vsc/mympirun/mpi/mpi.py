@@ -160,7 +160,6 @@ class RunFileLoopMPI(RunFile, RunLoop):
         """
         handle initialisation: get filename and output timeout from arguments
         """
-        self.filename = kwargs.get('filename', None)
         self.output_timeout = kwargs.pop('output_timeout', None)
 
         # check timeout
@@ -183,9 +182,9 @@ class RunFileLoopMPI(RunFile, RunLoop):
         if self.seen_output:
             return
         try:
-            self.seen_output = os.path.getsize(self.filename) > 0
-        except OSError as err:
-            raise OSError("Couldn't check file size; %s" % err)
+            self.seen_output = self.filehandle.tell() > 0
+        except IOError as err:
+            raise IOError("Couldn't check file size; %s" % err)
 
         time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
         if time_passed > self.output_timeout and not self.seen_output:
