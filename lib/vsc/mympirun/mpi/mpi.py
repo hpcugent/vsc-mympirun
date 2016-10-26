@@ -167,8 +167,8 @@ class RunFileLoopMPI(RunFile, RunLoop):
         # check timeout
         try:
             self.output_timeout = int(self.output_timeout)
-        except ValueError:
-            LOGGER.raiseException("Invalid timeout value: %s (should be integer)" % self.output_timeout)
+        except ValueError as err:
+            raise ValueError("Invalid timeout value: %s (should be integer): %s" % (self.output_timeout, err))
 
         super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
 
@@ -180,7 +180,7 @@ class RunFileLoopMPI(RunFile, RunLoop):
         check if process is generating any output at all; if not, warn the user after a set amount of time
         """
         if output:
-            print "Output was found using RunFile:\n%s\n This means something went horribly wrong." % output
+            raise ValueError("Output was found using RunFile:\n%s\n This means something went horribly wrong." % output)
 
         if self.seen_output:
             return
@@ -351,7 +351,8 @@ class MPI(object):
         # actual execution
         self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
         self.log.info("writing mpirun output to %s", self.options.output)
-        exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout, filename=self.options.output)
+        exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout,
+                                         filename=self.options.output)
         if print_output:
             with open(self.options.output, 'r') as fin:
                 print(fin.read())
