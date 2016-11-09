@@ -150,6 +150,20 @@ def which(cmd):
     LOGGER.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
     return None
 
+def check_output(time_passed, output_timeout, seen_output):
+    if time_passed > output_timeout and not seen_output:
+        warning_msg = '\n'.join([
+            "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
+            "This may mean that your program is hanging, please check and make sure that is not the case!",
+            '',
+            "If this warning is printed too soon and the program is doing useful work without producing any output,",
+            "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % output_timeout,
+            ])
+        LOGGER.warn(warning_msg + '\n')
+        seen_output = True
+
+    return seen_output
+
 
 class RunFileLoopMPI(RunFile, RunLoop):
     """
@@ -161,12 +175,6 @@ class RunFileLoopMPI(RunFile, RunLoop):
         handle initialisation: get filename and output timeout from arguments
         """
         self.output_timeout = kwargs.pop('output_timeout', None)
-
-        # check timeout
-        try:
-            self.output_timeout = int(self.output_timeout)
-        except ValueError as err:
-            raise ValueError("Invalid timeout value: %s (should be integer): %s" % (self.output_timeout, err))
 
         super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
 
@@ -187,29 +195,17 @@ class RunFileLoopMPI(RunFile, RunLoop):
             raise IOError("Couldn't check file size; %s" % err)
 
         time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
-        if time_passed > self.output_timeout and not self.seen_output:
-            warning_msg = '\n'.join([
-            "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
-            "This may mean that your program is hanging, please check and make sure that is not the case!",
-            '',
-            "If this warning is printed too soon and the program is doing useful work without producing any output,",
-            "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % self.output_timeout,
-            ])
-            self.log.error(warning_msg + '\n')
-            self.seen_output = True
+        self.seen_output = check_output(time_passed, self.output_timeout, self.seen_output)
+
 
 class RunAsyncMPI(RunAsyncLoopStdout):
     """
-    RunAsync for MPI in case a program 'hangs'
+    Stream output to stdout as in RunAsyncLoopStdout
+    while also checking whether any output has been produced after a specified amount of time.
 
     """
     def __init__(self, cmd, **kwargs):
         self.output_timeout = kwargs.pop('output_timeout', None)
-        # check timeout
-        try:
-            self.output_timeout = int(self.output_timeout)
-        except ValueError as err:
-            raise ValueError("Invalid timeout value: %s (should be integer): %s" % (self.output_timeout, err))
 
         super(RunAsyncMPI, self).__init__(cmd, **kwargs)
 
@@ -220,17 +216,8 @@ class RunAsyncMPI(RunAsyncLoopStdout):
         if len(output) > 0:
             self.seen_output = True
 
-        time_passed = self._loop_count * self.LOOP_TIMEOUT_MAIN
-        if time_passed > self.output_timeout and not self.seen_output:
-            warning_msg = '\n'.join([
-            "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
-            "This may mean that your program is hanging, please check and make sure that is not the case!",
-            '',
-            "If this warning is printed too soon and the program is doing useful work without producing any output,",
-            "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % self.output_timeout,
-            ])
-            self.log.error(warning_msg + '\n')
-            self.seen_output = True
+        time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
+        self.seen_output = check_output(time_passed, self.output_timeout, self.seen_output)
 
         super(RunAsyncMPI, self)._loop_process_output(output)
 
@@ -379,6 +366,13 @@ class MPI(object):
         # actual execution
         self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
         self.log.info("writing mpirun output to %s", self.options.output)
+
+        # check timeout
+        try:
+            self.options.output_check_timeout = int(self.options.output_check_timeout)
+        except ValueError as err:
+            raise ValueError("Invalid timeout value: %s (should be integer): %s" % (self.options.output_check_timeout,
+                             err))
 
         if self.options.output:
             exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout,
