@@ -166,7 +166,6 @@ def check_output(time_passed, output_timeout):
             "If this warning is printed too soon and the program is doing useful work without producing any output,",
             "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % output_timeout,
             ])
-        LOGGER.warn(warning_msg + '\n')
 
     return warning_msg
 
@@ -201,7 +200,11 @@ class RunFileLoopMPI(RunFile, RunLoop):
 
         time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
         if not self.seen_output:
-            self.seen_output = check_output(time_passed, self.output_timeout) is not None
+            msg = check_output(time_passed, self.output_timeout)
+            if msg:
+                self.log.warn(msg)
+                # avoid getting warning multiple times by setting seen_output to True if a warning was produced
+                self.seen_output = True
 
 
 class RunAsyncMPI(RunAsyncLoopStdout):
@@ -224,7 +227,11 @@ class RunAsyncMPI(RunAsyncLoopStdout):
 
         time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
         if not self.seen_output:
-            self.seen_output = check_output(time_passed, self.output_timeout) is not None
+            msg = check_output(time_passed, self.output_timeout)
+            if msg:
+                self.log.warn(msg)
+                # avoid getting warning multiple times by setting seen_output to True if a warning was produced
+                self.seen_output = True
 
         super(RunAsyncMPI, self)._loop_process_output(output)
 
