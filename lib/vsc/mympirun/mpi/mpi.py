@@ -150,16 +150,15 @@ def which(cmd):
     LOGGER.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
     return None
 
-def check_output(time_passed, output_timeout, seen_output):
+def check_output(time_passed, output_timeout):
     """
     Check whether output has been produced after a specified time
 
     @param time_passed: the time passed since starting the program
     @param output_timeout: the treshhold (--output-check-timeout)
-    @param seen_output: true if either output has been observed or the warning msg has been printed
     """
     warning_msg = None
-    if time_passed > output_timeout and not seen_output:
+    if time_passed > output_timeout:
         warning_msg = '\n'.join([
             "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
             "This may mean that your program is hanging, please check and make sure that is not the case!",
@@ -168,9 +167,8 @@ def check_output(time_passed, output_timeout, seen_output):
             "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)" % output_timeout,
             ])
         LOGGER.warn(warning_msg + '\n')
-        seen_output = True
 
-    return seen_output
+    return warning_msg
 
 class RunFileLoopMPI(RunFile, RunLoop):
     """
@@ -202,7 +200,8 @@ class RunFileLoopMPI(RunFile, RunLoop):
             raise IOError("Couldn't check file size; %s" % err)
 
         time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
-        self.seen_output = check_output(time_passed, self.output_timeout, self.seen_output)
+        if not self.seen_output:
+            self.seen_output = check_output(time_passed, self.output_timeout) is not None
 
 
 class RunAsyncMPI(RunAsyncLoopStdout):
@@ -224,7 +223,8 @@ class RunAsyncMPI(RunAsyncLoopStdout):
             self.seen_output = True
 
         time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
-        self.seen_output = check_output(time_passed, self.output_timeout, self.seen_output)
+        if not self.seen_output:
+            self.seen_output = check_output(time_passed, self.output_timeout) is not None
 
         super(RunAsyncMPI, self)._loop_process_output(output)
 
