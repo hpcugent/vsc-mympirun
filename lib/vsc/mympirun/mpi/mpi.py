@@ -151,6 +151,14 @@ def which(cmd):
     return None
 
 def check_output(time_passed, output_timeout, seen_output):
+    """
+    Check whether output has been produced after a specified time
+
+    @param time_passed: the time passed since starting the program
+    @param output_timeout: the treshhold (--output-check-timeout)
+    @param seen_output: true if either output has been observed or the warning msg has been printed
+    """
+    warning_msg = None
     if time_passed > output_timeout and not seen_output:
         warning_msg = '\n'.join([
             "WARNING: mympirun has been running for %s seconds without seeing any output." % time_passed,
@@ -163,7 +171,6 @@ def check_output(time_passed, output_timeout, seen_output):
         seen_output = True
 
     return seen_output
-
 
 class RunFileLoopMPI(RunFile, RunLoop):
     """
@@ -371,8 +378,7 @@ class MPI(object):
         try:
             self.options.output_check_timeout = int(self.options.output_check_timeout)
         except ValueError as err:
-            raise ValueError("Invalid timeout value: %s (should be integer): %s" % (self.options.output_check_timeout,
-                             err))
+            raise ValueError("Invalid timeout value: %s (should be int): %s" % (self.options.output_check_timeout, err))
 
         if self.options.output:
             exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout,
