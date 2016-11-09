@@ -152,7 +152,8 @@ class TestEnd2End(unittest.TestCase):
         f_out = os.path.join(self.tmpdir, "temp.out")
 
         install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
-        ec, out = run_simple("%s %s --setmpi impirun --output %s --output-check-timeout 2 hostname" % (sys.executable, self.mympiscript, f_out))
+        ec, out = run_simple("%s %s --setmpi impirun --output %s --output-check-timeout 2 hostname" % (sys.executable,
+                              self.mympiscript, f_out))
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
         regex = re.compile("WARNING: mympirun has been running for .* seconds without seeing any output.")
