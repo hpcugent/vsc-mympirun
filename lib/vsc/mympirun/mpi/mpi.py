@@ -58,6 +58,8 @@ TEMPDIR_ERROR_SIZE = 1000000
 
 LOGGER = getLogger()
 
+TIMEOUT_EXIT_CODE = 124
+
 
 def what_mpi(name):
     """
@@ -169,6 +171,15 @@ def check_output(time_passed, output_timeout):
 
     return warning_msg
 
+def fatal_msg(msg):
+    """Construct error message after timeout """
+    return '\n'.join([
+            msg,
+            '',
+            "If you don't wish for this check to stop your program, run with --disable-output-check-fatal.",
+        ])
+
+
 class RunFileLoopMPI(RunFile, RunLoop):
     """
     Combination of RunFile and RunLoop to support output to file,
@@ -179,6 +190,7 @@ class RunFileLoopMPI(RunFile, RunLoop):
         handle initialisation: get filename and output timeout from arguments
         """
         self.output_timeout = kwargs.pop('output_timeout', None)
+        self.fatal_option = kwargs.pop('fatal_option', None)
 
         super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
 
@@ -202,9 +214,13 @@ class RunFileLoopMPI(RunFile, RunLoop):
         if not self.seen_output:
             msg = check_output(time_passed, self.output_timeout)
             if msg:
-                self.log.warn(msg)
                 # avoid getting warning multiple times by setting seen_output to True if a warning was produced
                 self.seen_output = True
+                if self.fatal_option:
+                    self.stop_tasks()
+                    raise RunMPIException(TIMEOUT_EXIT_CODE, fatal_msg(msg))
+                else:
+                    self.log.warn(msg)
 
 
 class RunAsyncMPI(RunAsyncLoopStdout):
@@ -215,6 +231,7 @@ class RunAsyncMPI(RunAsyncLoopStdout):
     """
     def __init__(self, cmd, **kwargs):
         self.output_timeout = kwargs.pop('output_timeout', None)
+        self.fatal_option = kwargs.pop('fatal_option', None)
 
         super(RunAsyncMPI, self).__init__(cmd, **kwargs)
 
@@ -229,11 +246,25 @@ class RunAsyncMPI(RunAsyncLoopStdout):
         if not self.seen_output:
             msg = check_output(time_passed, self.output_timeout)
             if msg:
-                self.log.warn(msg)
                 # avoid getting warning multiple times by setting seen_output to True if a warning was produced
                 self.seen_output = True
+                if self.fatal_option:
+                    self.stop_tasks()
+                    raise RunMPIException(TIMEOUT_EXIT_CODE, fatal_msg(msg))
+                else:
+                    self.log.warn(msg)
 
         super(RunAsyncMPI, self)._loop_process_output(output)
+
+
+class RunMPIException(Exception):
+    def __init__(self, code, output):
+        self.code = code
+        self.output = output
+
+    def __str__(self):
+        return "exited with code %s: %s" % (self.code, self.output)
+
 
 
 class MPI(object):
@@ -389,9 +420,10 @@ class MPI(object):
 
         if self.options.output:
             exitcode, _ = RunFileLoopMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout,
-                                             filename=self.options.output)
+                                             filename=self.options.output, fatal_option=self.options.output_check_fatal)
         else:
-            exitcode, _ = RunAsyncMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout)
+            exitcode, _ = RunAsyncMPI.run(self.mpirun_cmd, output_timeout=self.options.output_check_timeout,
+                                          fatal_option=self.options.output_check_fatal)
 
         self.cleanup()
         if exitcode > 0:

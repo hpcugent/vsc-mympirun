@@ -94,7 +94,9 @@ class MympirunOption(GeneralOption):
                        "str", "store", None),
 
             "output-check-timeout": ("Set timeout threshold to print warning if no output has been produced yet (sec)",
-                                     "int", "store", 600),
+                                     "int", "store", 3600),
+
+            "output-check-fatal": ("Set output check to be fatal after a set amount of time", None, "store_true", True),
 
             "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
                              "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "

@@ -132,7 +132,15 @@ class TestEnd2End(unittest.TestCase):
         ])
 
         install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
-        ec, out = run_simple("%s %s --setmpi impirun --output-check-timeout 2 hostname" % (sys.executable, self.mympiscript))
+        cmd = ' '.join([
+            sys.executable,
+            self.mympiscript,
+            "--setmpi impirun",
+            "--output-check-timeout 2",
+            "--disable-output-check-fatal",
+            "hostname",
+            ])
+        ec, out = run_simple(cmd)
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
         regex = re.compile("WARNING: mympirun has been running for .* seconds without seeing any output.")
@@ -158,6 +166,7 @@ class TestEnd2End(unittest.TestCase):
             "--setmpi impirun",
             "--output %s" % f_out,
             "--output-check-timeout 2",
+            "--disable-output-check-fatal",
             "hostname",
             ])
         ec, out = run_simple(cmd)
@@ -165,4 +174,34 @@ class TestEnd2End(unittest.TestCase):
 
         regex = re.compile("WARNING: mympirun has been running for .* seconds without seeing any output.")
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+
+    def test_hanging_fatal(self):
+        """Test fatal hanging check when program has no output"""
+        no_output_mpirun = '\n'.join([
+            "#!/bin/bash",
+            "sleep 4",
+        ])
+
+        install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
+        cmd = ' '.join([
+            sys.executable,
+            self.mympiscript,
+            "--setmpi impirun",
+            "--output-check-timeout 2",
+            "hostname",
+            ])
+        ec, out = run_simple(cmd)
+        self.assertEqual(ec, 1)
+
+        regexes = [
+            "WARNING: mympirun has been running for .* seconds without seeing any output.",
+            "If you don't wish for this check to stop your program, run with --disable-output-check-fatal.",
+        ]
+
+        for regex in regexes:
+            regex = re.compile(regex)
+            self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+
 
