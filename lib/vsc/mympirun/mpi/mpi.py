@@ -557,18 +557,19 @@ class MPI(object):
 
             mpdboottxt += "%s\n" % txt
 
+        nodefn = os.path.join(self.mympirundir, 'nodes')
+        mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
-            nodefn = os.path.join(self.mympirundir, 'nodes')
             open(nodefn, 'w').write(nodetxt)
             self.mpiexec_node_filename = nodefn
             self.log.debug("make_node_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
-            mpdfn = os.path.join(self.mympirundir, 'mpdboot')
             open(mpdfn, 'w').write(mpdboottxt)
             self.mpdboot_node_filename = mpdfn
             self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
-        except Exception:
-            self.log.raiseException('make_node_file: failed to write nodefile %s mpbboot nodefile %s' % (nodefn, mpdfn))
+        except Exception as err:
+            msg = 'make_node_file: failed to write nodefile %s mpbboot nodefile %s: %s' % (nodefn, mpdfn, err)
+            self.log.raiseException(msg)
 
     def get_universe_ncpus(self):
         """Return ppn for universe"""
