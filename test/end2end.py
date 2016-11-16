@@ -132,10 +132,19 @@ class TestEnd2End(unittest.TestCase):
         ])
 
         install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
-        ec, out = run_simple("%s %s --setmpi impirun --output-check-timeout 2 hostname" % (sys.executable, self.mympiscript))
+        cmd = ' '.join([
+            sys.executable,
+            self.mympiscript,
+            "--setmpi impirun",
+            "--output-check-timeout 2",
+            "--disable-output-check-fatal",
+            "hostname",
+            ])
+        ec, out = run_simple(cmd)
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        regex = re.compile("WARNING: mympirun has been running for .* seconds without seeing any output.")
+        regex = re.compile(("mympirun has been running for .* seconds without seeing any output.\n"
+                            "This may mean that your program is hanging, please check and make sure that is not the case!"))
 
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
 
@@ -158,11 +167,34 @@ class TestEnd2End(unittest.TestCase):
             "--setmpi impirun",
             "--output %s" % f_out,
             "--output-check-timeout 2",
+            "--disable-output-check-fatal",
             "hostname",
             ])
         ec, out = run_simple(cmd)
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        regex = re.compile("WARNING: mympirun has been running for .* seconds without seeing any output.")
+        regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
 
+
+    def test_hanging_fatal(self):
+        """Test fatal hanging check when program has no output"""
+        no_output_mpirun = '\n'.join([
+            "#!/bin/bash",
+            "sleep 4",
+        ])
+
+        install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
+        # --output-check-fatal is True by default
+        cmd = ' '.join([
+            sys.executable,
+            self.mympiscript,
+            "--setmpi impirun",
+            "--output-check-timeout 2",
+            "hostname",
+            ])
+        ec, out = run_simple(cmd)
+        self.assertEqual(ec, 124)
+
+        regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
+        self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
