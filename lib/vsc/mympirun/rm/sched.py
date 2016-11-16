@@ -266,8 +266,11 @@ class Sched(object):
         if getattr(self.options, 'double', False):
             res = self.nodes * 2
         else:
-            for uniquenode in nub(self.nodes):
-                res.extend([uniquenode] * self.mpiprocesspernode)
+            if getattr(self.options, 'hybrid', None):
+                for uniquenode in nub(self.nodes):
+                    res.extend([uniquenode] * self.options.hybrid)
+            else:
+                res = self.nodes
 
         # reorder
         ordermode = getattr(self.options, 'order', None)
@@ -290,7 +293,5 @@ class Sched(object):
             self.log.debug("set_mpinodes sort nodes (mode %s)", ordermode)
         else:
             self.log.raiseException("set_mpinodes unknown ordermode %s" % ordermode)
-
-        self.log.debug("set_mpinodes: ordered node list %s (mpiprocesspernode %s)", res, self.mpiprocesspernode)
 
         self.mpinodes = res

@@ -49,13 +49,17 @@ SCHEDDICT = {
 
 os.environ['PBS_JOBID'] = "1"
 
-PBSNODEFILE = tempfile.NamedTemporaryFile(delete=False)
-PBSNODEFILE.write("localhost\nlocalhost\n")
-PBSNODEFILE.close()
-os.environ['PBS_NODEFILE'] = PBSNODEFILE.name
+def localhost_nodefile():
+    pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
+    pbsnodefile.write("localhost\nlocalhost\n")
+    pbsnodefile.close()
+    os.environ['PBS_NODEFILE'] = pbsnodefile.name
 
 class TestSched(unittest.TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""
+
+    def setUp(self):
+        localhost_nodefile()
 
     def test_what_sched(self):
         """
@@ -105,3 +109,36 @@ class TestSched(unittest.TestCase):
         inst = getinstance(mpim.MPI, Local, MympirunOption())
         self.assertEqual(set(inst.nodes), set(['localhost']))
         self.assertEqual(len(inst.cpus), len(inst.nodes))
+
+    def test_set_node_list(self):
+        """
+        test different scenarios for setting node list
+        """
+        nodes = [
+            'node1',
+            'node1',
+            'node2',
+            'node3',
+        ]
+        pbs_class = SCHEDDICT['pbs']
+        text = '\n'.join(nodes)
+        nodefile = open(os.environ['PBS_NODEFILE'], 'w')
+        nodefile.seek(0)
+        nodefile.write(text)
+        nodefile.close()
+
+        inst = getinstance(mpim.MPI, pbs_class, MympirunOption())
+        inst.set_mpinodes()
+        self.assertEqual(inst.mpinodes, nodes)
+
+        inst.options.double = True
+        inst.set_mpinodes()
+        self.assertEqual(inst.mpinodes, nodes + nodes)
+
+        inst.options.double = False
+        inst.options.hybrid = 1
+        inst.set_mpinodes()
+        self.assertEqual(inst.mpinodes, ['node1', 'node2', 'node3'])
+
+        # reset the nodefile for other tests
+        localhost_nodefile()
