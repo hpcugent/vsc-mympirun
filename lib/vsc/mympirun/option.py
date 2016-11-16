@@ -27,7 +27,7 @@ Optionparser for mympirun
 """
 import os
 
-from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.mpi.mpi import MPI, TIMEOUT_CODE
 from vsc.utils import fancylogger
 from vsc.utils.generaloption import GeneralOption
 from vsc.utils.missing import get_subclasses
@@ -93,10 +93,11 @@ class MympirunOption(GeneralOption):
             "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
                        "str", "store", None),
 
-            "output-check-timeout": ("Set timeout threshold to print warning if no output has been produced yet (sec)",
-                                     "int", "store", 3600),
+            "output-check-timeout": ("Warn when no stdout/stderr was seen after start (in seconds; negative number "
+                                     "disables this test", "int", "store", 3600),
 
-            "output-check-fatal": ("Set output check to be fatal after a set amount of time", None, "store_true", True),
+            "output-check-fatal": ("Exit with exitcode %s instead of warn in case of output check timeout" % TIMEOUT_CODE,
+                                    None, "store_true", True),
 
             "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
                              "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "

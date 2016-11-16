@@ -143,7 +143,7 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple(cmd)
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        regex = re.compile("WARNING: mympirun has been running for .* seconds without seeing any output.")
+        regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
 
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
 
@@ -172,7 +172,7 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple(cmd)
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        regex = re.compile("WARNING: mympirun has been running for .* seconds without seeing any output.")
+        regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
 
 
@@ -192,16 +192,7 @@ class TestEnd2End(unittest.TestCase):
             "hostname",
             ])
         ec, out = run_simple(cmd)
-        self.assertEqual(ec, 1)
+        self.assertEqual(ec, 124)
 
-        regexes = [
-            "WARNING: mympirun has been running for .* seconds without seeing any output.",
-            "If you don't wish for this check to stop your program, run with --disable-output-check-fatal.",
-        ]
-
-        for regex in regexes:
-            regex = re.compile(regex)
-            self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
-
-
-
+        regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
+        self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
