@@ -45,7 +45,7 @@ from IPy import IP
 
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import RunAsyncLoopStdout, RunFile, RunLoop, run_simple
+from vsc.utils.run import Run, RunAsyncLoopStdout, RunFile, RunLoop, run_simple
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -60,12 +60,12 @@ TEMPDIR_ERROR_SIZE = 1000000
 LOGGER = getLogger()
 
 TIMEOUT_CODE = 124
-TIMEOUT_WARNING = '\n'.join([
-    "mympirun has been running for %s seconds without seeing any output.",
-    "This may mean that your program is hanging, please check and make sure that is not the case!",
-    '',
-    "If this warning is printed too soon and the program is doing useful work without producing any output,",
-    "you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)"])
+TIMEOUT_WARNING = """mympirun has been running for %s seconds without seeing any output.
+                  This may mean that your program is hanging, please check and make sure that is not the case!
+
+                  If this warning is printed too soon and the program is doing useful work without producing any output,
+                  you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)"""
+
 TIMEOUT_FATAL_MSG = "This is considered fatal (unless --disable-output-check-fatal is used)"
 
 
@@ -159,23 +159,27 @@ def which(cmd):
     LOGGER.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
     return None
 
-def loop_process_output_common(runmpiclass):
+class RunMPI(Run):
     """
-    Common code for _loop_process_output in RunFileLoopMPI and RunAsyncMPI
+    Parent class for Run classes for MPI
     """
-    time_passed = runmpiclass.LOOP_TIMEOUT_INIT + runmpiclass._loop_count * runmpiclass.LOOP_TIMEOUT_MAIN
-    if not runmpiclass.seen_output and time_passed > runmpiclass.output_timeout:
-        msg = TIMEOUT_WARNING % (time_passed, runmpiclass.output_timeout)
-        # avoid getting warning multiple times by setting seen_output to True if a warning was produced
-        runmpiclass.seen_output = True
-        runmpiclass.log.warn(msg)
-        if runmpiclass.fatal_no_output:
-            runmpiclass.stop_tasks()
-            runmpiclass.log.error(TIMEOUT_FATAL_MSG)
-            sys.exit(TIMEOUT_CODE)
+    def loop_process_output_common(self):
+        """
+        Common code for _loop_process_output in RunFileLoopMPI and RunAsyncMPI
+        """
+        time_passed = self.LOOP_TIMEOUT_INIT + self._loop_count * self.LOOP_TIMEOUT_MAIN
+        if not self.seen_output and time_passed > self.output_timeout:
+            msg = TIMEOUT_WARNING % (time_passed, self.output_timeout)
+            # avoid getting warning multiple times by setting seen_output to True if a warning was produced
+            self.seen_output = True
+            self.log.warn(msg)
+            if self.fatal_no_output:
+                self.stop_tasks()
+                self.log.error(TIMEOUT_FATAL_MSG)
+                sys.exit(TIMEOUT_CODE)
 
 
-class RunFileLoopMPI(RunFile, RunLoop):
+class RunFileLoopMPI(RunFile, RunLoop, RunMPI):
     """
     Combination of RunFile and RunLoop to support output to file,
     while also checking whether any output has been produced after a specified amount of time.
@@ -205,10 +209,10 @@ class RunFileLoopMPI(RunFile, RunLoop):
         except IOError as err:
             raise IOError("Couldn't check file size; %s" % err)
 
-        loop_process_output_common(self)
+        self.loop_process_output_common()
 
 
-class RunAsyncMPI(RunAsyncLoopStdout):
+class RunAsyncMPI(RunAsyncLoopStdout, RunMPI):
     """
     Stream output to stdout as in RunAsyncLoopStdout
     while also checking whether any output has been produced after a specified amount of time.
@@ -227,7 +231,7 @@ class RunAsyncMPI(RunAsyncLoopStdout):
         if len(output) > 0:
             self.seen_output = True
 
-        loop_process_output_common(self)
+        self.loop_process_output_common()
 
         super(RunAsyncMPI, self)._loop_process_output(output)
 

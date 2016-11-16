@@ -184,6 +184,7 @@ class TestEnd2End(unittest.TestCase):
         ])
 
         install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
+        # fatal is True by default
         cmd = ' '.join([
             sys.executable,
             self.mympiscript,
