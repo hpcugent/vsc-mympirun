@@ -35,6 +35,7 @@ import re
 import stat
 import string
 import unittest
+from vsc.install.testing import TestCase
 from vsc.utils.run import run_simple
 from vsc.utils.missing import get_subclasses, nub
 
@@ -49,7 +50,7 @@ from vsc.mympirun.rm.local import Local
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
 
 
-class TestMPI(unittest.TestCase):
+class TestMPI(TestCase):
 
     """tests for vsc.mympirun.mpi.mpi functions"""
 
@@ -174,7 +175,7 @@ class TestMPI(unittest.TestCase):
                         (mpi_instance.netmasktype, mpi_instance.NETMASK_TYPE_MAP.values()))
 
     def test_make_node_file(self):
-        """test if the nodefile is made and if it contains the same amount of nodas as mpinodes"""
+        """test if the nodefile is made and if it contains the same amount of nodes as mpinodes"""
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.make_node_file()
         self.assertTrue(os.path.isfile(mpi_instance.mpiexec_node_filename), msg="the nodefile has not been created")
@@ -187,6 +188,11 @@ class TestMPI(unittest.TestCase):
                 pass
             self.assertEqual(len(mpi_instance.mpinodes), index+1,
                              msg="mpinodes doesn't match the amount of nodes in the nodefile")
+
+        # disable make_mympirundir
+        mpi_instance.make_mympirundir = lambda: True
+        mpi_instance.mympirundir = '/does/not/exist/'
+        self.assertErrorRegex(IOError, "failed to write nodefile", mpi_instance.make_node_file)
 
     def test_make_mympirundir(self):
         """test if the mympirundir is made"""
