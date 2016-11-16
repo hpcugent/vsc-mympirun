@@ -567,8 +567,9 @@ class MPI(object):
             open(mpdfn, 'w').write(mpdboottxt)
             self.mpdboot_node_filename = mpdfn
             self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
-        except Exception:
-            self.log.raiseException('make_node_file: failed to write nodefile %s mpbboot nodefile %s' % (nodefn, mpdfn))
+        except Exception as err:
+            msg = 'make_node_file: failed to write nodefile %s mpbboot nodefile %s: %s' % (nodefn, mpdfn, err)
+            self.log.raiseException(msg)
 
     def get_universe_ncpus(self):
         """Return ppn for universe"""
