@@ -143,7 +143,8 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple(cmd)
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
+        regex = re.compile(("mympirun has been running for .* seconds without seeing any output.\n"
+                            "This may mean that your program is hanging, please check and make sure that is not the case!"))
 
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
 
@@ -184,7 +185,7 @@ class TestEnd2End(unittest.TestCase):
         ])
 
         install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
-        # fatal is True by default
+        # --output-check-fatal is True by default
         cmd = ' '.join([
             sys.executable,
             self.mympiscript,

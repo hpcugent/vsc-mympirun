@@ -61,10 +61,10 @@ LOGGER = getLogger()
 
 TIMEOUT_CODE = 124
 TIMEOUT_WARNING = """mympirun has been running for %s seconds without seeing any output.
-                  This may mean that your program is hanging, please check and make sure that is not the case!
+This may mean that your program is hanging, please check and make sure that is not the case!
 
-                  If this warning is printed too soon and the program is doing useful work without producing any output,
-                  you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)"""
+If this warning is printed too soon and the program is doing useful work without producing any output,
+you can increase the timeout threshold via --output-check-timeout (current setting: %s seconds)"""
 
 TIMEOUT_FATAL_MSG = "This is considered fatal (unless --disable-output-check-fatal is used)"
 
