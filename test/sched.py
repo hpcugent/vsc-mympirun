@@ -50,20 +50,22 @@ SCHEDDICT = {
 
 os.environ['PBS_JOBID'] = "1"
 
+def localhost_nodefile():
+    pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
+    pbsnodefile.write("localhost\nlocalhost\n")
+    pbsnodefile.close()
+    os.environ['PBS_NODEFILE'] = pbsnodefile.name
+
 
 class TestSched(unittest.TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""
 
     def setUp(self):
         self.orig_environ = os.environ
-        pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
-        pbsnodefile.write("localhost\nlocalhost\n")
-        pbsnodefile.close()
-        os.environ['PBS_NODEFILE'] = pbsnodefile.name
+        localhost_nodefile()
 
     def tearDown(self):
         """Clean up after running test."""
-        # reset environment
         os.environ = self.orig_environ
 
     def test_what_sched(self):
