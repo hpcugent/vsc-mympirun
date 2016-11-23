@@ -790,7 +790,7 @@ class MPI(object):
     def make_mpiexec_hydra_options(self):
         """Hydra specific mpiexec options."""
         self.get_hydra_info()
-        self.mpiexec_options.append("--hostfile %s" % self.mpiexec_node_filename)
+        self.mpiexec_options.append("--machinefile %s" % self.mpiexec_node_filename)
         if self.options.branchcount is not None:
             self.mpiexec_options.append("--branch-count %d" % self.options.branchcount)
 
