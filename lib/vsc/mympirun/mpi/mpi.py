@@ -596,7 +596,8 @@ class MPI(object):
                 total_size += os.path.getsize(os.path.join(dirpath, filename))
 
         if total_size >= TEMPDIR_ERROR_SIZE:
-            self.log.raiseException("the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size))
+            size_err = "the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size)
+            self.log.raiseException(size_err)
         elif total_size >= TEMPDIR_WARN_SIZE:
             self.log.warn("the size of %s is currently %s ", self.mympirunbasedir, total_size)
 
@@ -756,7 +757,8 @@ class MPI(object):
         # get all unique variables that are both in os.environ and in OPTS_FROM_ENV_BASE
         vars_to_pass = nub(filter(os.environ.has_key, self.OPTS_FROM_ENV_BASE))
 
-        for env_prefix in self.OPTS_FROM_ENV_FLAVOR_PREFIX + self.OPTS_FROM_ENV_BASE_PREFIX + self.options.variablesprefix:
+        prefixes = self.OPTS_FROM_ENV_FLAVOR_PREFIX + self.OPTS_FROM_ENV_BASE_PREFIX + self.options.variablesprefix
+        for env_prefix in prefixes:
             for env_var in os.environ.keys():
                 # add all environment variable keys that are equal to <prefix> or start with <prefix>_
                 # to mpiexec_opts_from_env, but only if they aren't already in vars_to_pass

@@ -68,7 +68,6 @@ class TestEnd2End(unittest.TestCase):
         lib = os.path.join(self.topdir, 'lib')
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
         os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
-        print os.getenv('PYTHONPATH', '')
         self.tmpdir = tempfile.mkdtemp()
 
         # make sure we're using the right mympirun installation...
