@@ -42,7 +42,7 @@ FAKE_SUBDIRECTORY_NAME = 'fake'
 MYMPIRUN_ALIASES = ['ihmpirun', 'impirun', 'm2hmpirun', 'm2mpirun', 'mhmpirun', 'mmpirun', 'myscoop', 'ompirun']
 
 PACKAGE = {
-    'install_requires': [
+    'tests_require': [
         'vsc-base >= 2.5.0',
         'vsc-install >= 0.10.9', # for modified subclassing
         'IPy',

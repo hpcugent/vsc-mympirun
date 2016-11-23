@@ -66,9 +66,9 @@ class TestEnd2End(unittest.TestCase):
         self.topdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.mympiscript = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
         lib = os.path.join(self.topdir, 'lib')
-        pyver = '%s.%s' % (sys.version_info.major, sys.version_info.minor)
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
         os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
+        print os.getenv('PYTHONPATH', '')
         self.tmpdir = tempfile.mkdtemp()
 
         # make sure we're using the right mympirun installation...
