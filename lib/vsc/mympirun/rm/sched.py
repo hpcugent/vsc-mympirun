@@ -113,7 +113,7 @@ class Sched(object):
         if ppn is not None:
             self.ppn = int(ppn)
         else:
-            LOGGER.error('PPN is None')
+            raise Exception("$PBS_NUM_PPN: Failed to determine # cores per node (ppn) via $PBS_NUM_PPN")
         self.set_ppn()
 
         self.mpinodes = None
@@ -198,10 +198,8 @@ class Sched(object):
         """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
         self.ppn_dict = {}
         for node in self.nodes:
-            if node in self.ppn_dict:
-                self.ppn_dict[node] = self.ppn_dict[node]+1
-            else:
-                self.ppn_dict[node] = 1
+            self.ppn_dict.setdefault(node, 0)
+            self.ppn_dict[node] += 1
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -258,7 +256,7 @@ class Sched(object):
         if getattr(self.options, 'double', False):
             res = self.nodes * 2
         else:
-            if getattr(self.options, 'hybrid', None):
+            if self.options.hybrid is not None:
                 for uniquenode in nub(self.nodes):
                     res.extend([uniquenode] * self.options.hybrid)
             else:

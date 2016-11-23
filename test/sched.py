@@ -50,12 +50,18 @@ SCHEDDICT = {
 
 os.environ['PBS_JOBID'] = "1"
 
-def set_env():
+def set_PBS_env():
+    """ Set up the environment to recreate being in a hpc job """
     pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
     pbsnodefile.write("localhost\nlocalhost\n")
     pbsnodefile.close()
     os.environ['PBS_NODEFILE'] = pbsnodefile.name
     os.environ['PBS_NUM_PPN'] = '1'
+
+def cleanup_PBS_env(orig_env):
+    """ cleanup the mock job environment """
+    os.remove(os.environ['PBS_NODEFILE'])
+    os.environ = orig_env
 
 
 class TestSched(unittest.TestCase):
@@ -63,11 +69,11 @@ class TestSched(unittest.TestCase):
 
     def setUp(self):
         self.orig_environ = os.environ
-        set_env()
+        set_PBS_env()
 
     def tearDown(self):
         """Clean up after running test."""
-        os.environ = self.orig_environ
+        cleanup_PBS_env(self.orig_environ)
 
     def test_what_sched(self):
         """
@@ -135,14 +141,17 @@ class TestSched(unittest.TestCase):
         nodefile.write(text)
         nodefile.close()
 
+        # normal run
         inst = getinstance(mpim.MPI, pbs_class, MympirunOption())
         inst.set_mpinodes()
         self.assertEqual(inst.mpinodes, nodes)
 
+        # --double: start 2 processes for every entry in the nodefile
         inst.options.double = True
         inst.set_mpinodes()
         self.assertEqual(inst.mpinodes, nodes + nodes)
 
+        # --hybrid: start just one process on every physical node
         inst.options.double = False
         inst.options.hybrid = 1
         inst.set_mpinodes()

@@ -67,7 +67,7 @@ class OpenMPI(MPI):
 
         ranktxt = ""
         sockets_per_node = 2
-        universe = self.options.universe if self.options.universe else len(self.nodes)
+        universe = self.options.universe or len(self.nodes)
 
         try:
             rankfn = os.path.join(self.mympirundir, 'rankfile')

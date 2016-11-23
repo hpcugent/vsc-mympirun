@@ -39,7 +39,7 @@ import sys
 import tempfile
 import unittest
 from vsc.utils.run import run_simple
-from sched import set_env
+from sched import set_PBS_env, cleanup_PBS_env
 
 
 FAKE_MPIRUN = """#!/bin/bash
@@ -67,6 +67,7 @@ class TestEnd2End(unittest.TestCase):
         self.topdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.mympiscript = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
         lib = os.path.join(self.topdir, 'lib')
+        # make sure subshell finds .egg files by adding them to the pythonpath
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
         os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
         self.tmpdir = tempfile.mkdtemp()
@@ -75,11 +76,12 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
         expected_path = os.path.join(self.topdir, 'lib', 'vsc', 'mympirun')
         self.assertTrue(os.path.samefile(os.path.dirname(out.strip()), expected_path))
-        set_env()
+        # set variables that exist within jobs, but not locally, for testing
+        set_PBS_env()
 
     def tearDown(self):
         """Clean up after running test."""
-        os.environ = self.orig_environ
+        cleanup_PBS_env(self.orig_environ)
         shutil.rmtree(self.tmpdir)
 
     def test_serial(self):
