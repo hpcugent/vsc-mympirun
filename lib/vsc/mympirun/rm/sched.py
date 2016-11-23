@@ -233,25 +233,14 @@ class Sched(object):
         hybrid = getattr(self.options, 'hybrid', None)
         double = getattr(self.options, 'double', False)
 
-        # set the multiplier
         if hybrid:
-            multi = hybrid
+            self.mpiprocesspernode = hybrid
         elif double:
-            multi = 2
+            self.mpiprocesspernode = 2 * self.ppn
         else:
-            multi = 1
+            self.mpiprocesspernode = self.ppn
 
-        self.log.debug("set_mpinodes: hybrid %s double %s multi %s", hybrid, double, multi)
-
-        if double:
-            self.mpiprocesspernode = self.ppn * multi
-        elif hybrid:
-            # return multi unique nodes
-            # mpiprocesspernode = 1 per node * multi
-            self.mpiprocesspernode = multi
-        else:
-            # default mode
-            self.mpiprocesspernode = self.ppn * multi
+        self.log.debug("set_mpinodes: hybrid %s double %s processpernode %s", hybrid, double, self.mpiprocesspernode)
 
 
     def set_mpinodes(self):

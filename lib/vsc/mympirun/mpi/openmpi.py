@@ -67,7 +67,7 @@ class OpenMPI(MPI):
 
         ranktxt = ""
         sockets_per_node = 2
-        universe = self.options.universe if self.options.universe else (self.mpiprocesspernode * self.nruniquenodes)
+        universe = self.options.universe if self.options.universe else len(self.nodes)
 
         try:
             rankfn = os.path.join(self.mympirundir, 'rankfile')
@@ -83,7 +83,7 @@ class OpenMPI(MPI):
             elif override_type in ('spread', 'scatter'):
                 #spread ranks evenly across nodes, but also spread them across sockets
                 for rank in range(universe):
-                    node = rank % self.nruniquenodes
+                    node = rank % len(self.nodes)
                     socket = (rank % self.ppn) % sockets_per_node
                     slot = (rank % self.ppn) / sockets_per_node
                     ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
