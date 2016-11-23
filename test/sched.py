@@ -26,6 +26,7 @@
 Tests for the vsc.mympirun.mpi.sched module.
 
 @author: Jeroen De Clerck
+@author: Caroline De Brouwer
 """
 
 import os
@@ -49,17 +50,21 @@ SCHEDDICT = {
 
 os.environ['PBS_JOBID'] = "1"
 
-def localhost_nodefile():
-    pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
-    pbsnodefile.write("localhost\nlocalhost\n")
-    pbsnodefile.close()
-    os.environ['PBS_NODEFILE'] = pbsnodefile.name
 
 class TestSched(unittest.TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""
 
     def setUp(self):
-        localhost_nodefile()
+        self.orig_environ = os.environ
+        pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
+        pbsnodefile.write("localhost\nlocalhost\n")
+        pbsnodefile.close()
+        os.environ['PBS_NODEFILE'] = pbsnodefile.name
+
+    def tearDown(self):
+        """Clean up after running test."""
+        # reset environment
+        os.environ = self.orig_environ
 
     def test_what_sched(self):
         """
@@ -139,6 +144,3 @@ class TestSched(unittest.TestCase):
         inst.options.hybrid = 1
         inst.set_mpinodes()
         self.assertEqual(inst.mpinodes, ['node1', 'node2', 'node3'])
-
-        # reset the nodefile for other tests
-        localhost_nodefile()
