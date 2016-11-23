@@ -106,8 +106,8 @@ class Sched(object):
         self.nodes = None
         self.set_nodes()
 
-        self.mpiprocesspernode = None
-        self.set_mpiprocesspernode()
+        self.multiplier = None
+        self.set_multiplier()
 
         ppn = os.environ.get('PBS_NUM_PPN')
         if ppn is not None:
@@ -232,19 +232,19 @@ class Sched(object):
         self.log.debug("is_large returns %s", res)
         return res
 
-    def set_mpiprocesspernode(self):
-        """set mpiprocesspernode """
+    def set_multiplier(self):
+        """set multiplier """
 
         # get the working mode from options
         hybrid = getattr(self.options, 'hybrid', None)
         double = getattr(self.options, 'double', False)
 
         if hybrid:
-            self.mpiprocesspernode = hybrid
+            self.multiplier = hybrid
         elif double:
-            self.mpiprocesspernode = 2
+            self.multiplier = 2
         else:
-            self.mpiprocesspernode = 1
+            self.multiplier = 1
 
     def set_mpinodes(self):
         """

@@ -781,8 +781,10 @@ class MPI(object):
         # number of procs to start
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
+        elif self.options.hybrid:
+            self.mpiexec_options.append("-np %s" % len(nub(self.nodes))*self.multiplier)
         else:
-            self.mpiexec_options.append("-np %s" % len(self.nodes))
+            self.mpiexec_options.append("-np %s" % len(self.nodes)*self.multiplier)
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()
@@ -790,6 +792,8 @@ class MPI(object):
     def make_mpiexec_hydra_options(self):
         """Hydra specific mpiexec options."""
         self.get_hydra_info()
+        # see https://software.intel.com/en-us/articles/controlling-process-placement-with-the-intel-mpi-library
+        # machinefile keeps the imbalance if there is one; hostfile doesn't
         self.mpiexec_options.append("--machinefile %s" % self.mpiexec_node_filename)
         if self.options.branchcount is not None:
             self.mpiexec_options.append("--branch-count %d" % self.options.branchcount)

@@ -225,7 +225,7 @@ class IntelHydraMPI(IntelMPI):
 
     def make_mpiexec_hydra_options(self):
         super(IntelHydraMPI, self).make_mpiexec_hydra_options()
-        self.mpiexec_options.append("-perhost %d" % self.mpiprocesspernode)
+        self.mpiexec_options.append("-perhost %d" % self.multiplier)
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
@@ -237,7 +237,7 @@ class IntelHydraMPI(IntelMPI):
         if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.mpiprocesspernode * len(self.nodes)) > SCALABLE_PROGRESS_LOWER_THRESHOLD
+        scalable_progress = (self.multiplier * len(self.nodes)) > SCALABLE_PROGRESS_LOWER_THRESHOLD
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = _one_zero(scalable_progress)
 
         if self.options.impi_daplud:
