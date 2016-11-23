@@ -782,9 +782,9 @@ class MPI(object):
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
         elif self.options.hybrid:
-            self.mpiexec_options.append("-np %s" % len(nub(self.nodes))*self.multiplier)
+            self.mpiexec_options.append("-np %s" % (len(nub(self.nodes))*self.multiplier))
         else:
-            self.mpiexec_options.append("-np %s" % len(self.nodes)*self.multiplier)
+            self.mpiexec_options.append("-np %s" % (len(self.nodes)*self.multiplier))
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()
