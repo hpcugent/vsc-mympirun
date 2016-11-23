@@ -64,7 +64,9 @@ class TestEnd2End(unittest.TestCase):
         # add /bin to $PATH, /lib to $PYTHONPATH
         self.topdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         self.mympiscript = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
-        os.environ['PYTHONPATH'] = '%s:%s' % (os.path.join(self.topdir, 'lib'), os.getenv('PYTHONPATH', ''))
+        lib = os.path.join(self.topdir, 'lib')
+        eggs = os.path.join(self.topdir, '.eggs')
+        os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
 
         self.tmpdir = tempfile.mkdtemp()
 
