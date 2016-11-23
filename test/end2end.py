@@ -39,7 +39,7 @@ import sys
 import tempfile
 import unittest
 from vsc.utils.run import run_simple
-from sched import localhost_nodefile
+from sched import set_env
 
 
 FAKE_MPIRUN = """#!/bin/bash
@@ -75,7 +75,7 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
         expected_path = os.path.join(self.topdir, 'lib', 'vsc', 'mympirun')
         self.assertTrue(os.path.samefile(os.path.dirname(out.strip()), expected_path))
-        localhost_nodefile()
+        set_env()
 
     def tearDown(self):
         """Clean up after running test."""

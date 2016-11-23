@@ -106,11 +106,15 @@ class Sched(object):
         self.nodes = None
         self.set_nodes()
 
-        self.ppn = None
-        self.set_ppn()
-
         self.mpiprocesspernode = None
         self.set_mpiprocesspernode()
+
+        ppn = os.environ.get('PBS_NUM_PPN')
+        if ppn is not None:
+            self.ppn = int(ppn)
+        else:
+            LOGGER.error('PPN is None')
+        self.set_ppn()
 
         self.mpinodes = None
         self.set_mpinodes()
@@ -192,10 +196,12 @@ class Sched(object):
 
     def set_ppn(self):
         """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
-
-        self.ppn = len(self.nodes) // len(nub(self.nodes))
-
-        self.log.debug("Set ppn to %s", self.ppn)
+        self.ppn_dict = {}
+        for node in self.nodes:
+            if node in self.ppn_dict:
+                self.ppn_dict[node] = self.ppn_dict[node]+1
+            else:
+                self.ppn_dict[node] = 1
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -222,7 +228,7 @@ class Sched(object):
         """Determine if this is a large job or not"""
 
         res = ((len(self.nodes) > self.RSH_LARGE_LIMIT) and
-               (self.ppn == self.cores_per_node))
+               (any(c == self.cores_per_node for c in self.ppn_dict.values())))
         self.log.debug("is_large returns %s", res)
         return res
 
@@ -236,12 +242,9 @@ class Sched(object):
         if hybrid:
             self.mpiprocesspernode = hybrid
         elif double:
-            self.mpiprocesspernode = 2 * self.ppn
+            self.mpiprocesspernode = 2
         else:
-            self.mpiprocesspernode = self.ppn
-
-        self.log.debug("set_mpinodes: hybrid %s double %s processpernode %s", hybrid, double, self.mpiprocesspernode)
-
+            self.mpiprocesspernode = 1
 
     def set_mpinodes(self):
         """

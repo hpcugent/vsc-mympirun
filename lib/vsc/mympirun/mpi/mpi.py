@@ -27,6 +27,7 @@ Base MPI class, all actual classes should inherit from this one
 
 @author: Stijn De Weirdt
 @author: Jeroen De Clerck
+@author: Caroline De Brouwer
 """
 
 import os
@@ -414,8 +415,8 @@ class MPI(object):
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
         if not self.cores_per_node == len(self.cpus):
-            self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.cores_per_node, len(self.cpus))
+            self.log.info("check_usable_cpus: non-standard cpus found: found cpus %s, usable cpus %s",
+                          self.cores_per_node, len(self.cpus))
 
     def check_limit(self):
         """Check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error."""
@@ -428,7 +429,7 @@ class MPI(object):
         """
         Sets ompthreads to the amount of threads every MPI process should use.
 
-        For example, with hybrid 2 every MPI process should have a total 2 threads (each on a seperate processors).
+        For example, with hybrid 2 every MPI process should have a total 2 threads (each on a seperate processor).
         This way each node will have 8 MPI processes (assuming ppn is 16). Will default to 1 if hybrid is disabled.
         """
         if 'OMP_NUM_THREADS' in os.environ:
@@ -573,7 +574,7 @@ class MPI(object):
 
     def get_universe_ncpus(self):
         """Return ppn for universe"""
-        return self.mpiprocesspernode
+        return self.options.universe
 
     def make_mympirundir(self):
         """
@@ -781,7 +782,7 @@ class MPI(object):
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
         else:
-            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * len(self.nodes)))
+            self.mpiexec_options.append("-np %s" % len(self.nodes))
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()

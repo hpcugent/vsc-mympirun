@@ -50,11 +50,12 @@ SCHEDDICT = {
 
 os.environ['PBS_JOBID'] = "1"
 
-def localhost_nodefile():
+def set_env():
     pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
     pbsnodefile.write("localhost\nlocalhost\n")
     pbsnodefile.close()
     os.environ['PBS_NODEFILE'] = pbsnodefile.name
+    os.environ['PBS_NUM_PPN'] = '1'
 
 
 class TestSched(unittest.TestCase):
@@ -62,7 +63,7 @@ class TestSched(unittest.TestCase):
 
     def setUp(self):
         self.orig_environ = os.environ
-        localhost_nodefile()
+        set_env()
 
     def tearDown(self):
         """Clean up after running test."""

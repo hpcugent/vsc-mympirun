@@ -107,8 +107,8 @@ class IntelMPI(MPI):
         """
         if not self.cores_per_node == len(self.cpus):
             # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
-            self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.cores_per_node, len(self.cpus))
+            self.log.info("check_usable_cpus: non-standard cpus found: found cpus %s, usable cpus %s",
+                           self.cores_per_node, len(self.cpus))
 
             if len(nub(self.nodes)) > 1:
                 self.log.info(("check_usable_cpus: more then one unique node requested. "
