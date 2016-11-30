@@ -113,7 +113,8 @@ class Sched(object):
         if ppn is not None:
             self.ppn = int(ppn)
         else:
-            raise Exception("$PBS_NUM_PPN: Failed to determine # cores per node (ppn) via $PBS_NUM_PPN")
+            self.ppn = len(self.cpus)
+            self.log.debug("Failed to determine # cores per node via $PBS_NUM_PPN, using affinity: found %s" % self.ppn)
         self.set_ppn()
 
         self.mpinodes = None

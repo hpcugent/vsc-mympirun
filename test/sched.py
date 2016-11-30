@@ -56,7 +56,6 @@ def set_PBS_env():
     pbsnodefile.write("localhost\nlocalhost\n")
     pbsnodefile.close()
     os.environ['PBS_NODEFILE'] = pbsnodefile.name
-    os.environ['PBS_NUM_PPN'] = '1'
 
 def cleanup_PBS_env(orig_env):
     """ cleanup the mock job environment """
