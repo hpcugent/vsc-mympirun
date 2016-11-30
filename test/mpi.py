@@ -48,6 +48,7 @@ from vsc.mympirun.rm.local import Local
 
 # we wish to use the mpirun we ship
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
+os.environ["PBS_NUM_PPN"] = '1'
 
 
 class TestMPI(TestCase):
