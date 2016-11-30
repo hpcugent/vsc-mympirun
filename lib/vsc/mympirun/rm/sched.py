@@ -106,11 +106,17 @@ class Sched(object):
         self.nodes = None
         self.set_nodes()
 
-        self.ppn = None
-        self.set_ppn()
+        self.multiplier = None
+        self.set_multiplier()
 
-        self.mpiprocesspernode = None
-        self.set_mpiprocesspernode()
+        ppn = os.environ.get('PBS_NUM_PPN')
+        if ppn is not None:
+            self.ppn = int(ppn)
+            self.log.debug("Determined # cores per node via $PBS_NUM_PPN: %s" % self.ppn)
+        else:
+            self.ppn = len(self.cpus)
+            self.log.debug("Failed to determine # cores per node via $PBS_NUM_PPN, using affinity: found %s" % self.ppn)
+        self.set_ppn()
 
         self.mpinodes = None
         self.set_mpinodes()
@@ -192,10 +198,11 @@ class Sched(object):
 
     def set_ppn(self):
         """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
-
-        self.ppn = len(self.nodes) // len(nub(self.nodes))
-
-        self.log.debug("Set ppn to %s", self.ppn)
+        self.ppn_dict = {}
+        for node in self.nodes:
+            self.ppn_dict.setdefault(node, 0)
+            self.ppn_dict[node] += 1
+        self.log.debug("Number of processors per node: %s" % self.ppn_dict)
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -222,37 +229,23 @@ class Sched(object):
         """Determine if this is a large job or not"""
 
         res = ((len(self.nodes) > self.RSH_LARGE_LIMIT) and
-               (self.ppn == self.cores_per_node))
+               (any(c == self.cores_per_node for c in self.ppn_dict.values())))
         self.log.debug("is_large returns %s", res)
         return res
 
-    def set_mpiprocesspernode(self):
-        """set mpiprocesspernode """
+    def set_multiplier(self):
+        """set multiplier """
 
         # get the working mode from options
         hybrid = getattr(self.options, 'hybrid', None)
         double = getattr(self.options, 'double', False)
 
-        # set the multiplier
         if hybrid:
-            multi = hybrid
+            self.multiplier = hybrid
         elif double:
-            multi = 2
+            self.multiplier = 2
         else:
-            multi = 1
-
-        self.log.debug("set_mpinodes: hybrid %s double %s multi %s", hybrid, double, multi)
-
-        if double:
-            self.mpiprocesspernode = self.ppn * multi
-        elif hybrid:
-            # return multi unique nodes
-            # mpiprocesspernode = 1 per node * multi
-            self.mpiprocesspernode = multi
-        else:
-            # default mode
-            self.mpiprocesspernode = self.ppn * multi
-
+            self.multiplier = 1
 
     def set_mpinodes(self):
         """
@@ -266,8 +259,11 @@ class Sched(object):
         if getattr(self.options, 'double', False):
             res = self.nodes * 2
         else:
-            for uniquenode in nub(self.nodes):
-                res.extend([uniquenode] * self.mpiprocesspernode)
+            if self.options.hybrid is not None:
+                for uniquenode in nub(self.nodes):
+                    res.extend([uniquenode] * self.options.hybrid)
+            else:
+                res = self.nodes
 
         # reorder
         ordermode = getattr(self.options, 'order', None)
@@ -290,7 +286,5 @@ class Sched(object):
             self.log.debug("set_mpinodes sort nodes (mode %s)", ordermode)
         else:
             self.log.raiseException("set_mpinodes unknown ordermode %s" % ordermode)
-
-        self.log.debug("set_mpinodes: ordered node list %s (mpiprocesspernode %s)", res, self.mpiprocesspernode)
 
         self.mpinodes = res

@@ -27,6 +27,7 @@ Base MPI class, all actual classes should inherit from this one
 
 @author: Stijn De Weirdt
 @author: Jeroen De Clerck
+@author: Caroline De Brouwer
 """
 
 import os
@@ -414,8 +415,8 @@ class MPI(object):
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
         if not self.cores_per_node == len(self.cpus):
-            self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.cores_per_node, len(self.cpus))
+            self.log.info("check_usable_cpus: non-standard cpus found: found cpus %s, usable cpus %s",
+                          self.cores_per_node, len(self.cpus))
 
     def check_limit(self):
         """Check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error."""
@@ -428,7 +429,7 @@ class MPI(object):
         """
         Sets ompthreads to the amount of threads every MPI process should use.
 
-        For example, with hybrid 2 every MPI process should have a total 2 threads (each on a seperate processors).
+        For example, with hybrid 2 every MPI process should have a total 2 threads (each on a seperate processor).
         This way each node will have 8 MPI processes (assuming ppn is 16). Will default to 1 if hybrid is disabled.
         """
         if 'OMP_NUM_THREADS' in os.environ:
@@ -538,25 +539,26 @@ class MPI(object):
 
         Parses the list of nodes that run an MPI process and writes this information to a nodefile.
         Also parses the list of unique nodes and writes this information to a mpdbootfile
-        (based on hyrda and universe options).
+        (based on hydra and universe options).
         """
         self.make_mympirundir()
 
         if self.mpinodes is None:
             self.set_mpinodes()
 
-        nodetxt = "\n".join(self.mpinodes + [''])
 
         mpdboottxt = ""
-        for node in nub(self.nodes):
+        universe_ppn = self.get_universe_ncpus()
+
+        for node in nub(self.mpinodes):
             txt = node
             if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
-                    txt += ":%s" % self.get_universe_ncpus()
+                    txt += ":%s" % universe_ppn[node]
                 txt += " ifhn=%s" % node
-
             mpdboottxt += "%s\n" % txt
 
+        nodetxt = '\n'.join(self.mpinodes)
         nodefn = os.path.join(self.mympirundir, 'nodes')
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
@@ -572,8 +574,24 @@ class MPI(object):
             self.log.raiseException(msg)
 
     def get_universe_ncpus(self):
-        """Return ppn for universe"""
-        return self.mpiprocesspernode
+        """Construct dictionary with number of processes to start per node, based on --universe"""
+        if self.options.universe > len(self.nodes):
+            ex = "Universe asks for more processes (%s) than available processors (%s)"
+            self.log.raiseException(ex % (self.options.universe, len(self.nodes)))
+        nodes = nub(self.nodes)
+        universe_ppn = dict((node, 0) for node in nodes)
+        proc_cnt = 0
+        node = nodes.pop(0)
+        while proc_cnt < self.options.universe:
+            if universe_ppn[node] < self.ppn_dict[node]:
+                universe_ppn[node] += 1
+                proc_cnt += 1
+                # recycle node
+                nodes.append(node)
+            # select next node to assign a process to
+            node = nodes.pop(0)
+        return universe_ppn
+
 
     def make_mympirundir(self):
         """
@@ -596,7 +614,8 @@ class MPI(object):
                 total_size += os.path.getsize(os.path.join(dirpath, filename))
 
         if total_size >= TEMPDIR_ERROR_SIZE:
-            self.log.raiseException("the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size))
+            size_err = "the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size)
+            self.log.raiseException(size_err)
         elif total_size >= TEMPDIR_WARN_SIZE:
             self.log.warn("the size of %s is currently %s ", self.mympirunbasedir, total_size)
 
@@ -711,9 +730,11 @@ class MPI(object):
         # add the interface to mpdboot options
         if self.MPDBOOT_SET_INTERFACE:
             if self.has_hydra:
-                iface = "-iface %s" % self.mpdboot_localhost_interface[1]
+                localmachine = self.mpdboot_localhost_interface[1]
+                iface = "-iface %s" % localmachine
             else:
-                iface = "--ifhn=%s" % self.mpdboot_localhost_interface[0]
+                localmachine = self.mpdboot_localhost_interface[0]
+                iface = "--ifhn=%s" % localmachine
             self.log.debug('Set mpdboot interface option "%s"', iface)
             self.mpdboot_options.append(iface)
         else:
@@ -721,7 +742,7 @@ class MPI(object):
 
         # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0:
-            self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus())
+            self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus()[localmachine])
 
         # set verbosity
         if self.options.mpdbootverbose:
@@ -756,7 +777,8 @@ class MPI(object):
         # get all unique variables that are both in os.environ and in OPTS_FROM_ENV_BASE
         vars_to_pass = nub(filter(os.environ.has_key, self.OPTS_FROM_ENV_BASE))
 
-        for env_prefix in self.OPTS_FROM_ENV_FLAVOR_PREFIX + self.OPTS_FROM_ENV_BASE_PREFIX + self.options.variablesprefix:
+        prefixes = self.OPTS_FROM_ENV_FLAVOR_PREFIX + self.OPTS_FROM_ENV_BASE_PREFIX + self.options.variablesprefix
+        for env_prefix in prefixes:
             for env_var in os.environ.keys():
                 # add all environment variable keys that are equal to <prefix> or start with <prefix>_
                 # to mpiexec_opts_from_env, but only if they aren't already in vars_to_pass
@@ -778,8 +800,10 @@ class MPI(object):
         # number of procs to start
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
+        elif self.options.hybrid:
+            self.mpiexec_options.append("-np %s" % (len(nub(self.nodes))*self.multiplier))
         else:
-            self.mpiexec_options.append("-np %s" % (self.mpiprocesspernode * len(nub(self.nodes))))
+            self.mpiexec_options.append("-np %s" % (len(self.nodes)*self.multiplier))
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()
@@ -787,7 +811,9 @@ class MPI(object):
     def make_mpiexec_hydra_options(self):
         """Hydra specific mpiexec options."""
         self.get_hydra_info()
-        self.mpiexec_options.append("--hostfile %s" % self.mpiexec_node_filename)
+        # see https://software.intel.com/en-us/articles/controlling-process-placement-with-the-intel-mpi-library
+        # --machinefile keeps the imbalance if there is one; --hostfile doesn't
+        self.mpiexec_options.append("--machinefile %s" % self.mpiexec_node_filename)
         if self.options.branchcount is not None:
             self.mpiexec_options.append("--branch-count %d" % self.options.branchcount)
 

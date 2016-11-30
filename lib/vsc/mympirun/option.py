@@ -97,7 +97,7 @@ class MympirunOption(GeneralOption):
             "output-check-timeout": ("Warn when no stdout/stderr was seen after start (in seconds; negative number "
                                      "disables this test", "int", "store", DEFAULT_TIMEOUT),
 
-            "output-check-fatal": ("Exit with exitcode %s instead of warn in case of output check timeout" % TIMEOUT_CODE,
+            "output-check-fatal": ("Exit with code %s instead of warn in case of output check timeout" % TIMEOUT_CODE,
                                     None, "store_true", True),
 
             "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "

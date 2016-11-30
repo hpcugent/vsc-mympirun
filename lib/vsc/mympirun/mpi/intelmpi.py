@@ -84,10 +84,6 @@ class IntelMPI(MPI):
         else:
             return super(IntelMPI, self)._has_hydra()
 
-    def get_universe_ncpus(self):
-        """Return ppn for universe"""
-        return len(self.nodes)
-
     def make_mpdboot_options(self):
         """
         Make the mpdboot options.
@@ -107,8 +103,8 @@ class IntelMPI(MPI):
         """
         if not self.cores_per_node == len(self.cpus):
             # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
-            self.log.info("check_usable_cpus: non-standard cpus found: requested ppn %s, found cpus %s, usable cpus %s",
-                          self.ppn, self.cores_per_node, len(self.cpus))
+            self.log.info("check_usable_cpus: non-standard cpus found: found cpus %s, usable cpus %s",
+                           self.cores_per_node, len(self.cpus))
 
             if len(nub(self.nodes)) > 1:
                 self.log.info(("check_usable_cpus: more then one unique node requested. "
@@ -225,7 +221,7 @@ class IntelHydraMPI(IntelMPI):
 
     def make_mpiexec_hydra_options(self):
         super(IntelHydraMPI, self).make_mpiexec_hydra_options()
-        self.mpiexec_options.append("-perhost %d" % self.mpiprocesspernode)
+        self.mpiexec_options.append("-perhost %d" % self.multiplier)
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
@@ -237,7 +233,7 @@ class IntelHydraMPI(IntelMPI):
         if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.mpiprocesspernode * len(nub(self.nodes))) > SCALABLE_PROGRESS_LOWER_THRESHOLD
+        scalable_progress = (self.multiplier * len(self.nodes)) > SCALABLE_PROGRESS_LOWER_THRESHOLD
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = _one_zero(scalable_progress)
 
         if self.options.impi_daplud:
