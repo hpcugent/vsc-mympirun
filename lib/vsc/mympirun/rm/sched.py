@@ -201,6 +201,7 @@ class Sched(object):
         for node in self.nodes:
             self.ppn_dict.setdefault(node, 0)
             self.ppn_dict[node] += 1
+        self.log.debug("Number of processors per node: %s" % self.ppn_dict)
 
     def get_rsh(self):
         """Determine remote shell command"""

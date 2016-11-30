@@ -49,6 +49,7 @@ SCHEDDICT = {
     }
 
 os.environ['PBS_JOBID'] = "1"
+os.environ['PBS_NUM_PPN'] = "1"
 
 def set_PBS_env():
     """ Set up the environment to recreate being in a hpc job """

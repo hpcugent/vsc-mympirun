@@ -575,18 +575,21 @@ class MPI(object):
 
     def get_universe_ncpus(self):
         """Construct dictionary with number of processes to start per node, based on --universe"""
-        universe_ppn = {}
-        for node in nub(self.nodes):
-            universe_ppn[node] = 0
-        i = 0
-        while i < self.options.universe:
-            for node, ppn in universe_ppn.items():
-                if ppn < self.ppn_dict[node]:
-                    universe_ppn[node] = ppn+1
-                    i += 1
-                if i >= self.options.universe:
-                    break
-
+        if self.options.universe > len(self.nodes):
+            ex = "Universe asks for more processes (%s) than available processors (%s)"
+            self.log.raiseException(ex % (self.options.universe, len(self.nodes)))
+        nodes = nub(self.nodes)
+        universe_ppn = dict((node, 0) for node in nodes)
+        proc_cnt = 0
+        node = nodes.pop(0)
+        while proc_cnt < self.options.universe:
+            if universe_ppn[node] < self.ppn_dict[node]:
+                universe_ppn[node] += 1
+                proc_cnt += 1
+                # recycle node
+                nodes.append(node)
+            # select next node to assign a process to
+            node = nodes.pop(0)
         return universe_ppn
 
 
@@ -809,7 +812,7 @@ class MPI(object):
         """Hydra specific mpiexec options."""
         self.get_hydra_info()
         # see https://software.intel.com/en-us/articles/controlling-process-placement-with-the-intel-mpi-library
-        # machinefile keeps the imbalance if there is one; hostfile doesn't
+        # --machinefile keeps the imbalance if there is one; --hostfile doesn't
         self.mpiexec_options.append("--machinefile %s" % self.mpiexec_node_filename)
         if self.options.branchcount is not None:
             self.mpiexec_options.append("--branch-count %d" % self.options.branchcount)
