@@ -84,10 +84,6 @@ class IntelMPI(MPI):
         else:
             return super(IntelMPI, self)._has_hydra()
 
-    def get_universe_ncpus(self):
-        """Return ppn for universe"""
-        return len(self.nodes)
-
     def make_mpdboot_options(self):
         """
         Make the mpdboot options.

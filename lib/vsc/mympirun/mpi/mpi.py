@@ -539,25 +539,26 @@ class MPI(object):
 
         Parses the list of nodes that run an MPI process and writes this information to a nodefile.
         Also parses the list of unique nodes and writes this information to a mpdbootfile
-        (based on hyrda and universe options).
+        (based on hydra and universe options).
         """
         self.make_mympirundir()
 
         if self.mpinodes is None:
             self.set_mpinodes()
 
-        nodetxt = "\n".join(self.mpinodes + [''])
 
         mpdboottxt = ""
-        for node in nub(self.nodes):
+        universe_ppn = self.get_universe_ncpus()
+
+        for node in nub(self.mpinodes):
             txt = node
             if not self.has_hydra:
                 if self.options.universe is not None and self.options.universe > 0:
-                    txt += ":%s" % self.get_universe_ncpus()
+                    txt += ":%s" % universe_ppn[node]
                 txt += " ifhn=%s" % node
-
             mpdboottxt += "%s\n" % txt
 
+        nodetxt = '\n'.join(self.mpinodes)
         nodefn = os.path.join(self.mympirundir, 'nodes')
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
@@ -573,8 +574,21 @@ class MPI(object):
             self.log.raiseException(msg)
 
     def get_universe_ncpus(self):
-        """Return ppn for universe"""
-        return self.options.universe
+        """Return ppn dict for universe"""
+        universe_ppn = {}
+        for node in nub(self.nodes):
+            universe_ppn[node] = 0
+        i = 0
+        while i < self.options.universe:
+            for node, ppn in universe_ppn.items():
+                if ppn < self.ppn_dict[node]:
+                    universe_ppn[node] = ppn+1
+                    i += 1
+                if i >= self.options.universe:
+                    break
+
+        return universe_ppn
+
 
     def make_mympirundir(self):
         """
@@ -713,9 +727,11 @@ class MPI(object):
         # add the interface to mpdboot options
         if self.MPDBOOT_SET_INTERFACE:
             if self.has_hydra:
-                iface = "-iface %s" % self.mpdboot_localhost_interface[1]
+                localmachine = self.mpdboot_localhost_interface[1]
+                iface = "-iface %s" % localmachine
             else:
-                iface = "--ifhn=%s" % self.mpdboot_localhost_interface[0]
+                localmachine = self.mpdboot_localhost_interface[0]
+                iface = "--ifhn=%s" % localmachine
             self.log.debug('Set mpdboot interface option "%s"', iface)
             self.mpdboot_options.append(iface)
         else:
@@ -723,7 +739,7 @@ class MPI(object):
 
         # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0:
-            self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus())
+            self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus()[localmachine])
 
         # set verbosity
         if self.options.mpdbootverbose:
