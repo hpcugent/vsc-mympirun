@@ -574,7 +574,7 @@ class MPI(object):
             self.log.raiseException(msg)
 
     def get_universe_ncpus(self):
-        """Return ppn dict for universe"""
+        """Construct dictionary with number of processes to start per node, based on --universe"""
         universe_ppn = {}
         for node in nub(self.nodes):
             universe_ppn[node] = 0

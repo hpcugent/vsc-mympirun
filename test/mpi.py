@@ -300,3 +300,25 @@ class TestMPI(TestCase):
         """Make sure dirname for 'fake' subdir is the same in both setup.py and vsc.mympirun.mpi.mpi"""
         from setup import FAKE_SUBDIRECTORY_NAME
         self.assertEqual(mpim.FAKE_SUBDIRECTORY_NAME, FAKE_SUBDIRECTORY_NAME)
+
+    def test_get_universe_ncpus(self):
+        inst = getinstance(mpim.MPI, Local, MympirunOption())
+        inst.nodes = [
+            'node1',
+            'node1',
+            'node2',
+            'node2',
+            'node2',
+            'node2',
+        ]
+        options = {
+            3: {'node1': 2, 'node2': 1},
+            5: {'node1': 2, 'node2': 3}
+        }
+        for opt in options:
+            inst.options.universe = opt
+            inst.set_ppn()
+            inst.set_mpinodes()
+            universe_ppn = inst.get_universe_ncpus()
+            self.assertEqual(universe_ppn, options[opt])
+
