@@ -112,6 +112,7 @@ class Sched(object):
         ppn = os.environ.get('PBS_NUM_PPN')
         if ppn is not None:
             self.ppn = int(ppn)
+            self.log.debug("Determined # cores per node via $PBS_NUM_PPN: %s" % self.ppn)
         else:
             self.ppn = len(self.cpus)
             self.log.debug("Failed to determine # cores per node via $PBS_NUM_PPN, using affinity: found %s" % self.ppn)
