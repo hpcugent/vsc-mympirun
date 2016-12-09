@@ -1,0 +1,258 @@
+INFO: This is (based on) vsc.install.shared_setup 0.10.20
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: initial packages list: ['vsc.mympirun', 'vsc.mympirun.rm', 'vsc', 'vsc.mympirun.mpi']
+INFO: generated list: ['vsc.mympirun', 'vsc.mympirun.rm', 'vsc', 'vsc.mympirun.mpi']
+INFO: generated packages list: ['vsc.mympirun', 'vsc.mympirun.rm', 'vsc', 'vsc.mympirun.mpi']
+INFO: makesetupcfg set to True, (re)creating setup.cfg
+INFO: adding prospector to tests_require
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: setting license GPLv2
+INFO: No name defined, trying to determine it
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: Removing None download_url
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun'}
+INFO: using long_description Python libraries interfacing different mpi implementations.
+INFO: generated list: ['bin/sshsleep.sh', 'bin/mympirun.py', 'bin/pbsssh.sh', 'bin/mympisanity.py']
+INFO: generated scripts list: ['bin/sshsleep.sh', 'bin/mympirun.py', 'bin/pbsssh.sh', 'bin/mympisanity.py']
+INFO: adding prospector to tests_require
+{'maintainer': 'Stijn De Weirdt', 'install_requires': ['vsc-base >= 2.5.0', 'vsc-install >= 0.10.9', 'IPy'], 'zip_safe': 0, 'setup_requires': ['setuptools', 'vsc-install >= 0.10.20'], 'maintainer_email': 'stijn.deweirdt@ugent.be', 'long_description': '# Description\n\nPython libraries interfacing different mpi implementations.\n\nOriginally created by the [HPC team of Ghent University](http://ugent.be/hpc).\n\n# License\n\n`vsc-mympirun` is made available under the GNU General Public License\n(GPL) version 2.\n\n\n# Workflow\n\nThe first step of mympirun is making sure that every mpirun command passes\nthrough mympirun. This is accomplished by prepending a fake mpirun path to\n`$PATH`, which will catch the attempt to execute mpirun and forward it to\nmympirun.\n\nNext, the script will import every MPI flavor implementation from\n`lib/vsc/mympirun/mpi`. This way it is possible to deduce the MPI flavor that\nis requested by observing the path of the executable that called mympirun.\n\nIt will follow the same process for determining the scheduler. Both MPI flavor\nand scheduler flavor can be overwritten by using the `-M` and `-S` options\nrespectively.\n\nOnce both flavors have been set, the script will get some standard MPI\nconfiguration variables, such as usable nodes, netmask,... It will handle CPU\npinning if enabled.\n\nAfter setting up, it will transform the command line arguments and other global\nenvironment variables to a dict with options that the chosen MPI flavor can\nunderstand.\n\nFinally, it passes these options to the correct mpirun executable of the\nselected MPI flavor.\n', 'tests_require': ['prospector >= 0.12.1', 'pylint < 1.6.0', 'prospector >= 0.12.1', 'pylint < 1.6.0'], 'package_dir': {'': 'lib'}, 'author': 'Stijn De Weirdt', 'cmdclass': {'bdist_rpm': <class vsc.install.shared_setup.vsc_bdist_rpm at 0x7f345e025668>, 'install_scripts': <class __main__.mympirun_vsc_install_scripts at 0x7f345e97fdb8>, 'egg_info': <class vsc.install.shared_setup.vsc_egg_info at 0x7f345e0254c8>, 'test': <class vsc.install.shared_setup.VscTestCommand at 0x7f345e0256d0>, 'vsc_release': <class vsc.install.shared_setup.vsc_release at 0x7f345e025738>, 'sdist': <class vsc.install.shared_setup.vsc_sdist at 0x7f345e0253f8>}, 'download_url': '', 'version': '3.4.4', 'description': 'Python libraries interfacing different mpi implementations.', 'namespace_packages': ['vsc'], 'scripts': ['bin/sshsleep.sh', 'bin/mympirun.py', 'bin/pbsssh.sh', 'bin/mympisanity.py'], 'command_packages': ['vsc.install.shared_setup', 'shared_setup_dist_only', 'setuptools.command', 'distutils.command'], 'packages': ['vsc.mympirun', 'vsc.mympirun.rm', 'vsc', 'vsc.mympirun.mpi'], 'classifiers': ['License :: OSI Approved :: GNU General Public License v2 (GPLv2)'], 'dependency_links': ['git+ssh://git@github.ugent.be/hpcugent/vsc-install.git#egg=vsc-install-0.10.20', 'git+ssh://git@github.com/hpcugent/vsc-install.git#egg=vsc-install-0.10.20', 'git+https://github.com/hpcugent/vsc-install.git#egg=vsc-install-0.10.20', 'git+ssh://git@github.ugent.be/hpcugent/vsc-install.git#egg=vsc-install-0.10.20', 'git+ssh://git@github.com/hpcugent/vsc-install.git#egg=vsc-install-0.10.20', 'git+https://github.com/hpcugent/vsc-install.git#egg=vsc-install-0.10.20', 'git+ssh://git@github.ugent.be/hpcugent/vsc-base.git#egg=vsc-base-2.5.0', 'git+ssh://git@github.com/hpcugent/vsc-base.git#egg=vsc-base-2.5.0', 'git+https://github.com/hpcugent/vsc-base.git#egg=vsc-base-2.5.0', 'git+ssh://git@github.ugent.be/hpcugent/vsc-base.git#egg=vsc-base-2.5.0', 'git+ssh://git@github.com/hpcugent/vsc-base.git#egg=vsc-base-2.5.0', 'git+https://github.com/hpcugent/vsc-base.git#egg=vsc-base-2.5.0', 'git+ssh://git@github.ugent.be/hpcugent/vsc-install.git#egg=vsc-install-0.10.9', 'git+ssh://git@github.com/hpcugent/vsc-install.git#egg=vsc-install-0.10.9', 'git+https://github.com/hpcugent/vsc-install.git#egg=vsc-install-0.10.9', 'git+ssh://git@github.ugent.be/hpcugent/vsc-install.git#egg=vsc-install-0.10.9', 'git+ssh://git@github.com/hpcugent/vsc-install.git#egg=vsc-install-0.10.9', 'git+https://github.com/hpcugent/vsc-install.git#egg=vsc-install-0.10.9'], 'name': 'vsc-mympirun', 'license': 'GPLv2', 'url': 'https://github.com/hpcugent/vsc-mympirun', 'author_email': 'stijn.deweirdt@ugent.be', 'test_suite': 'test'}
+INFO: running test
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: test_loader set to vsc.install.shared_setup:vsc_setup.VscScanningLoader
+INFO: Searching for pylint<1.6.0
+INFO: Best match: pylint 1.5.6
+INFO: Processing pylint-1.5.6-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pylint-1.5.6-py2.7.egg
+INFO: Searching for prospector>=0.12.1
+INFO: Best match: prospector 0.12.4
+INFO: Processing prospector-0.12.4-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/prospector-0.12.4-py2.7.egg
+INFO: Searching for astroid<1.5.0,>=1.4.5
+INFO: Best match: astroid 1.4.8
+INFO: Processing astroid-1.4.8-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/astroid-1.4.8-py2.7.egg
+INFO: Searching for pydocstyle==1.0.0
+INFO: Best match: pydocstyle 1.0.0
+INFO: Processing pydocstyle-1.0.0-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pydocstyle-1.0.0-py2.7.egg
+INFO: Searching for pep8-naming>=0.3.3
+INFO: Best match: pep8-naming 0.4.1
+INFO: Processing pep8_naming-0.4.1-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pep8_naming-0.4.1-py2.7.egg
+INFO: Searching for pycodestyle==2.0.0
+INFO: Best match: pycodestyle 2.0.0
+INFO: Processing pycodestyle-2.0.0-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pycodestyle-2.0.0-py2.7.egg
+INFO: Searching for pyflakes>=0.8.1
+INFO: Best match: pyflakes 1.3.0
+INFO: Processing pyflakes-1.3.0-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pyflakes-1.3.0-py2.7.egg
+INFO: Searching for mccabe>=0.5.0
+INFO: Best match: mccabe 0.5.2
+INFO: Processing mccabe-0.5.2-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/mccabe-0.5.2-py2.7.egg
+INFO: Searching for dodgy>=0.1.9
+INFO: Best match: dodgy 0.1.9
+INFO: Processing dodgy-0.1.9-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/dodgy-0.1.9-py2.7.egg
+INFO: Searching for setoptconf>=0.2.0
+INFO: Best match: setoptconf 0.2.0
+INFO: Processing setoptconf-0.2.0-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/setoptconf-0.2.0-py2.7.egg
+INFO: Searching for requirements-detector>=0.4.1
+INFO: Best match: requirements-detector 0.5.2
+INFO: Processing requirements_detector-0.5.2-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/requirements_detector-0.5.2-py2.7.egg
+INFO: Searching for pylint-common>=0.2.2
+INFO: Best match: pylint-common 0.2.2
+INFO: Processing pylint_common-0.2.2-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pylint_common-0.2.2-py2.7.egg
+INFO: Searching for pylint-plugin-utils>=0.2.3
+INFO: Best match: pylint-plugin-utils 0.2.4
+INFO: Processing pylint_plugin_utils-0.2.4-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pylint_plugin_utils-0.2.4-py2.7.egg
+INFO: Searching for pylint-flask>=0.3
+INFO: Best match: pylint-flask 0.5
+INFO: Processing pylint_flask-0.5-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pylint_flask-0.5-py2.7.egg
+INFO: Searching for pylint-django>=0.7.2
+INFO: Best match: pylint-django 0.7.2
+INFO: Processing pylint_django-0.7.2-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pylint_django-0.7.2-py2.7.egg
+INFO: Searching for pylint-celery>=0.3
+INFO: Best match: pylint-celery 0.3
+INFO: Processing pylint_celery-0.3-py2.7.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/pylint_celery-0.3-py2.7.egg
+INFO: Searching for wrapt
+INFO: Best match: wrapt 1.10.8
+INFO: Processing wrapt-1.10.8-py2.7-linux-x86_64.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/wrapt-1.10.8-py2.7-linux-x86_64.egg
+INFO: Searching for lazy_object_proxy
+INFO: Best match: lazy-object-proxy 1.2.2
+INFO: Processing lazy_object_proxy-1.2.2-py2.7-linux-x86_64.egg
+INFO: 
+Using /home/caroline/GitHub/vsc-mympirun/.eggs/lazy_object_proxy-1.2.2-py2.7-linux-x86_64.egg
+INFO: running egg_info
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: creating lib/vsc_mympirun.egg-info
+INFO: writing requirements to lib/vsc_mympirun.egg-info/requires.txt
+INFO: writing lib/vsc_mympirun.egg-info/PKG-INFO
+INFO: writing namespace_packages to lib/vsc_mympirun.egg-info/namespace_packages.txt
+INFO: writing top-level names to lib/vsc_mympirun.egg-info/top_level.txt
+INFO: writing dependency_links to lib/vsc_mympirun.egg-info/dependency_links.txt
+INFO: writing manifest file 'lib/vsc_mympirun.egg-info/SOURCES.txt'
+INFO: reading manifest file 'lib/vsc_mympirun.egg-info/SOURCES.txt'
+INFO: writing manifest file 'lib/vsc_mympirun.egg-info/SOURCES.txt'
+INFO: looking for extra dist files
+INFO: running build_ext
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: generated list: ['vsc.mympirun.mpi.openmpi', 'vsc.mympirun.mpi.mpich', 'vsc.mympirun.rm.sched', 'vsc.mympirun.mpi.mpi', 'vsc.mympirun.mpi.intelmpi', 'vsc.mympirun.rm.local', 'vsc.mympirun.rm.scoop', 'vsc.mympirun.rm.pbs', 'vsc.mympirun.option', 'vsc.mympirun.factory']
+INFO: generated modules list: ['vsc.mympirun.mpi.openmpi', 'vsc.mympirun.mpi.mpich', 'vsc.mympirun.rm.sched', 'vsc.mympirun.mpi.mpi', 'vsc.mympirun.mpi.intelmpi', 'vsc.mympirun.rm.local', 'vsc.mympirun.rm.scoop', 'vsc.mympirun.rm.pbs', 'vsc.mympirun.option', 'vsc.mympirun.factory']
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: initial packages list: ['vsc.mympirun', 'vsc.mympirun.rm', 'vsc', 'vsc.mympirun.mpi']
+INFO: generated list: ['vsc.mympirun', 'vsc.mympirun.rm', 'vsc', 'vsc.mympirun.mpi']
+INFO: generated packages list: ['vsc.mympirun', 'vsc.mympirun.rm', 'vsc', 'vsc.mympirun.mpi']
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: generated list: ['bin/sshsleep.sh', 'bin/mympirun.py', 'bin/pbsssh.sh', 'bin/mympisanity.py']
+INFO: generated scripts list: ['bin/sshsleep.sh', 'bin/mympirun.py', 'bin/pbsssh.sh', 'bin/mympisanity.py']
+INFO: get_header for script
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: get_header for script
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+INFO: found match url git@github.com:hpcugent/vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: found match name vsc-mympirun in /home/caroline/GitHub/vsc-mympirun/.git/config
+INFO: get_name_url returns {'url': 'https://github.com/hpcugent/vsc-mympirun', 'name': 'vsc-mympirun', 'download_url': 'https://github.com/hpcugent/vsc-mympirun/archive/ALL_VERSIONS.tar.gz'}
+INFO: found license /home/caroline/GitHub/vsc-mympirun/LICENSE with md5sum b234ee4d69f5fce4486a80fdaf4a4263
+INFO: Found license name GPLv2 and classifier License :: OSI Approved :: GNU General Public License v2 (GPLv2)
+INFO: run_tests from base dir /home/caroline/GitHub/vsc-mympirun (using executable /home/caroline/GitHub/vsc-mympirun/setup.py)
+key: scoop, sched: <class 'vsc.mympirun.rm.scoop.Scoop'>, found_sched_: [<class 'vsc.mympirun.rm.local.Local'>, <class 'vsc.mympirun.rm.scoop.Scoop'>, <class 'vsc.mympirun.rm.pbs.PBS'>]
+key: local, sched: <class 'vsc.mympirun.rm.local.Local'>, found_sched_: [<class 'vsc.mympirun.rm.local.Local'>, <class 'vsc.mympirun.rm.scoop.Scoop'>, <class 'vsc.mympirun.rm.pbs.PBS'>]
+key: pbs, sched: <class 'vsc.mympirun.rm.pbs.PBS'>, found_sched_: [<class 'vsc.mympirun.rm.local.Local'>, <class 'vsc.mympirun.rm.scoop.Scoop'>, <class 'vsc.mympirun.rm.pbs.PBS'>]
+localhosts: [('localhost', 'lo')]
+mpiscriptname: ['ompirun'], path: apps/gent/SL6/sandybridge/software/OpenMPI/1.8.8-GNU-4.9.3-2.25/bin/mpirun, instance mpirun for: ['OpenMPI']
+mpiscriptname: ['impirun'], path: /apps/gent/SL6/sandybridge/software/impi/3.2.2.006/bin64/mpirun, instance mpirun for: ['impi']
+--file=/home/caroline/.mympirun/SCHED_Coupler2016120915072073291_20161209_150720/mpdboot --ifhn=localhost --rsh=ssh -machinefile /home/caroline/.mympirun/SCHED_Coupler2016120915072073291_20161209_150720/nodes -genv MKL_NUM_THREADS 1 -genv LOADEDMODULES -genv MODULESHOME /usr/local/Modules/3.2.10 -genv MODULEPATH /usr/local/Modules/versions:/usr/local/Modules/$MODULE_VERSION/modulefiles:/usr/local/Modules/modulefiles -np 8 -x OMP_NUM_THREADS test
+mpirunoptions: None
+mpdboot_options: ['--file=/home/caroline/.mympirun/SCHED_Coupler2016120915072073291_20161209_150720/mpdboot', '--ifhn=localhost', '--rsh=ssh']
+mpiexec_options: ['-machinefile /home/caroline/.mympirun/SCHED_Coupler2016120915072073291_20161209_150720/nodes', "-genv MKL_NUM_THREADS '1'", "-genv LOADEDMODULES ''", "-genv MODULESHOME '/usr/local/Modules/3.2.10'", "-genv MODULEPATH '/usr/local/Modules/versions:/usr/local/Modules/$MODULE_VERSION/modulefiles:/usr/local/Modules/modulefiles'", '-np 8', "-x 'OMP_NUM_THREADS'"]
+cmdargs: ['test']
+nodefile content: <open file '/home/caroline/.mympirun/SCHED_Coupler2016120915072003298_20161209_150720/nodes', mode 'r' at 0x7f345a24f150>
+--file=/home/caroline/.mympirun/SCHED_Coupler2016120915072039588_20161209_150720/mpdboot --ifhn=localhost --rsh=ssh -machinefile /home/caroline/.mympirun/SCHED_Coupler2016120915072039588_20161209_150720/nodes -genv MKL_NUM_THREADS 1 -genv LOADEDMODULES -genv MODULESHOME /usr/local/Modules/3.2.10 -genv MODULEPATH /usr/local/Modules/versions:/usr/local/Modules/$MODULE_VERSION/modulefiles:/usr/local/Modules/modulefiles -np 8 -x OMP_NUM_THREADS echo foo zever
+args given to mympirunoption: ['echo', 'foo', 'zever'], instance options: {'help': None, 'impi_fallback': False, 'basepath': None, 'output_check_fatal': True, 'debugmpi': False, 'impi_mpdbulletproof': False, 'stats': 0, 'ompthreads': '1', 'ignoreconfigfiles': None, 'hybrid': None, 'pinmpi': True, 'configfiles': None, 'showsched': False, 'showmpi': False, 'impi_daplud': False, 'setmpi': None, 'mpirunoptions': None, 'schedtype': None, 'noenvmodules': False, 'logtofile': None, 'debuglvl': 0, 'impi_xrc': False, 'rdma': None, 'ssh': True, 'use_psm': None, 'info': False, 'socket': None, 'output_check_timeout': 3600, 'double': False, 'quiet': False, 'variablesprefix': [], 'overridepin': None, 'universe': None, 'debug': False, 'output': None, 'mpdbootverbose': False, 'order': None, 'branchcount': None}, 
+MODULE_ENVIRONMENT_VARIABLES: ['MODULEPATH', 'LOADEDMODULES', 'MODULESHOME']
+opts_from_env: ['OMP_NUM_THREADS']
+netmask: 172.17.9.0/255.255.255.0
+old path: /home/caroline/GitHub/vsc-mympirun/test:/home/caroline/bin:/home/caroline/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/caroline/GitHub/easybuild-framework:/usr/local/Modules/3.2.10/bin/:/home/caroline/GitHub/easybuild-framework:/usr/local/Modules/3.2.10/bin/
+what mpi returns: ompirun, <class 'openmpi.OpenMPI'>, [<class 'vsc.mympirun.mpi.mpich.MPICH2Hydra'>, <class 'mpich.MVAPICH2Hydra'>, <class 'intelmpi.IntelMPI'>, <class 'vsc.mympirun.mpi.intelmpi.IntelMPI'>, <class 'vsc.mympirun.mpi.mpich.MVAPICH2'>, <class 'mpich.MVAPICH2'>, <class 'mpich.MPICH2Hydra'>, <class 'mpich.MPICH2'>, <class 'vsc.mympirun.mpi.intelmpi.IntelHydraMPI'>, <class 'openmpi.OpenMPI'>, <class 'vsc.mympirun.mpi.openmpi.OpenMPI'>, <class 'vsc.mympirun.mpi.mpich.MVAPICH2Hydra'>, <class 'vsc.mympirun.mpi.mpich.MPICH2'>, <class 'intelmpi.IntelHydraMPI'>]
+what mpi returns: /home/caroline/GitHub/vsc-mympirun/test/mpirun, None, [<class 'vsc.mympirun.mpi.mpich.MPICH2Hydra'>, <class 'mpich.MVAPICH2Hydra'>, <class 'intelmpi.IntelMPI'>, <class 'vsc.mympirun.mpi.intelmpi.IntelMPI'>, <class 'vsc.mympirun.mpi.mpich.MVAPICH2'>, <class 'mpich.MVAPICH2'>, <class 'mpich.MPICH2Hydra'>, <class 'mpich.MPICH2'>, <class 'vsc.mympirun.mpi.intelmpi.IntelHydraMPI'>, <class 'openmpi.OpenMPI'>, <class 'vsc.mympirun.mpi.openmpi.OpenMPI'>, <class 'vsc.mympirun.mpi.mpich.MVAPICH2Hydra'>, <class 'vsc.mympirun.mpi.mpich.MPICH2'>, <class 'intelmpi.IntelHydraMPI'>]
+what mpi returns: impirun, <class 'intelmpi.IntelMPI'>, [<class 'vsc.mympirun.mpi.mpich.MPICH2Hydra'>, <class 'mpich.MVAPICH2Hydra'>, <class 'intelmpi.IntelMPI'>, <class 'vsc.mympirun.mpi.intelmpi.IntelMPI'>, <class 'vsc.mympirun.mpi.mpich.MVAPICH2'>, <class 'mpich.MVAPICH2'>, <class 'mpich.MPICH2Hydra'>, <class 'mpich.MPICH2'>, <class 'vsc.mympirun.mpi.intelmpi.IntelHydraMPI'>, <class 'openmpi.OpenMPI'>, <class 'vsc.mympirun.mpi.openmpi.OpenMPI'>, <class 'vsc.mympirun.mpi.mpich.MVAPICH2Hydra'>, <class 'vsc.mympirun.mpi.mpich.MPICH2'>, <class 'intelmpi.IntelHydraMPI'>]
+what mpi returns: /home/caroline/GitHub/vsc-mympirun/test/mpirun, None, [<class 'vsc.mympirun.mpi.mpich.MPICH2Hydra'>, <class 'mpich.MVAPICH2Hydra'>, <class 'intelmpi.IntelMPI'>, <class 'vsc.mympirun.mpi.intelmpi.IntelMPI'>, <class 'vsc.mympirun.mpi.mpich.MVAPICH2'>, <class 'mpich.MVAPICH2'>, <class 'mpich.MPICH2Hydra'>, <class 'mpich.MPICH2'>, <class 'vsc.mympirun.mpi.intelmpi.IntelHydraMPI'>, <class 'openmpi.OpenMPI'>, <class 'vsc.mympirun.mpi.openmpi.OpenMPI'>, <class 'vsc.mympirun.mpi.mpich.MVAPICH2Hydra'>, <class 'vsc.mympirun.mpi.mpich.MPICH2'>, <class 'intelmpi.IntelHydraMPI'>]
+/home/caroline/GitHub/vsc-mympirun/test:/home/caroline/bin:/home/caroline/bin:/usr/local/sbin:/usr/local/bin:/usr/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl:/home/caroline/GitHub/easybuild-framework:/usr/local/Modules/3.2.10/bin/:/home/caroline/GitHub/easybuild-framework:/usr/local/Modules/3.2.10/bin/

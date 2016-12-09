@@ -49,7 +49,6 @@ echo 'fake mpirun called with args:' $@
 FAKE_MPIRUN_MACHINEFILE = r"""#!/bin/bash
 machinefile=$(echo $@ | sed -e 's/.*-machinefile[ ]*\([^ ]*\).*/\1/g')
 cat $machinefile
-
 """
 
 def install_fake_mpirun(cmdname, path, txt=None):
@@ -244,13 +243,14 @@ class TestEnd2End(unittest.TestCase):
         self.assertTrue(regex.search(out))
 
         self.change_env(1)
-        os.environ['I_MPI_PROCESS_MANAGER'] = 'mpd'
+        # intel mpi without hydra
         ec, out = run_simple("%s %s --setmpi impirun --universe 1 hostname" % (sys.executable, self.mympiscript))
         np_regex = re.compile('-np 1')
         ncpus_regex = re.compile('--ncpus=1')
         self.assertTrue(np_regex.search(out))
         self.assertTrue(ncpus_regex.search(out))
 
+        # intel mpi with hydra
         del os.environ['I_MPI_PROCESS_MANAGER']
         ec, out = run_simple("%s %s --setmpi ihmpirun --universe 1 hostname" % (sys.executable, self.mympiscript))
         self.assertTrue(np_regex.search(out))
