@@ -235,7 +235,7 @@ class TestEnd2End(unittest.TestCase):
 
 
     def test_option_universe(self):
-        """Test --hybrid command line option"""
+        """Test --universe command line option"""
         install_fake_mpirun('mpirun', self.tmpdir)
         ec, out = run_simple("%s %s --setmpi impirun --universe 1 hostname" % (sys.executable, self.mympiscript))
         regex = re.compile('-np 1')
