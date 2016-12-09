@@ -224,6 +224,7 @@ class TestEnd2End(unittest.TestCase):
         install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
         cmd = "%s %s --setmpi impirun --double hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
+        # set_pbs_env() sets 2 cores, so double is 4
         self.assertEqual(len(out.split('\n')), 4)
 
 
