@@ -46,6 +46,11 @@ FAKE_MPIRUN = """#!/bin/bash
 echo 'fake mpirun called with args:' $@
 """
 
+FAKE_MPIRUN_MACHINEFILE = r"""#!/bin/bash
+machinefile=$(echo $@ | sed -e 's/.*-machinefile[ ]*\([^ ]*\).*/\1/g')
+cat $machinefile
+"""
+
 def install_fake_mpirun(cmdname, path, txt=None):
     """Install fake mpirun command with given name in specified location"""
     fake_mpirun = os.path.join(path, cmdname)
@@ -71,6 +76,10 @@ class TestEnd2End(unittest.TestCase):
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
         os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
         self.tmpdir = tempfile.mkdtemp()
+        os.environ['HOME'] = self.tmpdir
+        mpdconf = open(os.path.join(self.tmpdir, '.mpd.conf'), 'w')
+        mpdconf.write("password=topsecretpassword")
+        mpdconf.close()
 
         # make sure we're using the right mympirun installation...
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
@@ -204,3 +213,57 @@ class TestEnd2End(unittest.TestCase):
 
         regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+
+    def test_option_double(self):
+        """Test --double command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
+        cmd = "%s %s --setmpi impirun --double hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
+        # set_pbs_env() sets 2 cores, so double is 4
+        self.assertEqual(len(out.split('\n')), 4)
+        self.assertEqual(out, ('\n'.join(['localhost'] * 4)))
+
+
+    def test_option_hybrid(self):
+        """Test --hybrid command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
+        ec, out = run_simple("%s %s --setmpi impirun --hybrid 5 hostname" % (sys.executable, self.mympiscript))
+        self.assertEqual(len(out.split('\n')), 5)
+        self.assertEqual(out, ('\n'.join(['localhost'] * 5)))
+
+
+    def test_option_universe(self):
+        """Test --universe command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir)
+
+        self.change_env(5)
+        ec, out = run_simple("%s %s --setmpi impirun --universe 4 hostname" % (sys.executable, self.mympiscript))
+        regex = re.compile('-np 4')
+        self.assertTrue(regex.search(out))
+
+        self.change_env(1)
+        # intel mpi without hydra
+        ec, out = run_simple("%s %s --setmpi impirun --universe 1 hostname" % (sys.executable, self.mympiscript))
+        os.environ['I_MPI_PROCESS_MANAGER'] = 'mpd'
+
+        np_regex = re.compile('-np 1')
+        ncpus_regex = re.compile('--ncpus=1')
+        self.assertTrue(np_regex.search(out))
+        self.assertTrue(ncpus_regex.search(out))
+
+        # intel mpi with hydra
+        del os.environ['I_MPI_PROCESS_MANAGER']
+        ec, out = run_simple("%s %s --setmpi ihmpirun --universe 1 hostname" % (sys.executable, self.mympiscript))
+        self.assertTrue(np_regex.search(out))
+        self.assertFalse(ncpus_regex.search(out))
+
+        # re-set pbs environment
+        set_PBS_env()
+
+    def change_env(self, cores):
+        """Helper method for changing the number of cores in the machinefile"""
+        pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
+        pbsnodefile.write('\n'.join(['localhost'] * cores))
+        pbsnodefile.close()
+        os.environ['PBS_NODEFILE'] = pbsnodefile.name
