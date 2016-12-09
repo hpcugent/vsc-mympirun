@@ -161,6 +161,7 @@ class TestSched(unittest.TestCase):
 
         # --hybrid: start just n processes on every physical node
         inst.options.double = False
+        inst.options.multi = None
         inst.options.hybrid = 1
         inst.set_multiplier()
         inst.set_mpinodes()
