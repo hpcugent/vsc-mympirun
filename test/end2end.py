@@ -46,6 +46,18 @@ FAKE_MPIRUN = """#!/bin/bash
 echo 'fake mpirun called with args:' $@
 """
 
+FAKE_MPIRUN_MACHINEFILE = """#!/bin/bash
+for ((i=1;i<=$#;i++));
+do
+    if [ "${!i}" = "-machinefile" ]
+    then ((i++))
+        machinefile=${!i};
+    fi
+done
+cat $machinefile
+
+"""
+
 def install_fake_mpirun(cmdname, path, txt=None):
     """Install fake mpirun command with given name in specified location"""
     fake_mpirun = os.path.join(path, cmdname)
@@ -204,3 +216,26 @@ class TestEnd2End(unittest.TestCase):
 
         regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+
+    def test_option_double(self):
+        """Test --double command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
+        cmd = "%s %s --setmpi impirun --double hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
+        self.assertEqual(len(out.split('\n')), 4)
+
+
+    def test_option_hybrid(self):
+        """Test --hybrid command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
+        ec, out = run_simple("%s %s --setmpi impirun --hybrid 5 hostname" % (sys.executable, self.mympiscript))
+        self.assertEqual(len(out.split('\n')), 5)
+
+
+    def test_option_universe(self):
+        """Test --hybrid command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir)
+        ec, out = run_simple("%s %s --setmpi impirun --universe 1 hostname" % (sys.executable, self.mympiscript))
+        regex = re.compile('-np 1')
+        self.assertTrue(regex.search(out))
