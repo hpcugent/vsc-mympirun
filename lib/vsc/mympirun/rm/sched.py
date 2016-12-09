@@ -253,7 +253,7 @@ class Sched(object):
         res = []
         if self.options.hybrid is not None:
             for uniquenode in nub(self.nodes):
-                res.extend([uniquenode] * self.options.hybrid * self.mulitplier)
+                res.extend([uniquenode] * self.options.hybrid * self.multiplier)
         else:
             res = self.nodes * self.multiplier
 
