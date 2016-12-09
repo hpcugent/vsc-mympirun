@@ -84,6 +84,9 @@ class TestEnd2End(unittest.TestCase):
         os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
         self.tmpdir = tempfile.mkdtemp()
         os.environ['HOME'] = self.tmpdir
+        mpdconf = open(os.path.join(self.tmpdir, '.mpd.conf'), 'w')
+        mpdconf.write("password=topsecretpassword")
+        mpdconf.close()
 
         # make sure we're using the right mympirun installation...
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
