@@ -83,6 +83,7 @@ class TestEnd2End(unittest.TestCase):
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
         os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
         self.tmpdir = tempfile.mkdtemp()
+        os.environ['HOME'] = self.tmpdir
 
         # make sure we're using the right mympirun installation...
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
