@@ -225,6 +225,16 @@ class TestEnd2End(unittest.TestCase):
         self.assertEqual(out, ('\n'.join(['localhost'] * 4)))
 
 
+    def test_option_multi(self):
+        """Test --multi command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
+        cmd = "%s %s --setmpi impirun --multi 3 -- hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
+        # set_pbs_env() sets 2 cores, so *3 = 6
+        self.assertEqual(len(out.split('\n')), 6)
+        self.assertEqual(out, ('\n'.join(['localhost'] * 6)))
+
+
     def test_option_hybrid(self):
         """Test --hybrid command line option"""
         install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)

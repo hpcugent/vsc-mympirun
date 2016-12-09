@@ -235,14 +235,9 @@ class Sched(object):
 
     def set_multiplier(self):
         """set multiplier """
-
-        # get the working mode from options
-        hybrid = getattr(self.options, 'hybrid', None)
-        double = getattr(self.options, 'double', False)
-
-        if hybrid:
-            self.multiplier = hybrid
-        elif double:
+        if self.options.multi:
+            self.multiplier = self.options.multi
+        elif self.options.double:
             self.multiplier = 2
         else:
             self.multiplier = 1
@@ -256,14 +251,11 @@ class Sched(object):
         """
 
         res = []
-        if getattr(self.options, 'double', False):
-            res = self.nodes * 2
+        if self.options.hybrid is None:
+            res = self.nodes * self.multiplier
         else:
-            if self.options.hybrid is not None:
-                for uniquenode in nub(self.nodes):
-                    res.extend([uniquenode] * self.options.hybrid)
-            else:
-                res = self.nodes
+            for uniquenode in nub(self.nodes):
+                res.extend([uniquenode] * self.options.hybrid * self.multiplier)
 
         # reorder
         ordermode = getattr(self.options, 'order', None)
