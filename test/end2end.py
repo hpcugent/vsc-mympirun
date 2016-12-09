@@ -245,6 +245,8 @@ class TestEnd2End(unittest.TestCase):
         self.change_env(1)
         # intel mpi without hydra
         ec, out = run_simple("%s %s --setmpi impirun --universe 1 hostname" % (sys.executable, self.mympiscript))
+        os.environ['I_MPI_PROCESS_MANAGER'] = 'mpd'
+
         np_regex = re.compile('-np 1')
         ncpus_regex = re.compile('--ncpus=1')
         self.assertTrue(np_regex.search(out))
@@ -265,4 +267,3 @@ class TestEnd2End(unittest.TestCase):
         pbsnodefile.write('\n'.join(['localhost'] * cores))
         pbsnodefile.close()
         os.environ['PBS_NODEFILE'] = pbsnodefile.name
-        os.environ['I_MPI_PROCESS_MANAGER'] = 'mpd'
