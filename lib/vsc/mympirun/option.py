@@ -72,8 +72,7 @@ class MympirunOption(GeneralOption):
 
             "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
 
-            "double": ("Run double the amount of processes (eg for GAMESS; to change multiplier, use --hybrid)",
-                       None, "store_true", False),
+            "double": ("Run double the amount of processes (equivalent to --multi 2)", None, "store_true", False),
 
             "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
 
@@ -84,6 +83,8 @@ class MympirunOption(GeneralOption):
 
             "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate command)",
                               "str", "store", None),
+
+            "multi": ("Run the amount of processes multiplied by the given integer", "int", "store", None),
 
             "noenvmodules": ("Don't pass the environment modules variables",
                              None, "store_true", False),

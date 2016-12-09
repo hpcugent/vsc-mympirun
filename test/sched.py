@@ -148,11 +148,20 @@ class TestSched(unittest.TestCase):
 
         # --double: start 2 processes for every entry in the nodefile
         inst.options.double = True
+        inst.set_multiplier()
         inst.set_mpinodes()
         self.assertEqual(inst.mpinodes, nodes + nodes)
 
-        # --hybrid: start just one process on every physical node
+        # --multi: start n processes for every entry in the nodefile
+        inst.options.double = False
+        inst.options.multi = 3
+        inst.set_multiplier()
+        inst.set_mpinodes()
+        self.assertEqual(inst.mpinodes, nodes + nodes + nodes)
+
+        # --hybrid: start just n processes on every physical node
         inst.options.double = False
         inst.options.hybrid = 1
+        inst.set_multiplier()
         inst.set_mpinodes()
         self.assertEqual(inst.mpinodes, ['node1', 'node2', 'node3'])
