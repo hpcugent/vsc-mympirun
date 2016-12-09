@@ -251,11 +251,11 @@ class Sched(object):
         """
 
         res = []
-        if self.options.hybrid is not None:
+        if self.options.hybrid is None:
+            res = self.nodes * self.multiplier
+        else:
             for uniquenode in nub(self.nodes):
                 res.extend([uniquenode] * self.options.hybrid * self.multiplier)
-        else:
-            res = self.nodes * self.multiplier
 
         # reorder
         ordermode = getattr(self.options, 'order', None)
