@@ -269,7 +269,7 @@ class TestEnd2End(unittest.TestCase):
         """ Test the passing of (extra) variables """
         fake_mpirun_env = """#!/bin/bash
         echo 'fake mpirun called with args:' $@
-        echo `env`
+        env
         """
         install_fake_mpirun('mpirun', self.tmpdir, txt=fake_mpirun_env)
         command = ' '.join([
