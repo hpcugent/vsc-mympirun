@@ -287,9 +287,9 @@ class TestEnd2End(unittest.TestCase):
         regex = r'.*-envlist [^ ]*USER.*'
         self.assertTrue(regex.find(out), "Variablesprefix USER isn't passed to mympirun script env")
 
-        if os.environ.has_key('PYTHONPATH'):
-            regex = r'.*-envlist [^ ]*PYTHONPATH.*'
-            self.assertTrue(regex.find(out), "PYTHONPATH isn't passed to mympirun script env")
+        os.environ['PYTHONPATH'] = '/just/an/example:%s' % os.getenv('PYTHONPATH', '')
+        regex = r'PYTHONPATH=/just/an/example:.*'
+        self.assertTrue(regex.find(out), "PYTHONPATH isn't passed to mympirun script env correctly")
 
 
 

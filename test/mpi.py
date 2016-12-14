@@ -260,10 +260,9 @@ class TestMPI(TestCase):
     def test_set_mpiexec_opts_from_env(self):
         """test if mpiexec_opts_from_env only contains environment variables that start with the given prefix"""
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
-        check_keys = ['PATH', 'PYTHONPATH']
-        for key in check_keys:
-            if not os.environ.has_key(key):
-                os.environ[key] = "fake %s" % key
+
+        if not os.environ.has_key('PYTHONPATH'):
+            os.environ[key] = "/example:/test/123"
         mpi_instance.set_mpiexec_opts_from_env()
         prefixes = mpi_instance.OPTS_FROM_ENV_FLAVOR_PREFIX
         prefixes += mpi_instance.OPTS_FROM_ENV_BASE_PREFIX
@@ -275,8 +274,7 @@ class TestMPI(TestCase):
                             msg="%s does not start with a correct prefix, prefixes %s" % (env_var, prefixes))
             self.assertTrue(env_var in os.environ, msg="%s is not in os.environ, while it should be" % env_var)
 
-        for key in check_keys:
-            self.assertTrue(key in mpi_instance.mpiexec_opts_from_env)
+        self.assertTrue('PYTHONPATH' in mpi_instance.mpiexec_opts_from_env)
 
 
     def test_make_mpirun(self):
