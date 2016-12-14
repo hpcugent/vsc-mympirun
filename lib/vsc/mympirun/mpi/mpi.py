@@ -776,6 +776,7 @@ class MPI(object):
 
         # get all unique variables that are both in os.environ and in OPTS_FROM_ENV_BASE
         vars_to_pass = nub(filter(os.environ.has_key, self.OPTS_FROM_ENV_BASE))
+        self.mpiexec_opts_from_env.extend(vars_to_pass)
 
         prefixes = self.OPTS_FROM_ENV_FLAVOR_PREFIX + self.OPTS_FROM_ENV_BASE_PREFIX + self.options.variablesprefix
         for env_prefix in prefixes:
@@ -784,6 +785,8 @@ class MPI(object):
                 # to mpiexec_opts_from_env, but only if they aren't already in vars_to_pass
                 if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and env_var not in vars_to_pass:
                     self.mpiexec_opts_from_env.append(env_var)
+
+        self.log.debug("Vars passed: %s" % self.mpiexec_opts_from_env)
 
     def set_mpiexec_options(self):
         """Add various options to mpiexec_options."""
@@ -821,10 +824,10 @@ class MPI(object):
         if getattr(self, 'HYDRA_RMK', None) is not None:
             rmk = [x for x in self.HYDRA_RMK if x in self.hydra_info.get('rmk', [])]
             if len(rmk) > 0:
-                self.log.debug("make_mpiexe_hydra_options: HYDRA: rmk %s, using first", rmk)
+                self.log.debug("make_mpiexec_hydra_options: HYDRA: rmk %s, using first", rmk)
                 self.mpiexec_options.append("-rmk %s" % rmk[0])
             else:
-                self.log.debug("make_mpiexe_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s",
+                self.log.debug("make_mpiexec_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s",
                                self.HYDRA_RMK, self.hydra_info)
         else:
             launcher = None
@@ -833,7 +836,7 @@ class MPI(object):
                 if launcher:
                     self.log.debug("make_mpiexec_hydra_options: HYDRA: launcher %s, using first one", launcher)
                 else:
-                    self.log.debug("make_mpiexe_hydra_options: no launcher from HYDRA_LAUNCHER %s and hydra_info %s",
+                    self.log.debug("make_mpiexec_hydra_options: no launcher from HYDRA_LAUNCHER %s and hydra_info %s",
                                    self.HYDRA_LAUNCHER, self.hydra_info)
 
             launcher_exec = self.HYDRA_LAUNCHER_EXEC

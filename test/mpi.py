@@ -260,7 +260,7 @@ class TestMPI(TestCase):
 
         print("opts_from_env: %s" % mpi_instance.mpiexec_opts_from_env)
         for env_var in mpi_instance.mpiexec_opts_from_env:
-            self.assertTrue(env_var.startswith(tuple(prefixes)),
+            self.assertTrue(env_var.startswith(tuple(prefixes)) or env_var in mpi_instance.OPTS_FROM_ENV_BASE,
                             msg="%s does not start with a correct prefix, prefixes %s" % (env_var, prefixes))
             self.assertTrue(env_var in os.environ, msg="%s is not in os.environ, while it should be" % env_var)
 
