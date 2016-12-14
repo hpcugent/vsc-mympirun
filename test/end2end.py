@@ -293,3 +293,5 @@ class TestEnd2End(unittest.TestCase):
         pbsnodefile.write('\n'.join(['localhost'] * cores))
         pbsnodefile.close()
         os.environ['PBS_NODEFILE'] = pbsnodefile.name
+
+
