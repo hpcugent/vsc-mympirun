@@ -283,8 +283,14 @@ class TestEnd2End(unittest.TestCase):
 
         for key in nub(filter(os.environ.has_key, MPI.OPTS_FROM_ENV_BASE)):
             self.assertTrue(key in out, "%s is not in out" % key)
-        regex = r'.*-envlist [^ ]USER.*'
-        self.assertTrue(regex.find(out), "Couldn't find variablesprefix USER in script env")
+
+        regex = r'.*-envlist [^ ]*USER.*'
+        self.assertTrue(regex.find(out), "Variablesprefix USER isn't passed to mympirun script env")
+
+        if os.environ.has_key('PYTHONPATH'):
+            regex = r'.*-envlist [^ ]*PYTHONPATH.*'
+            self.assertTrue(regex.find(out), "PYTHONPATH isn't passed to mympirun script env")
+
 
 
     def change_env(self, cores):

@@ -54,6 +54,13 @@ class TestMPI(TestCase):
 
     """tests for vsc.mympirun.mpi.mpi functions"""
 
+    def setUp(self):
+        self.orig_environ = os.environ
+
+    def tearDown(self):
+        """Clean up after running test."""
+        os.environ = self.orig_environ
+
     #######################
     ## General functions ##
     #######################
@@ -253,6 +260,10 @@ class TestMPI(TestCase):
     def test_set_mpiexec_opts_from_env(self):
         """test if mpiexec_opts_from_env only contains environment variables that start with the given prefix"""
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
+        check_keys = ['PATH', 'PYTHONPATH']
+        for key in check_keys:
+            if not os.environ.has_key(key):
+                os.environ[key] = "fake %s" % key
         mpi_instance.set_mpiexec_opts_from_env()
         prefixes = mpi_instance.OPTS_FROM_ENV_FLAVOR_PREFIX
         prefixes += mpi_instance.OPTS_FROM_ENV_BASE_PREFIX
@@ -263,6 +274,10 @@ class TestMPI(TestCase):
             self.assertTrue(env_var.startswith(tuple(prefixes)) or env_var in mpi_instance.OPTS_FROM_ENV_BASE,
                             msg="%s does not start with a correct prefix, prefixes %s" % (env_var, prefixes))
             self.assertTrue(env_var in os.environ, msg="%s is not in os.environ, while it should be" % env_var)
+
+        for key in check_keys:
+            self.assertTrue(key in mpi_instance.mpiexec_opts_from_env)
+
 
     def test_make_mpirun(self):
         """test if make_mpirun correctly builds the complete mpirun command"""
