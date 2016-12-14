@@ -38,7 +38,10 @@ import stat
 import sys
 import tempfile
 import unittest
+from vsc.utils.missing import nub
 from vsc.utils.run import run_simple
+
+from vsc.mympirun.mpi.mpi import MPI
 from sched import set_PBS_env, cleanup_PBS_env
 
 
@@ -271,9 +274,40 @@ class TestEnd2End(unittest.TestCase):
         # re-set pbs environment
         set_PBS_env()
 
+
+    def test_env_variables(self):
+        """ Test the passing of (extra) variables """
+        fake_mpirun_env = """#!/bin/bash
+        echo 'fake mpirun called with args:' $@
+        env
+        """
+        install_fake_mpirun('mpirun', self.tmpdir, txt=fake_mpirun_env)
+        command = ' '.join([
+            sys.executable,
+            self.mympiscript,
+            "--setmpi impirun",
+            "--variablesprefix=USER",
+            "hostname",
+        ])
+        ec, out = run_simple(command)
+
+        for key in nub(filter(os.environ.has_key, MPI.OPTS_FROM_ENV_BASE)):
+            self.assertTrue(key in out, "%s is not in out" % key)
+
+        regex = r'.*-envlist [^ ]*USER.*'
+        self.assertTrue(regex.find(out), "Variablesprefix USER isn't passed to mympirun script env")
+
+        os.environ['PYTHONPATH'] = '/just/an/example:%s' % os.getenv('PYTHONPATH', '')
+        regex = r'PYTHONPATH=/just/an/example:.*'
+        self.assertTrue(regex.find(out), "PYTHONPATH isn't passed to mympirun script env correctly")
+
+
+
     def change_env(self, cores):
         """Helper method for changing the number of cores in the machinefile"""
         pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
         pbsnodefile.write('\n'.join(['localhost'] * cores))
         pbsnodefile.close()
         os.environ['PBS_NODEFILE'] = pbsnodefile.name
+
+

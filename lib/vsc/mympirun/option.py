@@ -123,7 +123,7 @@ class MympirunOption(GeneralOption):
 
             "socket": ("Force socket device", None, "store_true", None),
 
-            "ssh": ("Force ssh for mpd startup (will try to use optimised  method by default)",
+            "ssh": ("Force ssh for mpd startup (will try to use optimised method by default)",
                     None, "store_false", True),
 
             "stats": ("Set MPI statistics level", "int", "store", 0),
