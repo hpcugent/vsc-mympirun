@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2016 Ghent University
+# Copyright 2012-2017 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -32,8 +32,10 @@ from IPy import IP
 import os
 import pkgutil
 import re
+import shutil
 import stat
 import string
+import tempfile
 import unittest
 from vsc.install.testing import TestCase
 from vsc.utils.run import run_simple
@@ -56,10 +58,13 @@ class TestMPI(TestCase):
 
     def setUp(self):
         self.orig_environ = os.environ
+        self.tmpdir = tempfile.mkdtemp()
+        os.environ['HOME'] = self.tmpdir
 
     def tearDown(self):
         """Clean up after running test."""
         os.environ = self.orig_environ
+        shutil.rmtree(self.tmpdir)
 
     #######################
     ## General functions ##
@@ -335,3 +340,12 @@ class TestMPI(TestCase):
             universe_ppn = inst.get_universe_ncpus()
             self.assertEqual(universe_ppn, options[opt])
 
+    def test_make_mympirundir(self):
+        """Test if basepaths are different on every run"""
+        basepaths = set()
+        for i in range(10):
+            inst = getinstance(mpim.MPI, Local, MympirunOption())
+            inst.make_mympirundir()
+            basepaths.add(inst.mympirundir)
+
+        self.assertEqual(len(basepaths), 10)

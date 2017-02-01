@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2016 Ghent University
+# Copyright 2012-2017 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -302,12 +302,9 @@ class TestEnd2End(unittest.TestCase):
         self.assertTrue(regex.find(out), "PYTHONPATH isn't passed to mympirun script env correctly")
 
 
-
     def change_env(self, cores):
         """Helper method for changing the number of cores in the machinefile"""
         pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
         pbsnodefile.write('\n'.join(['localhost'] * cores))
         pbsnodefile.close()
         os.environ['PBS_NODEFILE'] = pbsnodefile.name
-
-
