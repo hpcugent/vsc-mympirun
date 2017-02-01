@@ -32,6 +32,7 @@ from IPy import IP
 import os
 import pkgutil
 import re
+import shutil
 import stat
 import string
 import tempfile
