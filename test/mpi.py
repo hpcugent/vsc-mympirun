@@ -34,6 +34,7 @@ import pkgutil
 import re
 import stat
 import string
+import tempfile
 import unittest
 from vsc.install.testing import TestCase
 from vsc.utils.run import run_simple
@@ -56,10 +57,12 @@ class TestMPI(TestCase):
 
     def setUp(self):
         self.orig_environ = os.environ
+        self.tmpdir = tempfile.mkdtemp()
 
     def tearDown(self):
         """Clean up after running test."""
         os.environ = self.orig_environ
+        shutil.rmtee(self.tmpdir)
 
     #######################
     ## General functions ##
@@ -337,6 +340,7 @@ class TestMPI(TestCase):
 
     def test_make_mympirundir(self):
         """Test if basepaths are different on every run"""
+        os.environ['HOME'] = self.tmpdir
         basepaths = set()
         for i in range(10):
             inst = getinstance(mpim.MPI, Local, MympirunOption())
