@@ -59,6 +59,7 @@ class TestMPI(TestCase):
     def setUp(self):
         self.orig_environ = os.environ
         self.tmpdir = tempfile.mkdtemp()
+        os.environ['HOME'] = self.tmpdir
 
     def tearDown(self):
         """Clean up after running test."""
@@ -341,7 +342,6 @@ class TestMPI(TestCase):
 
     def test_make_mympirundir(self):
         """Test if basepaths are different on every run"""
-        os.environ['HOME'] = self.tmpdir
         basepaths = set()
         for i in range(10):
             inst = getinstance(mpim.MPI, Local, MympirunOption())
