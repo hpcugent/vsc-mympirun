@@ -335,3 +335,12 @@ class TestMPI(TestCase):
             universe_ppn = inst.get_universe_ncpus()
             self.assertEqual(universe_ppn, options[opt])
 
+    def test_make_mympirundir(self):
+        """Test if basepaths are different on every run"""
+        basepaths = set()
+        for i in range(10):
+            inst = getinstance(mpim.MPI, Local, MympirunOption())
+            inst.make_mympirundir()
+            basepaths.add(inst.mympirundir)
+
+        self.assertEqual(len(basepaths), 10)
