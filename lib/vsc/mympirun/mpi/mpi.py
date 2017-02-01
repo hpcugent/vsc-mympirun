@@ -606,7 +606,9 @@ class MPI(object):
         if not os.path.exists(basepath):
             self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
 
-        self.mympirunbasedir = os.path.join(basepath, '.mympirun')
+        # add random 6-char salt to basepath
+        randstr = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(6))
+        self.mympirunbasedir = os.path.join(basepath, '.mympirun_%s' % randstr)
 
         total_size = 0
         for dirpath, _, filenames in os.walk(self.mympirunbasedir):
