@@ -63,7 +63,7 @@ class TestMPI(TestCase):
     def tearDown(self):
         """Clean up after running test."""
         os.environ = self.orig_environ
-        shutil.rmtee(self.tmpdir)
+        shutil.rmtree(self.tmpdir)
 
     #######################
     ## General functions ##
