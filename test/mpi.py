@@ -320,6 +320,7 @@ class TestMPI(TestCase):
         self.assertEqual(mpim.FAKE_SUBDIRECTORY_NAME, FAKE_SUBDIRECTORY_NAME)
 
     def test_get_universe_ncpus(self):
+        """ Test mpinode scheduling for --universe option """
         inst = getinstance(mpim.MPI, Local, MympirunOption())
         inst.nodes = [
             'node1',
@@ -341,17 +342,9 @@ class TestMPI(TestCase):
             self.assertEqual(universe_ppn, options[opt])
 
     def test_get_hybrid_ncpus(self):
+        """ Test mpinode scheduling for --hybrid option """
         inst = getinstance(mpim.MPI, Local, MympirunOption())
-        inst.nodes = [
-            'node1',
-            'node1',
-            'node1',
-            'node1',
-            'node2',
-            'node2',
-            'node2',
-            'node2',
-        ]
+        inst.nodes = ['node1']*4 + ['node2']*4
         options = range(1,5)
         for opt in options:
             inst.options.hybrid = opt
