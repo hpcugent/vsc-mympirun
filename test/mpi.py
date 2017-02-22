@@ -345,7 +345,7 @@ class TestMPI(TestCase):
         """ Test mpinode scheduling for --hybrid option """
         inst = getinstance(mpim.MPI, Local, MympirunOption())
         inst.nodes = ['node1']*4 + ['node2']*4
-        options = range(1,5)
+        options = range(1,9)
         for opt in options:
             inst.options.hybrid = opt
             inst.set_ppn()
