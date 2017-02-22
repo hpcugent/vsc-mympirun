@@ -340,6 +340,28 @@ class TestMPI(TestCase):
             universe_ppn = inst.get_universe_ncpus()
             self.assertEqual(universe_ppn, options[opt])
 
+    def test_get_hybrid_ncpus(self):
+        inst = getinstance(mpim.MPI, Local, MympirunOption())
+        inst.nodes = [
+            'node1',
+            'node1',
+            'node1',
+            'node1',
+            'node2',
+            'node2',
+            'node2',
+            'node2',
+        ]
+        options = range(1,5)
+        for opt in options:
+            inst.options.hybrid = opt
+            inst.set_ppn()
+            inst.set_mpinodes()
+            hybrid_ppn = inst.mpinodes
+            self.assertEqual(hybrid_ppn.count('node1'), opt)
+            self.assertEqual(hybrid_ppn.count('node2'), opt)
+
+
     def test_make_mympirundir(self):
         """Test if basepaths are different on every run"""
         basepaths = set()
