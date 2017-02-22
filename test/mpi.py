@@ -320,6 +320,7 @@ class TestMPI(TestCase):
         self.assertEqual(mpim.FAKE_SUBDIRECTORY_NAME, FAKE_SUBDIRECTORY_NAME)
 
     def test_get_universe_ncpus(self):
+        """ Test mpinode scheduling for --universe option """
         inst = getinstance(mpim.MPI, Local, MympirunOption())
         inst.nodes = [
             'node1',
@@ -339,6 +340,20 @@ class TestMPI(TestCase):
             inst.set_mpinodes()
             universe_ppn = inst.get_universe_ncpus()
             self.assertEqual(universe_ppn, options[opt])
+
+    def test_get_hybrid_ncpus(self):
+        """ Test mpinode scheduling for --hybrid option """
+        inst = getinstance(mpim.MPI, Local, MympirunOption())
+        inst.nodes = ['node1']*4 + ['node2']*4
+        options = range(1,9)
+        for opt in options:
+            inst.options.hybrid = opt
+            inst.set_ppn()
+            inst.set_mpinodes()
+            hybrid_ppn = inst.mpinodes
+            self.assertEqual(hybrid_ppn.count('node1'), opt)
+            self.assertEqual(hybrid_ppn.count('node2'), opt)
+
 
     def test_make_mympirundir(self):
         """Test if basepaths are different on every run"""
