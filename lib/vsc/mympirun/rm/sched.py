@@ -49,6 +49,14 @@ def what_sched(requested):
                 return sched, found_sched
         LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
 
+    # if PBS_NODEFILE is not present, use local scheduler
+    filename = os.environ.get('PBS_NODEFILE', None)
+    if filename is None:
+        for sched in found_sched:
+            if sched._is_sched_for("local"):
+                LOGGER.debug("PBS_NODEFILE not found, using local scheduler")
+                return sched, found_sched
+
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
         if sched.SCHED_ENVIRON_ID in os.environ:
@@ -59,7 +67,6 @@ def what_sched(requested):
         LOGGER.debug("No scheduler found in environment, trying local")
         if sched._is_sched_for("local"):
             return sched, found_sched
-
 
     # if there is no local scheduler, return None
     return None, found_sched
