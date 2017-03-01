@@ -70,8 +70,8 @@ def what_sched(requested):
 def get_local_sched(found_sched):
     """Helper function to get local scheduler (or None, if there is no local scheduler)"""
     for sched in found_sched:
-            if sched._is_sched_for("local"):
-                return sched
+        if sched._is_sched_for("local"):
+            return sched
 
 
 class Sched(object):

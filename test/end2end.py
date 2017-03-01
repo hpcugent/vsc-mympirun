@@ -38,6 +38,7 @@ import stat
 import sys
 import tempfile
 import unittest
+import vsc.mympirun.rm.sched as schedm
 from vsc.utils.missing import nub
 from vsc.utils.run import run_simple
 
@@ -308,3 +309,14 @@ class TestEnd2End(unittest.TestCase):
         pbsnodefile.write('\n'.join(['localhost'] * cores))
         pbsnodefile.close()
         os.environ['PBS_NODEFILE'] = pbsnodefile.name
+
+
+    def test_unset_nodefile(self):
+        self.assertTrue(schedm.what_sched(False)[0].__name__ == 'PBS')
+        nodefile = os.environ['PBS_NODEFILE']
+        del os.environ['PBS_NODEFILE']
+        # fall back to local if PBS_NODEFILE is not available
+        self.assertTrue(schedm.what_sched(False)[0].__name__ == 'Local')
+
+        # reset nodefile for proper test cleanup
+        os.environ['PBS_NODEFILE'] = nodefile
