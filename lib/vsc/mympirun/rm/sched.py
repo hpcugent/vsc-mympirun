@@ -42,6 +42,9 @@ def what_sched(requested):
     # The coupler is also a subclass of sched, but we don't want it
     found_sched = [x for x in get_subclasses(Sched) if x.__name__ != 'Coupler']
 
+    # Get local scheduler
+    local_sched = get_local_sched(found_sched)
+
     # first, try to use the scheduler that was requested
     if requested:
         for sched in found_sched:
@@ -55,14 +58,18 @@ def what_sched(requested):
             return sched, found_sched
 
     # If that fails, try to force the local scheduler
+    LOGGER.debug("No scheduler found in environment, trying local")
+    return local_sched, found_sched
+
+
+def get_local_sched(found_sched):
+    """Helper function to get local scheduler (or None, if there is no local scheduler)"""
+    res = None
     for sched in found_sched:
-        LOGGER.debug("No scheduler found in environment, trying local")
         if sched._is_sched_for("local"):
-            return sched, found_sched
-
-
-    # if there is no local scheduler, return None
-    return None, found_sched
+            res = sched
+            break
+    return res
 
 
 class Sched(object):

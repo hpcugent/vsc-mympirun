@@ -166,3 +166,9 @@ class TestSched(unittest.TestCase):
         inst.set_multiplier()
         inst.set_mpinodes()
         self.assertEqual(inst.mpinodes, ['node1', 'node2', 'node3'])
+
+    def test_get_local_sched(self):
+        """ Test get_local_sched function """
+        self.assertEqual(schedm.get_local_sched(SCHEDDICT.values()), Local)
+        self.assertEqual(schedm.get_local_sched([]), None)
+
