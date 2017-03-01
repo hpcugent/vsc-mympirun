@@ -36,4 +36,3 @@ class Scoop(Local):
       - will use the amount of cores found on localhost.
     """
     _sched_for = ['scoop']
-    SCHED_ENVIRON_ID = 'SCOOP_JOBID'  # with Local, this is optional

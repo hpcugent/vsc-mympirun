@@ -54,7 +54,7 @@ def what_sched(requested):
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
-        if sched.SCHED_ENVIRON_ID in os.environ:
+        if sched.SCHED_NODEFILE in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
             return sched, found_sched
 
     # If that fails, try to force the local scheduler
@@ -78,6 +78,7 @@ class Sched(object):
     _sched_for = []  # classname is default added
     _sched_environ_test = []
     SCHED_ENVIRON_ID = None
+    SCHED_NODEFILE = None
 
     # if the SCHED_ENVIRON_ID is not found, create one yourself
     AUTOGENERATE_JOBID = False
@@ -160,16 +161,15 @@ class Sched(object):
             self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
         if self.sched_id is None:
-            if self.SCHED_ENVIRON_ID is not None:
-                if self.AUTOGENERATE_JOBID:
-                    self.log.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
-                                  self.SCHED_ENVIRON_ID)
-                    self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
-                                                        random.randint(0, 10 ** 5 - 1))
-                    self.log.debug("set_sched_id: using generated id %s", self.sched_id)
-                else:
-                    self.log.raiseException("set_sched_id: failed to get id from environment variable %s" %
-                                            self.SCHED_ENVIRON_ID)
+            if self.AUTOGENERATE_JOBID:
+                self.log.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
+                              self.SCHED_ENVIRON_ID)
+                self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
+                                                    random.randint(0, 10 ** 5 - 1))
+                self.log.debug("set_sched_id: using generated id %s", self.sched_id)
+            else:
+                self.log.raiseException("set_sched_id: failed to get id from environment variable %s" %
+                                        self.SCHED_ENVIRON_ID)
 
     def set_cores_per_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""
