@@ -170,5 +170,5 @@ class TestSched(unittest.TestCase):
     def test_get_local_sched(self):
         """ Test get_local_sched function """
         self.assertEqual(schedm.get_local_sched(SCHEDDICT.values()), Local)
-        self.assertIsNone(schedm.get_local_sched([]))
+        self.assertEqual(schedm.get_local_sched([]), None)
 
