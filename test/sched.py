@@ -166,3 +166,10 @@ class TestSched(unittest.TestCase):
         inst.set_multiplier()
         inst.set_mpinodes()
         self.assertEqual(inst.mpinodes, ['node1', 'node2', 'node3'])
+
+    def test_unset_nodefile(self):
+        del os.environ['PBS_NODEFILE']
+        inst = getinstance(mpim.MPI, None, MympirunOption())
+        print inst
+
+

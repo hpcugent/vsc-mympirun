@@ -42,6 +42,9 @@ def what_sched(requested):
     # The coupler is also a subclass of sched, but we don't want it
     found_sched = [x for x in get_subclasses(Sched) if x.__name__ != 'Coupler']
 
+    # Get local scheduler
+    local_sched = get_local_sched(found_sched)
+
     # first, try to use the scheduler that was requested
     if requested:
         for sched in found_sched:
@@ -50,12 +53,9 @@ def what_sched(requested):
         LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
 
     # if PBS_NODEFILE is not present, use local scheduler
-    filename = os.environ.get('PBS_NODEFILE', None)
-    if filename is None:
-        for sched in found_sched:
-            if sched._is_sched_for("local"):
-                LOGGER.debug("PBS_NODEFILE not found, using local scheduler")
-                return sched, found_sched
+    if not os.getenv('PBS_NODEFILE'):
+        LOGGER.debug("PBS_NODEFILE not found, using local scheduler")
+        return local_sched, found_sched
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
@@ -63,13 +63,15 @@ def what_sched(requested):
             return sched, found_sched
 
     # If that fails, try to force the local scheduler
-    for sched in found_sched:
-        LOGGER.debug("No scheduler found in environment, trying local")
-        if sched._is_sched_for("local"):
-            return sched, found_sched
+    LOGGER.debug("No scheduler found in environment, trying local")
+    return local_sched, found_sched
 
-    # if there is no local scheduler, return None
-    return None, found_sched
+
+def get_local_sched(found_sched):
+    """Helper function to get local scheduler (or None, if there is no local scheduler)"""
+    for sched in found_sched:
+            if sched._is_sched_for("local"):
+                return sched
 
 
 class Sched(object):
