@@ -43,6 +43,8 @@ from vsc.utils.missing import nub
 from vsc.utils.run import run_simple
 
 from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.rm.local import Local
+from vsc.mympirun.rm.pbs import PBS
 from sched import set_PBS_env, cleanup_PBS_env
 
 
@@ -312,11 +314,11 @@ class TestEnd2End(unittest.TestCase):
 
 
     def test_unset_nodefile(self):
-        self.assertTrue(schedm.what_sched(False)[0].__name__ == 'PBS')
+        self.assertEqual(schedm.what_sched(False)[0], PBS)
         nodefile = os.environ['PBS_NODEFILE']
         del os.environ['PBS_NODEFILE']
         # fall back to local if PBS_NODEFILE is not available
-        self.assertTrue(schedm.what_sched(False)[0].__name__ == 'Local')
+        self.assertEqual(schedm.what_sched(False)[0], Local)
 
         # reset nodefile for proper test cleanup
         os.environ['PBS_NODEFILE'] = nodefile
