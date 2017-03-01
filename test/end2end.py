@@ -45,7 +45,7 @@ from vsc.utils.run import run_simple
 from vsc.mympirun.mpi.mpi import MPI
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
-from sched import set_PBS_env, cleanup_PBS_env
+from sched import set_PBS_env
 
 
 FAKE_MPIRUN = """#!/bin/bash
@@ -96,7 +96,7 @@ class TestEnd2End(unittest.TestCase):
 
     def tearDown(self):
         """Clean up after running test."""
-        cleanup_PBS_env(self.orig_environ)
+        os.environ = self.orig_environ
         shutil.rmtree(self.tmpdir)
 
     def test_serial(self):
@@ -307,10 +307,9 @@ class TestEnd2End(unittest.TestCase):
 
     def change_env(self, cores):
         """Helper method for changing the number of cores in the machinefile"""
-        pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
+        pbsnodefile = open(os.environ['PBS_NODEFILE'], 'w')
         pbsnodefile.write('\n'.join(['localhost'] * cores))
         pbsnodefile.close()
-        os.environ['PBS_NODEFILE'] = pbsnodefile.name
 
 
     def test_unset_nodefile(self):
@@ -319,6 +318,3 @@ class TestEnd2End(unittest.TestCase):
         del os.environ['PBS_NODEFILE']
         # fall back to local if PBS_NODEFILE is not available
         self.assertEqual(schedm.what_sched(False)[0], Local)
-
-        # reset nodefile for proper test cleanup
-        os.environ['PBS_NODEFILE'] = nodefile
