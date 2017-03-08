@@ -42,6 +42,9 @@ def what_sched(requested):
     # The coupler is also a subclass of sched, but we don't want it
     found_sched = [x for x in get_subclasses(Sched) if x.__name__ != 'Coupler']
 
+    # Get local scheduler
+    local_sched = get_local_sched(found_sched)
+
     # first, try to use the scheduler that was requested
     if requested:
         for sched in found_sched:
@@ -51,18 +54,22 @@ def what_sched(requested):
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
-        if sched.SCHED_ENVIRON_ID in os.environ:
+        if sched.SCHED_ENVIRON_NODEFILE in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
             return sched, found_sched
 
     # If that fails, try to force the local scheduler
+    LOGGER.debug("No scheduler found in environment, trying local")
+    return local_sched, found_sched
+
+
+def get_local_sched(found_sched):
+    """Helper function to get local scheduler (or None, if there is no local scheduler)"""
+    res = None
     for sched in found_sched:
-        LOGGER.debug("No scheduler found in environment, trying local")
         if sched._is_sched_for("local"):
-            return sched, found_sched
-
-
-    # if there is no local scheduler, return None
-    return None, found_sched
+            res = sched
+            break
+    return res
 
 
 class Sched(object):
@@ -71,6 +78,7 @@ class Sched(object):
     _sched_for = []  # classname is default added
     _sched_environ_test = []
     SCHED_ENVIRON_ID = None
+    SCHED_ENVIRON_NODEFILE = None
 
     # if the SCHED_ENVIRON_ID is not found, create one yourself
     AUTOGENERATE_JOBID = False
@@ -153,16 +161,15 @@ class Sched(object):
             self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
         if self.sched_id is None:
-            if self.SCHED_ENVIRON_ID is not None:
-                if self.AUTOGENERATE_JOBID:
-                    self.log.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
-                                  self.SCHED_ENVIRON_ID)
-                    self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
-                                                        random.randint(0, 10 ** 5 - 1))
-                    self.log.debug("set_sched_id: using generated id %s", self.sched_id)
-                else:
-                    self.log.raiseException("set_sched_id: failed to get id from environment variable %s" %
-                                            self.SCHED_ENVIRON_ID)
+            if self.AUTOGENERATE_JOBID:
+                self.log.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
+                              self.SCHED_ENVIRON_ID)
+                self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
+                                                    random.randint(0, 10 ** 5 - 1))
+                self.log.debug("set_sched_id: using generated id %s", self.sched_id)
+            else:
+                self.log.raiseException("set_sched_id: failed to get id from environment variable %s" %
+                                        self.SCHED_ENVIRON_ID)
 
     def set_cores_per_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""

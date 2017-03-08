@@ -38,11 +38,14 @@ import stat
 import sys
 import tempfile
 import unittest
+import vsc.mympirun.rm.sched as schedm
 from vsc.utils.missing import nub
 from vsc.utils.run import run_simple
 
 from vsc.mympirun.mpi.mpi import MPI
-from sched import set_PBS_env, cleanup_PBS_env
+from vsc.mympirun.rm.local import Local
+from vsc.mympirun.rm.pbs import PBS
+from sched import cleanup_PBS_env, set_PBS_env
 
 
 FAKE_MPIRUN = """#!/bin/bash
@@ -94,7 +97,6 @@ class TestEnd2End(unittest.TestCase):
     def tearDown(self):
         """Clean up after running test."""
         cleanup_PBS_env(self.orig_environ)
-        shutil.rmtree(self.tmpdir)
 
     def test_serial(self):
         """Test running of a serial command via mympirun."""
@@ -304,7 +306,19 @@ class TestEnd2End(unittest.TestCase):
 
     def change_env(self, cores):
         """Helper method for changing the number of cores in the machinefile"""
-        pbsnodefile = tempfile.NamedTemporaryFile(delete=False)
+        os.chmod(os.environ['PBS_NODEFILE'], stat.S_IWUSR)
+        pbsnodefile = open(os.environ['PBS_NODEFILE'], 'w')
         pbsnodefile.write('\n'.join(['localhost'] * cores))
         pbsnodefile.close()
-        os.environ['PBS_NODEFILE'] = pbsnodefile.name
+        os.chmod(os.environ['PBS_NODEFILE'], stat.S_IRUSR)
+
+
+    def test_unset_nodefile(self):
+        """ Test if sched falls back to Local if nodefile is not available """
+        self.assertEqual(schedm.what_sched(False)[0], PBS)
+        nodefile = os.environ['PBS_NODEFILE']
+        del os.environ['PBS_NODEFILE']
+        # fall back to local if PBS_NODEFILE is not available
+        self.assertEqual(schedm.what_sched(False)[0], Local)
+        # restore env
+        os.environ['PBS_NODEFILE'] = nodefile
