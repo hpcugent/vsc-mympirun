@@ -35,6 +35,7 @@ class PBS(Sched):
     """Torque/PBS based"""
     _sched_for = ['pbs', 'torque']
     SCHED_ENVIRON_ID = 'PBS_JOBID'
+    SCHED_ENVIRON_NODEFILE = 'PBS_NODEFILE'
 
     RSH_LARGE_CMD = 'pbsssh'
     RSH_LARGE_LIMIT = 'pbsssh'
