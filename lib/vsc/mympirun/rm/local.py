@@ -35,7 +35,8 @@ class Local(Sched):
       - will use the amount of cores found on localhost.
     """
     _sched_for = ['local']
-    SCHED_ENVIRON_ID = 'LOCAL_JOBID'
+    SCHED_ENVIRON_ID = None
+    SCHED_ENVIRON_NODEFILE = None
     AUTOGENERATE_JOBID = True
 
     HYDRA_LAUNCHER = ['local']
