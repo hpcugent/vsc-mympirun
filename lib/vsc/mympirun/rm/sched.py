@@ -54,7 +54,7 @@ def what_sched(requested):
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
-        if sched.SCHED_NODEFILE in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
+        if sched.SCHED_ENVIRON_NODEFILE in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
             return sched, found_sched
 
     # If that fails, try to force the local scheduler
@@ -78,7 +78,7 @@ class Sched(object):
     _sched_for = []  # classname is default added
     _sched_environ_test = []
     SCHED_ENVIRON_ID = None
-    SCHED_NODEFILE = None
+    SCHED_ENVIRON_NODEFILE = None
 
     # if the SCHED_ENVIRON_ID is not found, create one yourself
     AUTOGENERATE_JOBID = False

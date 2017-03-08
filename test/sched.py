@@ -55,21 +55,23 @@ os.environ['PBS_NUM_PPN'] = "1"
 
 def set_PBS_env():
     """ Set up the environment to recreate being in a hpc job """
-    if not os.path.isdir('/tmp/%s' % os.environ['USER']):
-        os.mkdir('/tmp/%s' % os.environ['USER'])
-    pbsnodefile = tempfile.NamedTemporaryFile(dir='/tmp/%s' % os.environ['USER'], delete=False)
+    tmpdir = tempfile.mkdtemp()
+    pbsnodefile = tempfile.NamedTemporaryFile(dir=tmpdir, delete=False)
     pbsnodefile.write("localhost\nlocalhost\n")
     pbsnodefile.close()
     os.environ['PBS_NODEFILE'] = pbsnodefile.name
+    # make $PBS_NODEFILE and directory it is in read-only, just like in the real world
     os.chmod(pbsnodefile.name, stat.S_IRUSR)
-    os.chmod(os.path.dirname(pbsnodefile.name), stat.S_IRUSR|stat.S_IXUSR)
+    # make location directory where $PBS_NODEFILE resides read-only
+    os.chmod(tmpdir, stat.S_IRUSR|stat.S_IXUSR)
 
 
 def cleanup_PBS_env(orig_env):
     """ cleanup the mock job environment """
-    os.chmod(pbsnodefile.name, stat.S_IWUSR)
-    os.chmod(os.path.dirname(pbsnodefile.name), stat.S_IWUSR|stat.S_IXUSR)
-    os.remove(os.environ['PBS_NODEFILE'])
+    # make $PBS_NODEFILE and the dir it is in writeable again after making it read-only in set_PBS_env
+    os.chmod(os.environ['PBS_NODEFILE'], stat.S_IWUSR)
+    os.chmod(os.path.dirname(os.environ['PBS_NODEFILE']), stat.S_IWUSR|stat.S_IRUSR|stat.S_IXUSR)
+    shutil.rmtree(os.path.dirname(os.environ['PBS_NODEFILE']))
     os.environ = orig_env
 
 
@@ -145,11 +147,12 @@ class TestSched(unittest.TestCase):
         ]
         pbs_class = SCHEDDICT['pbs']
         text = '\n'.join(nodes)
-        os.chmod(pbsnodefile.name, stat.S_IRUSR | stat.S_IWUSR)
+        os.chmod(os.environ['PBS_NODEFILE'], stat.S_IRUSR | stat.S_IWUSR)
         nodefile = open(os.environ['PBS_NODEFILE'], 'w')
         nodefile.seek(0)
         nodefile.write(text)
         nodefile.close()
+        os.chmod(os.environ['PBS_NODEFILE'], stat.S_IRUSR)
 
         # normal run
         inst = getinstance(mpim.MPI, pbs_class, MympirunOption())
