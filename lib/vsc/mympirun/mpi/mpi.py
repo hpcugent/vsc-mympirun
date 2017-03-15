@@ -831,12 +831,13 @@ class MPI(object):
                 self.log.debug("make_mpiexec_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s",
                                self.HYDRA_RMK, self.hydra_info)
 
+        launcher = None
         default_launcher = getattr(self, 'HYDRA_LAUNCHER', None)
         avail_launchers = self.hydra_info.get('launcher', [])
 
         if self.options.launcher:
             launcher = self.options.launcher
-            if not launcher in avail_launchers:
+            if launcher not in avail_launchers:
                 err = "Specified launcher %s does not exist, available launchers: %s"
                 self.log.raiseException(err % (launcher, avail_launchers))
 
@@ -844,7 +845,7 @@ class MPI(object):
             if default_launcher in avail_launchers:
                 self.log.debug("No launcher specified, using default launcher: %s" % default_launcher)
                 launcher = default_launcher
-            else:
+            elif avail_launchers:
                 launcher = avail_launchers[0]
                 self.log.debug("make_mpiexec_hydra_options: HYDRA: launcher %s, using first one", avail_launchers)
 

@@ -270,6 +270,7 @@ class TestEnd2End(unittest.TestCase):
         # intel mpi with hydra
         del os.environ['I_MPI_PROCESS_MANAGER']
         ec, out = run_simple("%s %s --setmpi ihmpirun --universe 1 hostname" % (sys.executable, self.mympiscript))
+        print "--------------- %s" % out
         self.assertTrue(np_regex.search(out))
         self.assertFalse(ncpus_regex.search(out))
 

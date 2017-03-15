@@ -93,7 +93,7 @@ class Sched(object):
     RSH_LARGE_LIMIT = 16
 
     HYDRA_RMK = []
-    HYDRA_LAUNCHER = ['pbsdsh']
+    HYDRA_LAUNCHER = 'pbsdsh'
     HYDRA_LAUNCHER_EXEC = None
 
     def __init__(self, options=None, **kwargs):
