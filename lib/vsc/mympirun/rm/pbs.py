@@ -37,9 +37,11 @@ class PBS(Sched):
     SCHED_ENVIRON_ID = 'PBS_JOBID'
     SCHED_ENVIRON_NODEFILE = 'PBS_NODEFILE'
 
+    # pbsssh is only used if native support for pbsdsh is not supported in the MPI library;
+    # e.g. Intel MPI v5.x and newer supports using pbsdsh as launcher natively, no need for pbsssh wrapper
     RSH_LARGE_CMD = 'pbsssh'
     RSH_LARGE_LIMIT = 'pbsssh'
-    HYDRA_LAUNCHER_EXEC = 'pbsssh' # only used when default pbsdsh is not available (under impi 5.0)
+    HYDRA_LAUNCHER_EXEC = 'pbsssh'
     HYDRA_RMK = ['pbs']
 
     def set_nodes(self):

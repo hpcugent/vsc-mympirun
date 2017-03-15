@@ -832,34 +832,35 @@ class MPI(object):
                                self.HYDRA_RMK, self.hydra_info)
 
         default_launcher = getattr(self, 'HYDRA_LAUNCHER', None)
+        avail_launchers = self.hydra_info.get('launcher', [])
+
         if self.options.launcher:
-            launcher = [self.options.launcher]
-            launcher.extend(default_launcher)
+            launcher = self.options.launcher
+            if not launcher in avail_launchers:
+                err = "Specified launcher %s does not exist, available launchers: %s"
+                self.log.raiseException(err % (launcher, avail_launchers))
+
         else:
-            launcher = default_launcher
+            if default_launcher in avail_launchers:
+                self.log.debug("No launcher specified, using default launcher: %s" % default_launcher)
+                launcher = default_launcher
+            else:
+                launcher = avail_launchers[0]
+                self.log.debug("make_mpiexec_hydra_options: HYDRA: launcher %s, using first one", avail_launchers)
 
         if launcher:
-            # filter out the launchers that are not in self.hydra_info
-            avail_launcher = [x for x in launcher if x in self.hydra_info.get('launcher', [])]
-            if avail_launcher:
-                self.log.debug("make_mpiexec_hydra_options: HYDRA: launcher %s, using first one", avail_launcher)
-                self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, avail_launcher[0]))
+            self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher))
 
+        # when using ssh launcher, use custom pbsssh wrapper as exec
+        if launcher=='ssh':
+            launcher_exec = getattr(self, 'HYDRA_LAUNCHER_EXEC', None)
+
+            if launcher_exec is not None:
+                self.log.debug("make_mpiexec_hydra_options: HYDRA using launcher exec %s", launcher_exec)
             else:
-                self.log.debug("make_mpiexec_hydra_options: no launcher from HYDRA_LAUNCHER %s and hydra_info %s",
-                                self.HYDRA_LAUNCHER, self.hydra_info)
+                launcher_exec = self.get_rsh()
 
-                launcher_exec = getattr(self, 'HYDRA_LAUNCHER_EXEC', None)
-
-                if launcher_exec is not None:
-                    self.log.debug("make_mpiexec_hydra_options: HYDRA using launcher exec %s", launcher_exec)
-                else:
-                    launcher_exec = self.get_rsh()
-
-                self.mpiexec_options.append("-%s-exec %s" % (self.HYDRA_LAUNCHER_NAME, launcher_exec))
-
-
-
+            self.mpiexec_options.append("-%s-exec %s" % (self.HYDRA_LAUNCHER_NAME, launcher_exec))
 
 
     def get_hydra_info(self):
