@@ -248,9 +248,10 @@ class IntelHydraMPI(IntelMPI):
             self.mpiexec_global_options['I_MPI_OFA_USE_XRC'] = 1
 
 
-class IntelHydraMPI_ver5(IntelHydraMPI):
+class IntelHydraMPIPbsdsh(IntelHydraMPI):
 
     """ MPI class for IntelMPI, with hydra and supporting pbsdsh """
-    # pbsdsh is supported from 5.0: http://scc.ustc.edu.cn/zlsc/tc4600/intel/2016.0.109/mpi/Release_Notes.txt
-    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("5.0.3.0"))
+    # pbsdsh is supported from Intel MPI 5.0.3:
+    # https://software.intel.com/sites/default/files/managed/b7/99/intelmpi-5.0-update3-releasenotes-linux.pdf
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("5.0.3"))
     HYDRA_LAUNCHER = 'pbsdsh'

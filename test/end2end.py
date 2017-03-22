@@ -277,8 +277,7 @@ class TestEnd2End(unittest.TestCase):
 
         # intel mpi with hydra
         del os.environ['I_MPI_PROCESS_MANAGER']
-        # specific launcher specified because there is no hydra_info in this test environment
-        cmd = "%s %s --setmpi ihmpirun --launcher pbsdsh --universe 1 hostname"
+        cmd = "%s %s --setmpi ihmpirun --universe 1 hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         self.assertTrue(np_regex.search(out))
         self.assertFalse(ncpus_regex.search(out))
@@ -345,8 +344,12 @@ class TestEnd2End(unittest.TestCase):
 
         # forced behavior
         ec, out = run_simple("%s %s --setmpi ihmpirun --launcher ssh hostname" % (sys.executable, self.mympiscript))
-        regex = r'-bootstrap ssh'
-        self.assertTrue(regex.find(out), "-bootstrap option is not ssh (with option)")
+        regexes = [
+            (r'-bootstrap ssh', "bootstrap option is not ssh (with option)"),
+            (r'-bootstrap-exec pbsssh', "bootstrap-exec is should be pbsssh when specified launcher is ssh")
+        ]
+        for regex in regexes:
+            self.assertTrue(regex[0].find(out), regex[1])
 
         # wrong behavior
         ec, out = run_simple("%s %s --setmpi ihmpirun --launcher doesnotexist hostname" % (sys.executable, self.mympiscript))
