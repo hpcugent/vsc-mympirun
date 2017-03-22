@@ -103,10 +103,13 @@ The options that can be passed to mympirun are:
 
 Manipulating the number of processes
 ''''''''''''''''''''''''''''''''''''
-With the options `double`, `multi`, `hybrid`, and `universe` you can manipulate the number of processes mympirun starts, different from the number of nodes.
+With the options `double`, `multi`, `hybrid`, and `universe` you can manipulate the number of processes mympirun starts, different from the default number of processes.
 
-* `double` starts twice the amount of processes.
-* `multi n` starts `n` times the amount of processes. So `mympirun --multi 4` will start 4 times the amount of processes. `double` and `multi 2` are equivalent.
-* `hybrid n` starts `n` processes on each physical node.
-* `universe n` starts `n` processes in total.
+* `--double` starts twice the amount of processes.
+* `--multi n` starts `n` times the amount of processes. So `mympirun --multi 4` will start 4 times the amount of processes. `--double` and `--multi 2` are equivalent.
+* `--hybrid n` starts `n` processes on each physical node.
+* `--universe n` starts `n` processes in total.
+
+
+
 
