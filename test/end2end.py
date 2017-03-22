@@ -269,8 +269,9 @@ class TestEnd2End(unittest.TestCase):
 
         # intel mpi with hydra
         del os.environ['I_MPI_PROCESS_MANAGER']
-        ec, out = run_simple("%s %s --setmpi ihmpirun --universe 1 hostname" % (sys.executable, self.mympiscript))
-        print "--------------- %s" % out
+        # specific launcher specified because there is no hydra_info in this test environment
+        cmd = "%s %s --setmpi ihmpirun --launcher pbsdsh --universe 1 hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         self.assertTrue(np_regex.search(out))
         self.assertFalse(ncpus_regex.search(out))
 
@@ -323,3 +324,11 @@ class TestEnd2End(unittest.TestCase):
         self.assertEqual(schedm.what_sched(False)[0], Local)
         # restore env
         os.environ['PBS_NODEFILE'] = nodefile
+
+
+    def test_launcher_opt(self):
+        """Test --launcher command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir)
+        ec, out = run_simple("%s %s --setmpi ihmpirun --launcher pbsdsh hostname" % (sys.executable, self.mympiscript))
+        regex = r'-bootstrap pbsdsh'
+        self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh")

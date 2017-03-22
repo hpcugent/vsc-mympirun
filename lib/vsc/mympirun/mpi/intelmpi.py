@@ -246,3 +246,11 @@ class IntelHydraMPI(IntelMPI):
             # force it
             self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:ofa'
             self.mpiexec_global_options['I_MPI_OFA_USE_XRC'] = 1
+
+
+class IntelHydraMPI_ver5(IntelHydraMPI):
+
+    """ MPI class for IntelMPI, with hydra and supporting pbsdsh """
+
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("5.0.0.0"))
+    HYDRA_LAUNCHER = 'pbsdsh'
