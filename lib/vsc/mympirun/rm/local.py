@@ -39,7 +39,7 @@ class Local(Sched):
     SCHED_ENVIRON_NODEFILE = None
     AUTOGENERATE_JOBID = True
 
-    HYDRA_LAUNCHER = ['local']
+    HYDRA_LAUNCHER = 'local'
 
     def set_nodes(self):
         """

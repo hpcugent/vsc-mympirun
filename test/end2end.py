@@ -356,3 +356,7 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         regex = r'WARNING .* Specified launcher doesnotexist does not exist'
         self.assertTrue(regex.find(out), "mympirun should warn for non-existing launcher")
+
+        cmd = "%s %s --setmpi ihmpirun --sched local hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
+        self.assertFalse("-bootstrap" in out, "using local scheduler, no bootstrap launcher should be specified: " + out)

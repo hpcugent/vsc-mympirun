@@ -847,7 +847,7 @@ class MPI(object):
             else:
                 self.log.raiseException("There is no launcher specified, and no default launcher found")
 
-        if launcher:
+        if launcher != 'local':
             self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher))
 
         # when using ssh launcher, use custom pbsssh wrapper as exec
