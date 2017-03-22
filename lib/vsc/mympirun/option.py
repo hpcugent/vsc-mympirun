@@ -76,6 +76,9 @@ class MympirunOption(GeneralOption):
 
             "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
 
+            "launcher": ("The launcher to be used by Hydra (used in recent Intel MPI versions (> 4.1))"
+                         "for example: ssh, pbsdsh, ..", "str", "store", None),
+
             "logtofile": ("redirect the logging of mympirun to a file (instead of stdout/stderr)",
                           "str", "store", None),
 

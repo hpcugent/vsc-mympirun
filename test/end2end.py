@@ -50,6 +50,14 @@ from sched import cleanup_PBS_env, set_PBS_env
 
 FAKE_MPIRUN = """#!/bin/bash
 echo 'fake mpirun called with args:' $@
+while test $# -gt 0
+do
+    case "$1" in
+        -info) echo "    Bootstrap servers available:             ssh rsh pdsh fork slum ll pbsdsh"
+            ;;
+    esac
+    shift
+done
 """
 
 FAKE_MPIRUN_MACHINEFILE = r"""#!/bin/bash
@@ -269,7 +277,8 @@ class TestEnd2End(unittest.TestCase):
 
         # intel mpi with hydra
         del os.environ['I_MPI_PROCESS_MANAGER']
-        ec, out = run_simple("%s %s --setmpi ihmpirun --universe 1 hostname" % (sys.executable, self.mympiscript))
+        cmd = "%s %s --setmpi ihmpirun --universe 1 hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         self.assertTrue(np_regex.search(out))
         self.assertFalse(ncpus_regex.search(out))
 
@@ -322,3 +331,32 @@ class TestEnd2End(unittest.TestCase):
         self.assertEqual(schedm.what_sched(False)[0], Local)
         # restore env
         os.environ['PBS_NODEFILE'] = nodefile
+
+
+    def test_launcher_opt(self):
+        """Test --launcher command line option"""
+        install_fake_mpirun('mpirun', self.tmpdir)
+
+        # default behavior
+        ec, out = run_simple("%s %s --setmpi ihmpirun hostname" % (sys.executable, self.mympiscript))
+        regex = r'-bootstrap pbsdsh'
+        self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh (default): " + out)
+
+        # forced behavior
+        ec, out = run_simple("%s %s --setmpi ihmpirun --launcher ssh hostname" % (sys.executable, self.mympiscript))
+        regexes = [
+            (r'-bootstrap ssh', "bootstrap option is not ssh (with option)"),
+            (r'-bootstrap-exec pbsssh', "bootstrap-exec is should be pbsssh when specified launcher is ssh")
+        ]
+        for regex in regexes:
+            self.assertTrue(regex[0].find(out), regex[1] + ": " + out)
+
+        # unknown launcher being specified only results in a warning (we allow specifying launchers that are not listed)
+        cmd = "%s %s --setmpi ihmpirun --launcher doesnotexist hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
+        regex = r'WARNING .* Specified launcher doesnotexist does not exist'
+        self.assertTrue(regex.find(out), "mympirun should warn for non-existing launcher")
+
+        cmd = "%s %s --setmpi ihmpirun --sched local hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
+        self.assertFalse("-bootstrap" in out, "using local scheduler, no bootstrap launcher should be specified: " + out)
