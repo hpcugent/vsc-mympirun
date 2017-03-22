@@ -840,7 +840,6 @@ class MPI(object):
             if launcher not in avail_launchers:
                 err = "Specified launcher %s does not exist, available launchers: %s"
                 self.log.warning(err % (launcher, avail_launchers))
-
         else:
             if default_launcher:
                 self.log.debug("No launcher specified, using default launcher: %s" % default_launcher)

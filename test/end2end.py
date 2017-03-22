@@ -349,9 +349,10 @@ class TestEnd2End(unittest.TestCase):
             (r'-bootstrap-exec pbsssh', "bootstrap-exec is should be pbsssh when specified launcher is ssh")
         ]
         for regex in regexes:
-            self.assertTrue(regex[0].find(out), regex[1])
+            self.assertTrue(regex[0].find(out), regex[1] + ": " + out)
 
-        # wrong behavior
-        ec, out = run_simple("%s %s --setmpi ihmpirun --launcher doesnotexist hostname" % (sys.executable, self.mympiscript))
+        # unknown launcher being specified only results in a warning (we allow specifying launchers that are not listed)
+        cmd = "%s %s --setmpi ihmpirun --launcher doesnotexist hostname"
+        ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         regex = r'WARNING .* Specified launcher doesnotexist does not exist'
         self.assertTrue(regex.find(out), "mympirun should warn for non-existing launcher")

@@ -249,7 +249,6 @@ class IntelHydraMPI(IntelMPI):
 
 
 class IntelHydraMPIPbsdsh(IntelHydraMPI):
-
     """ MPI class for IntelMPI, with hydra and supporting pbsdsh """
     # pbsdsh is supported from Intel MPI 5.0.3:
     # https://software.intel.com/sites/default/files/managed/b7/99/intelmpi-5.0-update3-releasenotes-linux.pdf
