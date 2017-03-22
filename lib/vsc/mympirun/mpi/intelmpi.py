@@ -251,6 +251,6 @@ class IntelHydraMPI(IntelMPI):
 class IntelHydraMPI_ver5(IntelHydraMPI):
 
     """ MPI class for IntelMPI, with hydra and supporting pbsdsh """
-
-    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("5.0.0.0"))
+    # pbsdsh is supported from 5.0: http://scc.ustc.edu.cn/zlsc/tc4600/intel/2016.0.109/mpi/Release_Notes.txt
+    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("5.0.3.0"))
     HYDRA_LAUNCHER = 'pbsdsh'

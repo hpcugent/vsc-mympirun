@@ -866,7 +866,6 @@ class MPI(object):
     def get_hydra_info(self):
         """Get a dict with hydra info."""
         reg_hydra_info = re.compile(r"^\s+(?P<key>\S[^:\n]*)\s*:(?P<value>.*?)\s*$", re.M)
-
         cmd = "mpirun -info"
         exitcode, out = run_simple(cmd)
         if exitcode > 0:

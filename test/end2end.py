@@ -50,6 +50,14 @@ from sched import cleanup_PBS_env, set_PBS_env
 
 FAKE_MPIRUN = """#!/bin/bash
 echo 'fake mpirun called with args:' $@
+while test $# -gt 0
+do
+    case "$1" in
+        -info) echo "    Bootstrap servers available:             ssh rsh pdsh fork slum ll pbsdsh"
+            ;;
+    esac
+    shift
+done
 """
 
 FAKE_MPIRUN_MACHINEFILE = r"""#!/bin/bash
@@ -329,6 +337,18 @@ class TestEnd2End(unittest.TestCase):
     def test_launcher_opt(self):
         """Test --launcher command line option"""
         install_fake_mpirun('mpirun', self.tmpdir)
-        ec, out = run_simple("%s %s --setmpi ihmpirun --launcher pbsdsh hostname" % (sys.executable, self.mympiscript))
+
+        # default behavior
+        ec, out = run_simple("%s %s --setmpi ihmpirun hostname" % (sys.executable, self.mympiscript))
         regex = r'-bootstrap pbsdsh'
-        self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh")
+        self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh (default)")
+
+        # forced behavior
+        ec, out = run_simple("%s %s --setmpi ihmpirun --launcher ssh hostname" % (sys.executable, self.mympiscript))
+        regex = r'-bootstrap ssh'
+        self.assertTrue(regex.find(out), "-bootstrap option is not ssh (with option)")
+
+        # wrong behavior
+        ec, out = run_simple("%s %s --setmpi ihmpirun --launcher doesnotexist hostname" % (sys.executable, self.mympiscript))
+        regex = r'WARNING .* Specified launcher doesnotexist does not exist'
+        self.assertTrue(regex.find(out), "mympirun should warn for non-existing launcher")
