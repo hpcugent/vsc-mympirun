@@ -340,7 +340,7 @@ class TestEnd2End(unittest.TestCase):
         # default behavior
         ec, out = run_simple("%s %s --setmpi ihmpirun hostname" % (sys.executable, self.mympiscript))
         regex = r'-bootstrap pbsdsh'
-        self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh (default)")
+        self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh (default): " + out)
 
         # forced behavior
         ec, out = run_simple("%s %s --setmpi ihmpirun --launcher ssh hostname" % (sys.executable, self.mympiscript))
