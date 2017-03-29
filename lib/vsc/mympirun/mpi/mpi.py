@@ -370,8 +370,9 @@ class MPI(object):
                     if mpirun_version_check and version:
                         res = mpirun_version_check(version)
                         LOGGER.debug("found $%s: %s => match for %s: %s" % (version_var_name, version, cls, res))
-                    elif mpirun_version_check:
+                    elif mpirun_version_check is None:
                         LOGGER.debug("no mpirun version provided, skipping version check")
+                        res = True
                     else:
                         LOGGER.debug("environment variable $%s not found, skipping version check" % version_var_name)
                 else:
