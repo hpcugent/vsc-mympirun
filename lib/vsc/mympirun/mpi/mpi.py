@@ -366,11 +366,12 @@ class MPI(object):
                     # next, check wheter version meets requirements (checked via _mpirun_version function)
                     version_var_name = 'EBVERSION' + mpiname.upper()
                     version = os.getenv(version_var_name)
-                    if not hasattr(cls, '_mpirun_version'):
-                        LOGGER.debug("no mpirun version provided, skipping version check")
-                    elif version:
-                        res = cls._mpirun_version(version)
+                    mpirun_version_check = getattr(cls, '_mpirun_version', None)
+                    if mpirun_version_check and version:
+                        res = mpirun_version_check(version)
                         LOGGER.debug("found $%s: %s => match for %s: %s" % (version_var_name, version, cls, res))
+                    elif mpirun_version_check:
+                        LOGGER.debug("no mpirun version provided, skipping version check")
                     else:
                         LOGGER.debug("environment variable $%s not found, skipping version check" % version_var_name)
                 else:
