@@ -38,7 +38,7 @@ class MVAPICH2Hydra(MPI):
     """An implementation of the MPI class for MVAPICH2 with Hydra"""
 
     _mpiscriptname_for = ['mhmpirun']
-    _mpirun_for = ['MVAPICH2']
+    _mpirun_for = 'MVAPICH2'
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '1.6.0', None))
 
     HYDRA = True
@@ -78,7 +78,7 @@ class MVAPICH2(MVAPICH2Hydra):
       - it uses the hydra interface and sligthly other mpdboot
     """
     _mpiscriptname_for = ['mmpirun']
-    _mpirun_for = ['MVAPICH2']
+    _mpirun_for = 'MVAPICH2'
     staticmethod(lambda ver: version_in_range(ver, None, '1.6.0'))
 
     HYDRA = False
@@ -113,7 +113,7 @@ class MPICH2Hydra(MVAPICH2Hydra):
     """An implementation of the MPI class for MPICH2 with Hydra"""
 
     _mpiscriptname_for = ['m2hmpirun']
-    _mpirun_for = ['MPICH2', 'mpich2']
+    _mpirun_for = 'MPICH2'
     staticmethod(lambda ver: version_in_range(ver, '1.4.0', None))
 
     OPTS_FROM_ENV_FLAVOR_PREFIX = ['MPICH']
@@ -131,7 +131,7 @@ class MPICH2(MVAPICH2):
     """An implementation of the MPI class for MPICH2"""
 
     _mpiscriptname_for = ['m2mpirun']
-    _mpirun_for = ['MPICH2', 'mpich2']
+    _mpirun_for = 'MPICH2'
     staticmethod(lambda ver: version_in_range(ver, None, '1.4.0'))
 
     OPTS_FROM_ENV_FLAVOR_PREFIX = ['MPICH']

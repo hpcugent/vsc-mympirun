@@ -288,7 +288,7 @@ class Sched(object):
 
         self.mpinodes = res
 
-    def isLocal(self):
+    def is_local(self):
         """
         Only returns True if scheduler is local.
         """

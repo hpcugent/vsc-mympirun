@@ -52,7 +52,7 @@ class IntelMPI(MPI):
     """An implementation of the MPI class for IntelMPI"""
 
     _mpiscriptname_for = ['impirun']
-    _mpirun_for = ['impi']
+    _mpirun_for = 'impi'
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, None, '4.1.0.0'))
 
     RUNTIMEOPTION = {

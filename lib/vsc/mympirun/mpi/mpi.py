@@ -107,7 +107,7 @@ def what_mpi(name):
     # mympirun was not called through a known alias, so find out which MPI
     # implementation the user has installed
     for mpi in supp_mpi_impl:
-        if mpi._is_mpirun_for(mpirun_path):
+        if mpi._is_mpirun_for():
             return scriptname, mpi, supp_mpi_impl
 
     # no specific flavor found, default to mpirun_path
@@ -335,32 +335,21 @@ class MPI(object):
 
     # factory methods for MPI
     @classmethod
-    def _is_mpirun_for(cls, mpirun_path):
+    def _is_mpirun_for(cls):
         """
         Check if this class provides support for the mpirun that was called.
 
         @param cls: the class that calls this function
-        @param mpirun_path: the path to the mpirun aka `which mpirun`
-
-        @return: true if $mpirun_path is defined as an mpirun implementation of $cls
+        @return: true if $EBVERSION is defined as an mpirun implementation of $cls
         """
 
-        # regex matches "cls._mpirun_for/version number"
-        reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
-                         ("|".join(cls._mpirun_for), os.sep))
-        reg_match = reg.search(mpirun_path)
-        LOGGER.debug("_is_mpirun_for(), reg_match: %s", reg_match)
-
-        if reg_match:
-            if cls._mpirun_version is None:
-                LOGGER.debug("no mpirun version provided, skipping version check")
-                return True
-            else:
-                # do version check (reg_match.group(1) is the version number)
-                LOGGER.debug("checking if mpirun version is equal or greater than required")
-                return cls._mpirun_version(reg_match.group(1))
+        vs = os.getenv('EBVERSION' + cls._mpirun_for.upper())
+        if vs:
+            return cls._mpirun_version(vs)
         else:
-            return False
+            LOGGER.debug("no mpirun version provided, skipping version check")
+            return True
+
 
     @classmethod
     def _is_mpiscriptname_for(cls, scriptname):
@@ -864,7 +853,7 @@ class MPI(object):
             else:
                 self.log.raiseException("There is no launcher specified, and no default launcher found")
 
-        if not self.isLocal():
+        if not self.is_local():
             self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher))
 
         # when using ssh launcher, use custom pbsssh wrapper as exec

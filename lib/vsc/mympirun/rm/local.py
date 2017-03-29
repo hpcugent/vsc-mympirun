@@ -52,7 +52,7 @@ class Local(Sched):
 
         self.log.debug("set_nodes: %s", self.nodes)
 
-    def isLocal(self):
+    def is_local(self):
         """
         Returns True if scheduler is local.
         """

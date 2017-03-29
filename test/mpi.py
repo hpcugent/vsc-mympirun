@@ -150,7 +150,7 @@ class TestMPI(TestCase):
             print("mpiscriptname: %s, path: %s, instance mpirun for: %s" %
                   (instance._mpiscriptname_for, val,
                    instance._mpirun_for))
-            self.assertTrue(instance._is_mpirun_for(val),
+            self.assertTrue(instance._is_mpirun_for(),
                             msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for, path: %s" %
                             (key, val))
 
