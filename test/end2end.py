@@ -65,7 +65,7 @@ machinefile=$(echo $@ | sed -e 's/.*-machinefile[ ]*\([^ ]*\).*/\1/g')
 cat $machinefile
 """
 
-def install_fake_mpirun(cmdname, path, txt=None):
+def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
     """Install fake mpirun command with given name in specified location"""
     fake_mpirun = os.path.join(path, cmdname)
     if not txt:
@@ -73,7 +73,7 @@ def install_fake_mpirun(cmdname, path, txt=None):
     open(fake_mpirun, 'w').write(txt)
     os.chmod(fake_mpirun, stat.S_IRUSR|stat.S_IXUSR)
     os.environ['PATH'] = '%s:%s' % (path, os.getenv('PATH', ''))
-    os.environ['EBVERSIONIMPI'] = '5.1'
+    os.environ['EBVERSION%s' % mpi_name] = mpi_version
 
 
 class TestEnd2End(unittest.TestCase):
@@ -111,7 +111,7 @@ class TestEnd2End(unittest.TestCase):
         """Test running of a serial command via mympirun."""
         print os.environ['PATH']
 
-        install_fake_mpirun('mpirun', self.tmpdir)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
         ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
         regex = re.compile("^fake mpirun called with args: .*hostname$")
@@ -120,7 +120,7 @@ class TestEnd2End(unittest.TestCase):
 
     def test_sched(self):
         """ Test --sched(type) option """
-        install_fake_mpirun('mpirun', self.tmpdir)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
         regex_tmpl = "^fake mpirun called with args: .*%s.* hostname$"
         testcases = {
             'impirun': "-genv I_MPI_DEVICE shm",
@@ -135,7 +135,7 @@ class TestEnd2End(unittest.TestCase):
 
     def test_output(self):
         """ Test --output option """
-        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN + "\necho 'fake mpirun error' >&2")
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN + "\necho 'fake mpirun error' >&2")
         f_out = os.path.join(self.tmpdir, "temp.out")
 
         ec, out = run_simple("%s %s --setmpi impirun --output %s hostname" % (sys.executable, self.mympiscript, f_out))
@@ -160,7 +160,7 @@ class TestEnd2End(unittest.TestCase):
             "sleep 3"
         ])
 
-        install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=no_output_mpirun)
         cmd = ' '.join([
             sys.executable,
             self.mympiscript,
@@ -189,7 +189,7 @@ class TestEnd2End(unittest.TestCase):
 
         f_out = os.path.join(self.tmpdir, "temp.out")
 
-        install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=no_output_mpirun)
         cmd = ' '.join([
             sys.executable,
             self.mympiscript,
@@ -213,7 +213,7 @@ class TestEnd2End(unittest.TestCase):
             "sleep 4",
         ])
 
-        install_fake_mpirun('mpirun', self.tmpdir, txt=no_output_mpirun)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=no_output_mpirun)
         # --output-check-fatal is True by default
         cmd = ' '.join([
             sys.executable,
@@ -231,7 +231,7 @@ class TestEnd2End(unittest.TestCase):
 
     def test_option_double(self):
         """Test --double command line option"""
-        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
         cmd = "%s %s --setmpi impirun --double hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         # set_pbs_env() sets 2 cores, so double is 4
@@ -241,7 +241,7 @@ class TestEnd2End(unittest.TestCase):
 
     def test_option_multi(self):
         """Test --multi command line option"""
-        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
         cmd = "%s %s --setmpi impirun --multi 3 -- hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         # set_pbs_env() sets 2 cores, so *3 = 6
@@ -251,7 +251,7 @@ class TestEnd2End(unittest.TestCase):
 
     def test_option_hybrid(self):
         """Test --hybrid command line option"""
-        install_fake_mpirun('mpirun', self.tmpdir, txt=FAKE_MPIRUN_MACHINEFILE)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
         ec, out = run_simple("%s %s --setmpi impirun --hybrid 5 hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(len(out.split('\n')), 5)
         self.assertEqual(out, ('\n'.join(['localhost'] * 5)))
@@ -259,7 +259,7 @@ class TestEnd2End(unittest.TestCase):
 
     def test_option_universe(self):
         """Test --universe command line option"""
-        install_fake_mpirun('mpirun', self.tmpdir)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '4.1.2')
 
         self.change_env(5)
         ec, out = run_simple("%s %s --setmpi impirun --universe 4 hostname" % (sys.executable, self.mympiscript))
@@ -278,7 +278,8 @@ class TestEnd2End(unittest.TestCase):
 
         # intel mpi with hydra
         del os.environ['I_MPI_PROCESS_MANAGER']
-        cmd = "%s %s --setmpi ihmpirun --universe 1 hostname"
+        os.environ['EBVERSIONIMPI'] = '5.1.2'
+        cmd = "%s %s --setmpi impirun --universe 1 hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         self.assertTrue(np_regex.search(out))
         self.assertFalse(ncpus_regex.search(out))
@@ -293,7 +294,7 @@ class TestEnd2End(unittest.TestCase):
         echo 'fake mpirun called with args:' $@
         env
         """
-        install_fake_mpirun('mpirun', self.tmpdir, txt=fake_mpirun_env)
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=fake_mpirun_env)
         command = ' '.join([
             sys.executable,
             self.mympiscript,
@@ -334,21 +335,25 @@ class TestEnd2End(unittest.TestCase):
         os.environ['PBS_NODEFILE'] = nodefile
 
 
-    def test_launcher_opt(self):
-        """Test --launcher command line option"""
-        install_fake_mpirun('mpirun', self.tmpdir)
+    def test_launcher_opt_1(self):
+        """Test --launcher command line option with impi < 5.0.3"""
+
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '4.2')
+
+        ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
+        regex = r'-bootstrap ssh'
+        self.assertTrue(regex.find(out), "-bootstrap option is not ssh (default for impi/4.2)" + out)
+
+
+    def test_launcher_opt_2(self):
+        """Test --launcher command line option with impi > 5.0.3"""
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
 
         # default behavior
         ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
         regex = r'-bootstrap pbsdsh'
         self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh (default for impi/5.1): " + out)
 
-        os.environ['EBVERSIONIMPI'] = '4.2'
-        ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
-        regex = r'-bootstrap ssh'
-        self.assertTrue(regex.find(out), "-bootstrap option is not ssh (default for impi/4.2)" + out)
-
-        os.environ['EBVERSIONIMPI'] = '5.1'
         # forced behavior
         ec, out = run_simple("%s %s --setmpi impirun --launcher ssh hostname" % (sys.executable, self.mympiscript))
         regexes = [
