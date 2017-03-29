@@ -73,7 +73,7 @@ def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
     open(fake_mpirun, 'w').write(txt)
     os.chmod(fake_mpirun, stat.S_IRUSR|stat.S_IXUSR)
     os.environ['PATH'] = '%s:%s' % (path, os.getenv('PATH', ''))
-    os.environ['EBVERSION%s' % mpi_name] = mpi_version
+    os.environ['EBVERSION%s' % mpi_name.upper()] = mpi_version
 
 
 class TestEnd2End(unittest.TestCase):
@@ -138,7 +138,7 @@ class TestEnd2End(unittest.TestCase):
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN + "\necho 'fake mpirun error' >&2")
         f_out = os.path.join(self.tmpdir, "temp.out")
 
-        ec, out = run_simple("%s %s --setmpi impirun --output %s hostname" % (sys.executable, self.mympiscript, f_out))
+        ec, out = run_simple("%s %s --output %s hostname" % (sys.executable, self.mympiscript, f_out))
 
         self.assertTrue(os.path.isfile(f_out))
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
@@ -164,7 +164,6 @@ class TestEnd2End(unittest.TestCase):
         cmd = ' '.join([
             sys.executable,
             self.mympiscript,
-            "--setmpi impirun",
             "--output-check-timeout 2",
             "--disable-output-check-fatal",
             "hostname",
@@ -193,7 +192,6 @@ class TestEnd2End(unittest.TestCase):
         cmd = ' '.join([
             sys.executable,
             self.mympiscript,
-            "--setmpi impirun",
             "--output %s" % f_out,
             "--output-check-timeout 2",
             "--disable-output-check-fatal",
@@ -218,7 +216,6 @@ class TestEnd2End(unittest.TestCase):
         cmd = ' '.join([
             sys.executable,
             self.mympiscript,
-            "--setmpi impirun",
             "--output-check-timeout 2",
             "hostname",
             ])
@@ -259,16 +256,16 @@ class TestEnd2End(unittest.TestCase):
 
     def test_option_universe(self):
         """Test --universe command line option"""
-        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '4.1.2')
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '4.0.3')
 
         self.change_env(5)
-        ec, out = run_simple("%s %s --setmpi impirun --universe 4 hostname" % (sys.executable, self.mympiscript))
+        ec, out = run_simple("%s %s --universe 4 hostname" % (sys.executable, self.mympiscript))
         regex = re.compile('-np 4')
         self.assertTrue(regex.search(out))
 
         self.change_env(1)
         # intel mpi without hydra
-        ec, out = run_simple("%s %s --setmpi impirun --universe 1 hostname" % (sys.executable, self.mympiscript))
+        ec, out = run_simple("%s %s --universe 1 hostname" % (sys.executable, self.mympiscript))
         os.environ['I_MPI_PROCESS_MANAGER'] = 'mpd'
 
         np_regex = re.compile('-np 1')
@@ -276,13 +273,19 @@ class TestEnd2End(unittest.TestCase):
         self.assertTrue(np_regex.search(out))
         self.assertTrue(ncpus_regex.search(out))
 
-        # intel mpi with hydra
-        del os.environ['I_MPI_PROCESS_MANAGER']
-        os.environ['EBVERSIONIMPI'] = '5.1.2'
-        cmd = "%s %s --setmpi impirun --universe 1 hostname"
+
+    def test_option_universe_hydra(self):
+        """Test --universe command line option with hydra impi"""
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.124.67')
+
+        cmd = "%s %s --universe 1 hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
-        self.assertTrue(np_regex.search(out))
-        self.assertFalse(ncpus_regex.search(out))
+        print out
+
+        np_regex = re.compile('-np 1')
+        ncpus_regex = re.compile('--ncpus=1')
+        self.assertTrue(np_regex.search(out), "Pattern %s found in %s" % (np_regex, out))
+        self.assertFalse(ncpus_regex.search(out), "Pattern %s found in %s" % (ncpus_regex, out))
 
         # re-set pbs environment
         set_PBS_env()

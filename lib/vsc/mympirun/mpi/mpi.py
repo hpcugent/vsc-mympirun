@@ -342,17 +342,16 @@ class MPI(object):
         @param cls: the class that calls this function
         @return: true if $EBVERSION is defined as an mpirun implementation of $cls
         """
-        version = True
+        version = False
         if cls._mpirun_for:
             vs = os.getenv('EBVERSION' + cls._mpirun_for.upper())
-            if hasattr(cls, '_mpirun_version'):
+            if not hasattr(cls, '_mpirun_version'):
                 LOGGER.debug("no mpirun version provided, skipping version check")
             elif vs:
-                LOGGER.DEBUG("found EBVERSION%s: %s" % (cls._mpirun_for.upper(), vs))
+                LOGGER.debug("found EBVERSION%s: %s" % (cls._mpirun_for.upper(), vs))
                 version = cls._mpirun_version(vs)
             else:
                 LOGGER.debug("environment variable EBVERSION%s not found, skipping version check" % cls._mpirun_for)
-
         return version
 
 
