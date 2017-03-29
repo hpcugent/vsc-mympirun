@@ -287,3 +287,9 @@ class Sched(object):
             self.log.raiseException("set_mpinodes unknown ordermode %s" % ordermode)
 
         self.mpinodes = res
+
+    def isLocal(self):
+        """
+        Only returns True if scheduler is local.
+        """
+        return False

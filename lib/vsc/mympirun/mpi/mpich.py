@@ -29,9 +29,7 @@ Documentation can be found at https://www.mpich.org/documentation/guides/
 """
 import os
 
-from distutils.version import LooseVersion
-
-from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.mpi.mpi import MPI, version_in_range
 from vsc.utils.run import run_simple
 from vsc.utils.missing import nub
 
@@ -41,7 +39,7 @@ class MVAPICH2Hydra(MPI):
 
     _mpiscriptname_for = ['mhmpirun']
     _mpirun_for = ['MVAPICH2']
-    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("1.6.0"))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '1.6.0', None))
 
     HYDRA = True
 
@@ -81,7 +79,7 @@ class MVAPICH2(MVAPICH2Hydra):
     """
     _mpiscriptname_for = ['mmpirun']
     _mpirun_for = ['MVAPICH2']
-    _mpirun_version = staticmethod(lambda x: LooseVersion(x) < LooseVersion("1.6.0"))
+    staticmethod(lambda ver: version_in_range(ver, None, '1.6.0'))
 
     HYDRA = False
 
@@ -116,7 +114,7 @@ class MPICH2Hydra(MVAPICH2Hydra):
 
     _mpiscriptname_for = ['m2hmpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
-    _mpirun_version = staticmethod(lambda x: LooseVersion(x) >= LooseVersion("1.4.0"))
+    staticmethod(lambda ver: version_in_range(ver, '1.4.0', None))
 
     OPTS_FROM_ENV_FLAVOR_PREFIX = ['MPICH']
 
@@ -134,7 +132,7 @@ class MPICH2(MVAPICH2):
 
     _mpiscriptname_for = ['m2mpirun']
     _mpirun_for = ['MPICH2', 'mpich2']
-    _mpirun_version = staticmethod(lambda x: LooseVersion(x) < LooseVersion("1.4.0"))
+    staticmethod(lambda ver: version_in_range(ver, None, '1.4.0'))
 
     OPTS_FROM_ENV_FLAVOR_PREFIX = ['MPICH']
 

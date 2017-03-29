@@ -349,7 +349,7 @@ class MPI(object):
         reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
                          ("|".join(cls._mpirun_for), os.sep))
         reg_match = reg.search(mpirun_path)
-        LOGGER.debug("_is_mpisrun_for(), reg_match: %s", reg_match)
+        LOGGER.debug("_is_mpirun_for(), reg_match: %s", reg_match)
 
         if reg_match:
             if cls._mpirun_version is None:
@@ -864,7 +864,7 @@ class MPI(object):
             else:
                 self.log.raiseException("There is no launcher specified, and no default launcher found")
 
-        if launcher != 'local':
+        if not self.isLocal():
             self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher))
 
         # when using ssh launcher, use custom pbsssh wrapper as exec

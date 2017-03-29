@@ -364,3 +364,15 @@ class TestMPI(TestCase):
             basepaths.add(inst.mympirundir)
 
         self.assertEqual(len(basepaths), 10)
+
+
+    def test_version_in_range(self):
+        """Test version_in_range function"""
+        self.assertTrue(mpim.version_in_range('1.4.0', '1.2.0', '2.0'))
+        self.assertTrue(mpim.version_in_range('1.4.0', '1.2.0', None))
+        self.assertTrue(mpim.version_in_range('1.4.0', None, '2.0'))
+        self.assertTrue(mpim.version_in_range('1.4.0', None, None)) # always true
+
+        self.assertFalse(mpim.version_in_range('1.4.0', '1.6.0', '2.0'))
+        self.assertFalse(mpim.version_in_range('1.4.0', '1.6.0', None))
+        self.assertFalse(mpim.version_in_range('2.4.0', None, '2.0'))

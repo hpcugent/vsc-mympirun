@@ -28,7 +28,6 @@ Intel MPI specific class
 Documentation can be found at https://software.intel.com/en-us/node/528769
 """
 
-from distutils.version import LooseVersion
 import os
 import socket
 import tempfile
@@ -54,7 +53,7 @@ class IntelMPI(MPI):
 
     _mpiscriptname_for = ['impirun']
     _mpirun_for = ['impi']
-    _mpirun_version = staticmethod(lambda x: LooseVersion(x) < LooseVersion("4.1.0.0"))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, None, '4.1.0.0'))
 
     RUNTIMEOPTION = {
         'options': {
