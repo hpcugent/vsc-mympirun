@@ -42,8 +42,8 @@ import subprocess
 import sys
 import time
 
+from distutils.version import LooseVersion
 from IPy import IP
-
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
 from vsc.utils.run import Run, RunAsyncLoopStdout, RunFile, RunLoop, run_simple
@@ -144,6 +144,7 @@ def stripfake():
     LOGGER.debug("PATH after stripfake(): %s", os.environ['PATH'])
     return
 
+
 def which(cmd):
     """
     Return (first) path in $PATH for specified command, or None if command is not found.
@@ -159,6 +160,22 @@ def which(cmd):
             return cmd_path
     LOGGER.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
     return None
+
+
+def version_in_range(version, lower_limit, upper_limit):
+    """
+    Check whether version is in specified range
+
+    :param lower_limit: lower limit for version (inclusive), no lower limit if None
+    :param upper_limit: upper limit for version (exclusive), no upper limit if None
+    """
+    in_range = True
+    if lower_limit is not None and LooseVersion(version) < LooseVersion(lower_limit):
+        in_range = False
+    if upper_limit is not None and LooseVersion(version) >= LooseVersion(upper_limit):
+        in_range = False
+    return in_range
+
 
 class RunMPI(Run):
     """
