@@ -345,10 +345,13 @@ class MPI(object):
 
         mpiname = cls._mpirun_for
         if mpiname:
+            LOGGER.debug("Checking whether %s (MPI name: %s) matches with %s..." % (cls, mpiname, mpirun_path))
 
             # first, check whether specified mpirun location is in $EBROOT<NAME>
-            mpiroot = os.getenv('EBROOT' + mpiname.upper())
+            root_var_name = 'EBROOT' + mpiname.upper()
+            mpiroot = os.getenv(root_var_name)
             if mpiroot:
+                LOGGER.debug("found $%s: %s" % (root_var_name, mpiroot))
                 # try to determine resolved path for both, this may file if we hit a non-existing paths
                 try:
                     mpirun_path = os.path.realpath(mpirun_path)
@@ -358,6 +361,7 @@ class MPI(object):
 
                 # only if mpirun location is in $EBROOT* location, we should check the version too
                 if mpirun_path.startswith(mpiroot):
+                    LOGGER.debug("%s is in subdirectory of %s" % (mpirun_path, mpiroot))
 
                     # next, check wheter version meets requirements (checked via _mpirun_version function)
                     version_var_name = 'EBVERSION' + mpiname.upper()
@@ -365,10 +369,14 @@ class MPI(object):
                     if not hasattr(cls, '_mpirun_version'):
                         LOGGER.debug("no mpirun version provided, skipping version check")
                     elif version:
-                        LOGGER.debug("found $%s: %s" % (version_var_name, version))
                         res = cls._mpirun_version(version)
+                        LOGGER.debug("found $%s: %s => match for %s: %s" % (version_var_name, version, cls, res))
                     else:
                         LOGGER.debug("environment variable $%s not found, skipping version check" % version_var_name)
+                else:
+                    LOGGER.debug("%s is NOT in subdirectory of %s, no match for %s" % (mpirun_path, mpiroot, cls))
+            else:
+                LOGGER.debug("$%s not defined, no match for %s" % (root_var_name, cls))
 
         return res
 
