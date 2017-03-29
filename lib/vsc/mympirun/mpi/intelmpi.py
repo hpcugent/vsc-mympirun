@@ -252,5 +252,5 @@ class IntelHydraMPIPbsdsh(IntelHydraMPI):
     # pbsdsh is supported from Intel MPI 5.0.3:
     # https://software.intel.com/sites/default/files/managed/b7/99/intelmpi-5.0-update3-releasenotes-linux.pdf
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5.0.3', None))
-    HYDRA = True
+
     HYDRA_LAUNCHER = 'pbsdsh'

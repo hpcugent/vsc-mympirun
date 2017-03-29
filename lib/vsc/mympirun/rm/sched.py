@@ -290,6 +290,6 @@ class Sched(object):
 
     def is_local(self):
         """
-        Only returns True if scheduler is local.
+        Return whether this is a local scheduler or not.
         """
         return False

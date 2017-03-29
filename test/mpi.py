@@ -138,16 +138,27 @@ class TestMPI(TestCase):
     def test_is_mpirun_for(self):
         """test if _is_mpirun_for returns true when it is given the path of its executable"""
         impi_instance = getinstance(IntelMPI, Local, MympirunOption())
-        # EBVERSION not set
-        self.assertFalse(impi_instance._is_mpirun_for(), "")
+
+        fake_mpirun_path = os.path.join('/tmp/test/bin/intel64/mpirun')
+
+        # $EBROOT* not set
+        self.assertFalse(impi_instance._is_mpirun_for(fake_mpirun_path))
+
+        # other $EBROOT* value
+        os.environ['EBROOTIMPI'] = '/tmp/foo/bar'
+        self.assertFalse(impi_instance._is_mpirun_for(fake_mpirun_path))
+
+        os.environ['EBROOTIMPI'] = '/tmp/test'
+
+        # $EBVERSION* not set
+        self.assertFalse(impi_instance._is_mpirun_for(fake_mpirun_path))
         os.environ['EBVERSIONIMPI'] = '4.0.1'
-        self.assertTrue(impi_instance._is_mpirun_for(), "")
+        self.assertTrue(impi_instance._is_mpirun_for(fake_mpirun_path))
         os.environ['EBVERSIONIMPI'] = '5.1.3'
-        self.assertFalse(impi_instance._is_mpirun_for(), "")
+        self.assertFalse(impi_instance._is_mpirun_for(fake_mpirun_path))
 
         impi_instance = getinstance(IntelHydraMPIPbsdsh, Local, MympirunOption())
-        self.assertTrue(impi_instance._is_mpirun_for(), "")
-
+        self.assertTrue(impi_instance._is_mpirun_for(fake_mpirun_path))
 
     def test_set_omp_threads(self):
         """test if OMP_NUM_THREAD gets set correctly"""

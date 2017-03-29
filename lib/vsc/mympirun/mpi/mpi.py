@@ -107,12 +107,11 @@ def what_mpi(name):
     # mympirun was not called through a known alias, so find out which MPI
     # implementation the user has installed
     for mpi in supp_mpi_impl:
-        if mpi._is_mpirun_for():
+        if mpi._is_mpirun_for(mpirun_path):
             return scriptname, mpi, supp_mpi_impl
 
     # no specific flavor found, default to mpirun_path
-    LOGGER.warn("The executable that called mympirun (%s) isn't supported"
-                ", defaulting to %s", name, mpirun_path)
+    LOGGER.warn("The executable that called mympirun (%s) isn't supported, defaulting to %s", name, mpirun_path)
     return mpirun_path, None, supp_mpi_impl
 
 
@@ -335,24 +334,43 @@ class MPI(object):
 
     # factory methods for MPI
     @classmethod
-    def _is_mpirun_for(cls):
+    def _is_mpirun_for(cls, mpirun_path):
         """
-        Check if this class provides support for the mpirun that was called.
+        Check if this class provides support for active mpirun command.
 
         @param cls: the class that calls this function
-        @return: true if $EBVERSION is defined as an mpirun implementation of $cls
+        @return: True if mpirun is located in $EBROOT*, and if $EBVERSION* value matches version requirement
         """
-        version = False
-        if cls._mpirun_for:
-            vs = os.getenv('EBVERSION' + cls._mpirun_for.upper())
-            if not hasattr(cls, '_mpirun_version'):
-                LOGGER.debug("no mpirun version provided, skipping version check")
-            elif vs:
-                LOGGER.debug("found EBVERSION%s: %s" % (cls._mpirun_for.upper(), vs))
-                version = cls._mpirun_version(vs)
-            else:
-                LOGGER.debug("environment variable EBVERSION%s not found, skipping version check" % cls._mpirun_for)
-        return version
+        res = False
+
+        mpiname = cls._mpirun_for
+        if mpiname:
+
+            # first, check whether specified mpirun location is in $EBROOT<NAME>
+            mpiroot = os.getenv('EBROOT' + mpiname.upper())
+            if mpiroot:
+                # try to determine resolved path for both, this may file if we hit a non-existing paths
+                try:
+                    mpirun_path = os.path.realpath(mpirun_path)
+                    mpiroot = os.path.realpath(mpiroot)
+                except (IOError, OSError) as err:
+                    LOGGER.debug("Failed to resolve paths %s and %s, ignoring it: %s" % (mpirun_path, mpiroot, err))
+
+                # only if mpirun location is in $EBROOT* location, we should check the version too
+                if mpirun_path.startswith(mpiroot):
+
+                    # next, check wheter version meets requirements (checked via _mpirun_version function)
+                    version_var_name = 'EBVERSION' + mpiname.upper()
+                    version = os.getenv(version_var_name)
+                    if not hasattr(cls, '_mpirun_version'):
+                        LOGGER.debug("no mpirun version provided, skipping version check")
+                    elif version:
+                        LOGGER.debug("found $%s: %s" % (version_var_name, version))
+                        res = cls._mpirun_version(version)
+                    else:
+                        LOGGER.debug("environment variable $%s not found, skipping version check" % version_var_name)
+
+        return res
 
 
     @classmethod
