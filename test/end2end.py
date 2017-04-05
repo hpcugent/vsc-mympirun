@@ -61,8 +61,12 @@ done
 """
 
 FAKE_MPIRUN_MACHINEFILE = r"""#!/bin/bash
-machinefile=$(echo $@ | sed -e 's/.*-machinefile[ ]*\([^ ]*\).*/\1/g')
-cat $machinefile
+if [ "$1" == "-info" ]; then
+    echo "    Bootstrap servers available:             ssh rsh pdsh fork slum ll pbsdsh"
+else
+    machinefile=$(echo $@ | sed -e 's/.*-machinefile[ ]*\([^ ]*\).*/\1/g')
+    cat $machinefile
+fi
 """
 
 def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
@@ -112,7 +116,7 @@ class TestEnd2End(unittest.TestCase):
         """Test running of a serial command via mympirun."""
 
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
-        ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
+        ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
         regex = re.compile("^fake mpirun called with args: .*hostname$")
 
@@ -229,7 +233,7 @@ class TestEnd2End(unittest.TestCase):
     def test_option_double(self):
         """Test --double command line option"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
-        cmd = "%s %s --setmpi impirun --double hostname"
+        cmd = "%s %s --double hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         # set_pbs_env() sets 2 cores, so double is 4
         self.assertEqual(len(out.split('\n')), 4)
@@ -239,7 +243,7 @@ class TestEnd2End(unittest.TestCase):
     def test_option_multi(self):
         """Test --multi command line option"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
-        cmd = "%s %s --setmpi impirun --multi 3 -- hostname"
+        cmd = "%s %s --multi 3 -- hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         # set_pbs_env() sets 2 cores, so *3 = 6
         self.assertEqual(len(out.split('\n')), 6)
@@ -249,7 +253,7 @@ class TestEnd2End(unittest.TestCase):
     def test_option_hybrid(self):
         """Test --hybrid command line option"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
-        ec, out = run_simple("%s %s --setmpi impirun --hybrid 5 hostname" % (sys.executable, self.mympiscript))
+        ec, out = run_simple("%s %s --hybrid 5 hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(len(out.split('\n')), 5)
         self.assertEqual(out, ('\n'.join(['localhost'] * 5)))
 
@@ -298,7 +302,6 @@ class TestEnd2End(unittest.TestCase):
         command = ' '.join([
             sys.executable,
             self.mympiscript,
-            "--setmpi impirun",
             "--variablesprefix=USER",
             "hostname",
         ])
@@ -337,7 +340,7 @@ class TestEnd2End(unittest.TestCase):
 
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '4.2')
 
-        ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
+        ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
         regex = r'-bootstrap ssh'
         self.assertTrue(regex.find(out), "-bootstrap option is not ssh (default for impi/4.2)" + out)
 
@@ -346,12 +349,12 @@ class TestEnd2End(unittest.TestCase):
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.0.3')
 
         # default behavior
-        ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
+        ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
         regex = r'-bootstrap pbsdsh'
         self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh (default for impi/5.1): " + out)
 
         # forced behavior
-        ec, out = run_simple("%s %s --setmpi impirun --launcher ssh hostname" % (sys.executable, self.mympiscript))
+        ec, out = run_simple("%s %s --launcher ssh hostname" % (sys.executable, self.mympiscript))
         regexes = [
             (r'-bootstrap ssh', "bootstrap option is not ssh (with option)"),
             (r'-bootstrap-exec pbsssh', "bootstrap-exec is should be pbsssh when specified launcher is ssh")
@@ -360,11 +363,11 @@ class TestEnd2End(unittest.TestCase):
             self.assertTrue(regex[0].find(out), regex[1] + ": " + out)
 
         # unknown launcher being specified only results in a warning (we allow specifying launchers that are not listed)
-        cmd = "%s %s --setmpi impirun --launcher doesnotexist hostname"
+        cmd = "%s %s --launcher doesnotexist hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         regex = r'WARNING .* Specified launcher doesnotexist does not exist'
         self.assertTrue(regex.find(out), "mympirun should warn for non-existing launcher")
 
-        cmd = "%s %s --setmpi impirun --sched local hostname"
+        cmd = "%s %s --sched local hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         self.assertFalse("-bootstrap" in out, "using local scheduler, no bootstrap launcher should be specified: " + out)
