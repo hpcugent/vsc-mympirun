@@ -54,6 +54,6 @@ class Local(Sched):
 
     def is_local(self):
         """
-        Returns True if scheduler is local.
+        Return whether this is a local scheduler or not.
         """
         return True

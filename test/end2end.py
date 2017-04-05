@@ -73,6 +73,7 @@ def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
     open(fake_mpirun, 'w').write(txt)
     os.chmod(fake_mpirun, stat.S_IRUSR|stat.S_IXUSR)
     os.environ['PATH'] = '%s:%s' % (path, os.getenv('PATH', ''))
+    os.environ['EBROOT%s' % mpi_name.upper()] = os.path.dirname(fake_mpirun)
     os.environ['EBVERSION%s' % mpi_name.upper()] = mpi_version
 
 
@@ -109,7 +110,6 @@ class TestEnd2End(unittest.TestCase):
 
     def test_serial(self):
         """Test running of a serial command via mympirun."""
-        print os.environ['PATH']
 
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
         ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
@@ -273,14 +273,12 @@ class TestEnd2End(unittest.TestCase):
         self.assertTrue(np_regex.search(out))
         self.assertTrue(ncpus_regex.search(out))
 
-
     def test_option_universe_hydra(self):
         """Test --universe command line option with hydra impi"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.124.67')
 
         cmd = "%s %s --universe 1 hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
-        print out
 
         np_regex = re.compile('-np 1')
         ncpus_regex = re.compile('--ncpus=1')
@@ -289,7 +287,6 @@ class TestEnd2End(unittest.TestCase):
 
         # re-set pbs environment
         set_PBS_env()
-
 
     def test_env_variables(self):
         """ Test the passing of (extra) variables """
@@ -317,7 +314,6 @@ class TestEnd2End(unittest.TestCase):
         regex = r'PYTHONPATH=/just/an/example:.*'
         self.assertTrue(regex.find(out), "PYTHONPATH isn't passed to mympirun script env correctly")
 
-
     def change_env(self, cores):
         """Helper method for changing the number of cores in the machinefile"""
         os.chmod(os.environ['PBS_NODEFILE'], stat.S_IWUSR)
@@ -325,7 +321,6 @@ class TestEnd2End(unittest.TestCase):
         pbsnodefile.write('\n'.join(['localhost'] * cores))
         pbsnodefile.close()
         os.chmod(os.environ['PBS_NODEFILE'], stat.S_IRUSR)
-
 
     def test_unset_nodefile(self):
         """ Test if sched falls back to Local if nodefile is not available """
@@ -337,8 +332,7 @@ class TestEnd2End(unittest.TestCase):
         # restore env
         os.environ['PBS_NODEFILE'] = nodefile
 
-
-    def test_launcher_opt_1(self):
+    def test_launcher_opt_old_impi(self):
         """Test --launcher command line option with impi < 5.0.3"""
 
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '4.2')
@@ -347,10 +341,9 @@ class TestEnd2End(unittest.TestCase):
         regex = r'-bootstrap ssh'
         self.assertTrue(regex.find(out), "-bootstrap option is not ssh (default for impi/4.2)" + out)
 
-
-    def test_launcher_opt_2(self):
-        """Test --launcher command line option with impi > 5.0.3"""
-        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
+    def test_launcher_opt_impi_hydra(self):
+        """Test --launcher command line option with impi >= 5.0.3 (supports pbsdsh)"""
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.0.3')
 
         # default behavior
         ec, out = run_simple("%s %s --setmpi impirun hostname" % (sys.executable, self.mympiscript))
