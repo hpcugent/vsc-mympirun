@@ -39,7 +39,7 @@ An overview of known job scheduler is available via `-s` or `--showsched`.
 
 `mympirun` will detect the available resources, and pass options to the `mpirun` command benig used accordingly.
 
-By default, it will use all avaiable cores, i.e.:
+By default, it will use all available cores, i.e.:
 
 * all cores on the *current* system, if the `local` scheduler is used
 * all cores assigned to the current job, if the `pbs` scheduler is used
@@ -48,8 +48,7 @@ This can be changed if needed using the `--hybrid`, `--universe`, `--double` or 
 
 Pinning of MPI processes to cores is also enabled by default (can be disabled using `--disable-pinmpi`).
 
-It will also leverage the Torque integration of the MPI library being used by default, by launching MPI processes
-using `pbsdsh` rather than `ssh`.
+It will also leverage the Torque integration of the MPI library being used by default, by launching MPI processes using `pbsdsh` rather than `ssh`.
 
 
 # Configuring `mympirun`
@@ -60,11 +59,27 @@ using `pbsdsh` rather than `ssh`.
 
 # Controlling number of processes
 
-(explain briefly, include a clear example)
-
 ## `--hybrid` / `-h`
+The `hybrid` option requires one integer. This integer will be the number of processes started on each available physical node.
+        
+    $ echo $PBS_NUM_NODES
+    2
+
+    $ mympirun --hybrid 2 hostname
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
 
 ## `--universe`
+The `universe`option also requires one integer. This integer will be the exact number of processes started by mympirun (independent of the number of nodes). When using `universe` for multiple processes, mympirun will try to balance the processes on the available nodes.
+        
+    $ echo $PBS_NUM_NODES
+    2
+
+    $ mympirun --universe 1 hostname
+    node2157.delcatty.os
+    
 
 ## `--double` and `--multi`
 
@@ -74,7 +89,7 @@ using `pbsdsh` rather than `ssh`.
 `--output`
 
 
-# Passing down environemt variables
+# Passing down environment variables
 
 (explains default behavior, and how to tweak)
 
