@@ -37,7 +37,7 @@ class OpenMPI(MPI):
     """An implementation of the MPI class for OpenMPI"""
 
     _mpiscriptname_for = ['ompirun']
-    _mpirun_for = ['OpenMPI']
+    _mpirun_for = 'OpenMPI'
 
     DEVICE_MPIDEVICE_MAP = {'ib': 'sm,openib,self', 'det': 'sm,tcp,self', 'shm': 'sm,self', 'socket': 'sm,tcp,self'}
 

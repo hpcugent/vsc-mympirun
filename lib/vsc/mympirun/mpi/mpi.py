@@ -42,8 +42,8 @@ import subprocess
 import sys
 import time
 
+from distutils.version import LooseVersion
 from IPy import IP
-
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
 from vsc.utils.run import Run, RunAsyncLoopStdout, RunFile, RunLoop, run_simple
@@ -111,8 +111,7 @@ def what_mpi(name):
             return scriptname, mpi, supp_mpi_impl
 
     # no specific flavor found, default to mpirun_path
-    LOGGER.warn("The executable that called mympirun (%s) isn't supported"
-                ", defaulting to %s", name, mpirun_path)
+    LOGGER.warn("The executable that called mympirun (%s) isn't supported, defaulting to %s", name, mpirun_path)
     return mpirun_path, None, supp_mpi_impl
 
 
@@ -144,6 +143,7 @@ def stripfake():
     LOGGER.debug("PATH after stripfake(): %s", os.environ['PATH'])
     return
 
+
 def which(cmd):
     """
     Return (first) path in $PATH for specified command, or None if command is not found.
@@ -159,6 +159,22 @@ def which(cmd):
             return cmd_path
     LOGGER.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
     return None
+
+
+def version_in_range(version, lower_limit, upper_limit):
+    """
+    Check whether version is in specified range
+
+    :param lower_limit: lower limit for version (inclusive), no lower limit if None
+    :param upper_limit: upper limit for version (exclusive), no upper limit if None
+    """
+    in_range = True
+    if lower_limit is not None and LooseVersion(version) < LooseVersion(lower_limit):
+        in_range = False
+    if upper_limit is not None and LooseVersion(version) >= LooseVersion(upper_limit):
+        in_range = False
+    return in_range
+
 
 class RunMPI(Run):
     """
@@ -246,7 +262,7 @@ class MPI(object):
 
     RUNTIMEOPTION = None
 
-    _mpirun_for = []
+    _mpirun_for = None
     _mpiscriptname_for = []
     _mpirun_version = None
 
@@ -320,30 +336,52 @@ class MPI(object):
     @classmethod
     def _is_mpirun_for(cls, mpirun_path):
         """
-        Check if this class provides support for the mpirun that was called.
+        Check if this class provides support for active mpirun command.
 
         @param cls: the class that calls this function
-        @param mpirun_path: the path to the mpirun aka `which mpirun`
-
-        @return: true if $mpirun_path is defined as an mpirun implementation of $cls
+        @return: True if mpirun is located in $EBROOT*, and if $EBVERSION* value matches version requirement
         """
+        res = False
 
-        # regex matches "cls._mpirun_for/version number"
-        reg = re.compile(r"(?:%s)%s(\d+(?:(?:\.|-)\d+(?:(?:\.|-)\d+\S+)?)?)" %
-                         ("|".join(cls._mpirun_for), os.sep))
-        reg_match = reg.search(mpirun_path)
-        LOGGER.debug("_is_mpisrun_for(), reg_match: %s", reg_match)
+        mpiname = cls._mpirun_for
+        if mpiname:
+            LOGGER.debug("Checking whether %s (MPI name: %s) matches with %s..." % (cls, mpiname, mpirun_path))
 
-        if reg_match:
-            if cls._mpirun_version is None:
-                LOGGER.debug("no mpirun version provided, skipping version check")
-                return True
+            # first, check whether specified mpirun location is in $EBROOT<NAME>
+            root_var_name = 'EBROOT' + mpiname.upper()
+            mpiroot = os.getenv(root_var_name)
+            if mpiroot:
+                LOGGER.debug("found $%s: %s" % (root_var_name, mpiroot))
+                # try to determine resolved path for both, this may file if we hit a non-existing paths
+                try:
+                    mpirun_path = os.path.realpath(mpirun_path)
+                    mpiroot = os.path.realpath(mpiroot)
+                except (IOError, OSError) as err:
+                    LOGGER.debug("Failed to resolve paths %s and %s, ignoring it: %s" % (mpirun_path, mpiroot, err))
+
+                # only if mpirun location is in $EBROOT* location, we should check the version too
+                if mpirun_path.startswith(mpiroot):
+                    LOGGER.debug("%s is in subdirectory of %s" % (mpirun_path, mpiroot))
+
+                    # next, check wheter version meets requirements (checked via _mpirun_version function)
+                    version_var_name = 'EBVERSION' + mpiname.upper()
+                    version = os.getenv(version_var_name)
+                    mpirun_version_check = getattr(cls, '_mpirun_version', None)
+                    if mpirun_version_check and version:
+                        res = mpirun_version_check(version)
+                        LOGGER.debug("found $%s: %s => match for %s: %s" % (version_var_name, version, cls, res))
+                    elif mpirun_version_check is None:
+                        LOGGER.debug("no mpirun version provided, skipping version check, match for %s" % cls)
+                        res = True
+                    else:
+                        LOGGER.debug("environment variable $%s not found, skipping version check" % version_var_name)
+                else:
+                    LOGGER.debug("%s is NOT in subdirectory of %s, no match for %s" % (mpirun_path, mpiroot, cls))
             else:
-                # do version check (reg_match.group(1) is the version number)
-                LOGGER.debug("checking if mpirun version is equal or greater than required")
-                return cls._mpirun_version(reg_match.group(1))
-        else:
-            return False
+                LOGGER.debug("$%s not defined, no match for %s" % (root_var_name, cls))
+
+        return res
+
 
     @classmethod
     def _is_mpiscriptname_for(cls, scriptname):
@@ -847,7 +885,7 @@ class MPI(object):
             else:
                 self.log.raiseException("There is no launcher specified, and no default launcher found")
 
-        if launcher != 'local':
+        if not self.is_local():
             self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher))
 
         # when using ssh launcher, use custom pbsssh wrapper as exec

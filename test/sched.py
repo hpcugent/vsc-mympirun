@@ -72,8 +72,13 @@ def cleanup_PBS_env(orig_env):
     os.chmod(os.environ['PBS_NODEFILE'], stat.S_IWUSR)
     os.chmod(os.path.dirname(os.environ['PBS_NODEFILE']), stat.S_IWUSR|stat.S_IRUSR|stat.S_IXUSR)
     shutil.rmtree(os.path.dirname(os.environ['PBS_NODEFILE']))
-    os.environ = orig_env
 
+    # make sure that previously undefined variables are undefined
+    for key in os.environ.keys():
+        if key not in orig_env:
+            del os.environ[key]
+
+    os.environ = orig_env
 
 class TestSched(unittest.TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""

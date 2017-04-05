@@ -51,3 +51,9 @@ class Local(Sched):
         self.nodes = [localhostname] * len(self.cpus)
 
         self.log.debug("set_nodes: %s", self.nodes)
+
+    def is_local(self):
+        """
+        Return whether this is a local scheduler or not.
+        """
+        return True

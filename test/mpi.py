@@ -44,7 +44,7 @@ from vsc.utils.missing import get_subclasses, nub
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.mpi.openmpi import OpenMPI
-from vsc.mympirun.mpi.intelmpi import IntelMPI
+from vsc.mympirun.mpi.intelmpi import IntelMPI, IntelHydraMPIPbsdsh
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.local import Local
 
@@ -137,22 +137,28 @@ class TestMPI(TestCase):
 
     def test_is_mpirun_for(self):
         """test if _is_mpirun_for returns true when it is given the path of its executable"""
-        optionparser = MympirunOption()
+        impi_instance = getinstance(IntelMPI, Local, MympirunOption())
 
-        mpidict = {
-            IntelMPI: "/apps/gent/SL6/sandybridge/software/impi/3.2.2.006/bin64/mpirun",
-            OpenMPI: "apps/gent/SL6/sandybridge/software/OpenMPI/1.8.8-GNU-4.9.3-2.25/bin/mpirun",
-        }
+        fake_mpirun_path = os.path.join('/tmp/test/bin/intel64/mpirun')
 
-        for key, val in mpidict.iteritems():
-            instance = getinstance(key, Local, optionparser)
+        # $EBROOT* not set
+        self.assertFalse(impi_instance._is_mpirun_for(fake_mpirun_path))
 
-            print("mpiscriptname: %s, path: %s, instance mpirun for: %s" %
-                  (instance._mpiscriptname_for, val,
-                   instance._mpirun_for))
-            self.assertTrue(instance._is_mpirun_for(val),
-                            msg="mpi instance is not an MPI flavor defined by %s according to _is_mpirun_for, path: %s" %
-                            (key, val))
+        # other $EBROOT* value
+        os.environ['EBROOTIMPI'] = '/tmp/foo/bar'
+        self.assertFalse(impi_instance._is_mpirun_for(fake_mpirun_path))
+
+        os.environ['EBROOTIMPI'] = '/tmp/test'
+
+        # $EBVERSION* not set
+        self.assertFalse(impi_instance._is_mpirun_for(fake_mpirun_path))
+        os.environ['EBVERSIONIMPI'] = '4.0.1'
+        self.assertTrue(impi_instance._is_mpirun_for(fake_mpirun_path))
+        os.environ['EBVERSIONIMPI'] = '5.1.3'
+        self.assertFalse(impi_instance._is_mpirun_for(fake_mpirun_path))
+
+        impi_instance = getinstance(IntelHydraMPIPbsdsh, Local, MympirunOption())
+        self.assertTrue(impi_instance._is_mpirun_for(fake_mpirun_path))
 
     def test_set_omp_threads(self):
         """test if OMP_NUM_THREAD gets set correctly"""
@@ -364,3 +370,15 @@ class TestMPI(TestCase):
             basepaths.add(inst.mympirundir)
 
         self.assertEqual(len(basepaths), 10)
+
+
+    def test_version_in_range(self):
+        """Test version_in_range function"""
+        self.assertTrue(mpim.version_in_range('1.4.0', '1.2.0', '2.0'))
+        self.assertTrue(mpim.version_in_range('1.4.0', '1.2.0', None))
+        self.assertTrue(mpim.version_in_range('1.4.0', None, '2.0'))
+        self.assertTrue(mpim.version_in_range('1.4.0', None, None)) # always true
+
+        self.assertFalse(mpim.version_in_range('1.4.0', '1.6.0', '2.0'))
+        self.assertFalse(mpim.version_in_range('1.4.0', '1.6.0', None))
+        self.assertFalse(mpim.version_in_range('2.4.0', None, '2.0'))
