@@ -584,19 +584,25 @@ class MPI(object):
         if self.mpinodes is None:
             self.set_mpinodes()
 
-
-        mpdboottxt = ""
+        nodetxt = ""
         universe_ppn = self.get_universe_ncpus()
+        universe = self.options.universe
 
-        for node in nub(self.mpinodes):
-            txt = node
-            if not self.has_hydra:
-                if self.options.universe is not None and self.options.universe > 0:
+        if universe is not None and universe > 0:
+            for node in nub(self.mpinodes):
+                txt = node
+                if self._mpirun_for == 'impi':
                     txt += ":%s" % universe_ppn[node]
-                txt += " ifhn=%s" % node
-            mpdboottxt += "%s\n" % txt
+                    if not self.has_hydra:
+                        nodetxt += " ifhn=%s" % node
+                else:
+                    txt += " slots=%s" % universe_ppn[node]
+                nodetxt += '%s\n' % txt
+        else:
+            nodetxt = '\n'.join(self.mpinodes)
 
-        nodetxt = '\n'.join(self.mpinodes)
+        mpdboottxt = '\n'.join(nub(self.mpinodes))
+
         nodefn = os.path.join(self.mympirundir, 'nodes')
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
