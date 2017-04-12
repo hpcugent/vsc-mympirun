@@ -26,9 +26,7 @@ to `$PATH`. If `mympirun` is provided via a module, you should load it *after* a
 
 # Detection of MPI and job scheduler
 
-`mympirun` detects which MPI implementation (OpenMPI, Intel MPI, ...) is being used, to figure out which `mpirun` command
-it should be using. This can be overridden using the `--setmpi` or `-M` option. An overview of known MPI implementations
-is available via `-m` or `--showmpi`.
+`mympirun` detects which MPI implementation (OpenMPI, Intel MPI, ...) is being used, to figure out which `mpirun` command it should be using. This can be overridden using the `--setmpi` or `-M` option. An overview of known MPI implementations is available via `-m` or `--showmpi`.
 
 In addition, the job scheduler (e.g., Torque) is also detected automatically, and can be overridden via `--schedtype` or `-S`.
 If not job scheduler could be detected, local execution is assumed.
@@ -60,7 +58,7 @@ It will also leverage the Torque integration of the MPI library being used by de
 # Controlling number of processes
 
 ## `--hybrid` / `-h`
-The `hybrid` option requires one integer. This integer will be the number of processes started on each available physical node.
+The `hybrid` or `h` option requires one integer. This integer will be the number of processes started on each available physical node.
         
     $ echo $PBS_NUM_NODES
     2
@@ -82,18 +80,63 @@ The `universe`option also requires one integer. This integer will be the exact n
     
 
 ## `--double` and `--multi`
+As the name suggests, when using the `double` option,  mympirun will start double the amount of processes as requested. The `multi`option works the same but it requires an integer, indicating the multiplier, for example, `multi 3` will start triple the amount of processes. This means `double` and `multi 2` will have the exact same effect.
+
+    $ echo $PBS_NUM_NODES
+    2
+
+    $ echo $PBS_NUM_PPN
+    4
+
+    $ mympirun --double hostname
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    
 
 
 # Controlling output
 
-`--output`
+Use `--output` to redirect your mympirun output to a file instead of stdout/stderr. 
+
+    $ mympirun --output out.txt hostname
+    
+    $ cat out.txt
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2157.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    node2158.delcatty.os
+    
 
 
 # Passing down environment variables
 
-(explains default behavior, and how to tweak)
+The environment variables that mympirun passes to the MPI environment are `LD_LIBRARY_PATH`, `PATH`, `PYTHONPATH`, `CLASSPATH`, `LD_PRELOAD`, `PYTHONUNBUFFERED` and all environment variables that are prefixed with `OMP`, `MKL`, `KMP`, `DAPL`, `PSM`, `IPATH`, `TMI`, `PSC`, `O64`, and `VSMP`
 
-`--variablesprefix`
+To add other variables to this list, you can use the mympirun option  `--variablesprefix`. This option requires a comma-seperated list of strings that are either the exact variable name or a prefix that matches the environment variable(s).
+
+    $ mypmirun ./echo_my_env_var
+    
+    $ export MY_ENV_VAR="my_env_var"
+    $ mympirun --variablesprefix MY ./echo_my_env_var
+    my_env_var
+    my_env_var
 
 
 # Controlling launcher
@@ -109,10 +152,12 @@ explain difference between `pbsdsh` and `ssh`
 
 # Hang detection
 
-(explains default behavior, and how to tweak)
+If your mpi jobscript doesn't have any output for a long time, mympirun will assume something is wrong and will interrupt your job as a safety measure (we wouldn't want your program to "hang" for hours, or even days, without really doing anything).  The default time mympirun waits for output is one hour (3600 seconds).
 
-`--output-check-timeout`, `--disable-output-check-fatal`
+You can change the amount of time mympirun waits for output by using the option `output-check-timeout` with a number of seconds, or you can disable it alltogether by using the option `--disable-output-check-fatal`.
 
 # Debugging
 
-(use of `--debug`, `--logtofile`, `--debugmpi`)
+To get all debugging info from mympirun itself, use the option `--debug` or simply `-d`. This will print to stdout by default. For debugging on MPI level, use `--debugmpi`.
+
+TODO : `--logtofile`
