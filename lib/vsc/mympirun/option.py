@@ -193,6 +193,7 @@ class MympirunOption(GeneralOption):
             if os.path.exists(self.options.logtofile):
                 os.remove(self.options.logtofile)
             fancylogger.logToFile(self.options.logtofile)
+            fancylogger.logToScreen(False)
 
     def postprocess(self):
         """Some additional processing"""
