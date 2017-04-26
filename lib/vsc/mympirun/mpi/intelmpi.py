@@ -33,7 +33,6 @@ import socket
 import tempfile
 
 from vsc.mympirun.mpi.mpi import MPI, version_in_range, which
-from vsc.utils.missing import nub
 
 SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
 
@@ -95,24 +94,6 @@ class IntelMPI(MPI):
             mpd = which(['mpd.py'])
             self.mpdboot_options.append('-m "\\\"%s --bulletproof\\\""' % mpd)
 
-    def check_usable_cpus(self):
-        """
-        Check and act on fact of non-standard cpus (eg due to cpusets)
-          - default: do nothing more then log
-        """
-        if not self.cores_per_node == len(self.cpus):
-            # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
-            self.log.info("check_usable_cpus: non-standard cpus found: found cpus %s, usable cpus %s",
-                           self.cores_per_node, len(self.cpus))
-
-            if len(nub(self.nodes)) > 1:
-                self.log.info(("check_usable_cpus: more then one unique node requested. "
-                               "Not setting I_MPI_PIN_PROCESSOR_LIST."))
-            else:
-                txt = ",".join(["%d" % x for x in self.cpus])
-                self.mpiexec_global_options['I_MPI_PIN_PROCESSOR_LIST'] = txt
-                os.environ['I_MPI_PIN_PROCESSOR_LIST'] = txt
-                self.log.info("check_usable_cpus: one node requested. Setting I_MPI_PIN_PROCESSOR_LIST to %s", txt)
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
