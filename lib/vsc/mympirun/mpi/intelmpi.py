@@ -33,7 +33,6 @@ import socket
 import tempfile
 
 from vsc.mympirun.mpi.mpi import MPI, version_in_range, which
-from vsc.utils.missing import nub
 
 SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
 
