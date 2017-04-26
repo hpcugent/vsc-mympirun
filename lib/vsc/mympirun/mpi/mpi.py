@@ -367,7 +367,7 @@ class MPI(object):
                     version_var_name = 'EBVERSION' + mpiname.upper()
                     version = os.getenv(version_var_name)
 
-                    # mympirun is not compatibel OpenMPI version 2.0: this version contains a bug
+                    # mympirun is not compatible with OpenMPI version 2.0: this version contains a bug
                     # see https://github.com/hpcugent/vsc-mympirun/issues/113
                     if mpiname == "OpenMPI" and version_in_range(version, "2.0", "2.1"):
                         LOGGER.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
