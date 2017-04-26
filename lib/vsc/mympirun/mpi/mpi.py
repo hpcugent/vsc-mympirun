@@ -366,6 +366,14 @@ class MPI(object):
                     # next, check wheter version meets requirements (checked via _mpirun_version function)
                     version_var_name = 'EBVERSION' + mpiname.upper()
                     version = os.getenv(version_var_name)
+
+                    # mympirun is not compatibel OpenMPI version 2.0: this version contains a bug
+                    # see https://github.com/hpcugent/vsc-mympirun/issues/113
+                    if mpiname == "OpenMPI" and version_in_range(version, "2.0", "2.1"):
+                        LOGGER.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
+                                      "compatible with mympirun. This issue is not present in OpenMPI 1.x and it has "
+                                      "been fixed in OpenMPI 2.1 and further."))
+
                     mpirun_version_check = getattr(cls, '_mpirun_version', None)
                     if mpirun_version_check and version:
                         res = mpirun_version_check(version)
@@ -380,8 +388,9 @@ class MPI(object):
             else:
                 LOGGER.debug("$%s not defined, no match for %s" % (root_var_name, cls))
 
-        return res
 
+
+        return res
 
     @classmethod
     def _is_mpiscriptname_for(cls, scriptname):
