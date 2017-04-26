@@ -388,8 +388,6 @@ class MPI(object):
             else:
                 LOGGER.debug("$%s not defined, no match for %s" % (root_var_name, cls))
 
-
-
         return res
 
     @classmethod
