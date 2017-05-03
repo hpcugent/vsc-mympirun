@@ -360,7 +360,6 @@ class TestMPI(TestCase):
             self.assertEqual(hybrid_ppn.count('node1'), opt)
             self.assertEqual(hybrid_ppn.count('node2'), opt)
 
-
     def test_make_mympirundir_basepaths(self):
         """Test if basepaths are different on every run"""
         basepaths = set()
@@ -370,7 +369,6 @@ class TestMPI(TestCase):
             basepaths.add(inst.mympirundir)
 
         self.assertEqual(len(basepaths), 10)
-
 
     def test_version_in_range(self):
         """Test version_in_range function"""
