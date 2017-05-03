@@ -373,6 +373,7 @@ class MPI(object):
                         LOGGER.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
                                       "compatible with mympirun. This issue is not present in OpenMPI 1.x and it has "
                                       "been fixed in OpenMPI 2.1 and further."))
+                        exit 1
 
                     mpirun_version_check = getattr(cls, '_mpirun_version', None)
                     if mpirun_version_check and version:
