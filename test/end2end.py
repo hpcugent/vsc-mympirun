@@ -377,6 +377,6 @@ class TestEnd2End(unittest.TestCase):
         """Test ompi v 2.0 bug (mympirun should produce error and stop)"""
         install_fake_mpirun('mpirun', self.tmpdir, 'ompi', '2.0')
         ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
-        self.assertEqual(ex, 1)
+        self.assertEqual(ec, 1)
         regex = r"OpenMPI 2\.0\.x uses a different naming protocol for nodes"
         self.assertTrue(regex.find(out), "mympirun should produce an error with ompi 2.0")
