@@ -14,19 +14,11 @@ Originally created by the [HPC team of Ghent University](http://ugent.be/hpc).
 `vsc-mympirun` is made available under the GNU General Public License (GPL) version 2.
 
 
-# Workflow
+# Basic usage
 
-The first step of mympirun is making sure that every mpirun command passes through mympirun. This is accomplished by prepending a fake mpirun path to `$PATH`, which will catch the attempt to execute mpirun and forward it to mympirun.
+The most basic form of using mympirun is `mympirun [options] your_program [program options]`. 
 
-Next, the script will import every MPI flavor implementation from `lib/vsc/mympirun/mpi`. This way it is possible to deduce the MPI flavor that is requested by observing the path of the executable that called mympirun.
-
-It will follow the same process for determining the scheduler. Both MPI flavor and scheduler flavor can be overwritten by using the `-M` and `-S` options respectively.
-
-Once both flavors have been set, the script will get some standard MPI configuration variables, such as usable nodes, netmask,... It will handle CPU pinning if enabled.
-
-After setting up, it will transform the command line arguments and other global environment variables to a dict with options that the chosen MPI flavor can understand.
-
-Finally, it passes these options to the correct mpirun executable of the selected MPI flavor.
+Mympirun parses options until it runs into something it doesn't recognize as an option and assumes this is the executable, and everything after it are options for the program. To separate mympirun options from program options manually, use `--` in between both.
 
 
 # Setup
@@ -58,7 +50,7 @@ This can be changed if needed using the `--hybrid`, `--universe`, `--double` or 
 
 Pinning of MPI processes to cores is also enabled by default (can be disabled using `--disable-pinmpi`).
 
-It will also leverage the Torque integration of the MPI library being used by default, by launching MPI processes using `pbsdsh` rather than `ssh`.
+It will also leverage the Torque integration of the MPI library being used by default, by launching MPI processes using `pbsdsh` rather than `ssh`. (See also: [Controlling launcher](#controlling-launcher))
 
 
 # Configuring `mympirun`
@@ -150,9 +142,12 @@ To add other variables to this list, you can use the mympirun option  `--variabl
 
 # Controlling launcher
 
-In recent Intel MPI versions (> 4.1), mpirun uses Hydra as its process manager. It is possible to change the launcher Hydra uses using the `--launcher` option (see [Bootstrap Options](https://software.intel.com/en-us/node/589997)). 
+In recent Intel MPI versions (> 4.1), mpirun uses Hydra as its process manager. It is possible to change the launcher Hydra uses using the `--launcher` option. (see [Bootstrap Options](https://software.intel.com/en-us/node/589997))
 
-FIXME: explain difference between `pbsdsh` and `ssh`
+By default, mympirun will use `pbsdsh` as launcher, which is provided by the Torque/PBS resource manager.
+It enables distributing tasks under control of Torque, ensuring that the processes are properly pinned to the resources available in the job.
+
+This is a better alternative to using `ssh` as launcher.
 
 
 # Passing options to `mpirun`
@@ -176,3 +171,17 @@ To get all debugging info from mympirun itself, use the option `--debug` or simp
 For debugging on MPI level, use `--debugmpi`.
 
 Redirecting the logger output of a mympirun script to a file is done with the option `--logtofile`. 
+
+# Internal Workflow
+
+The first step of mympirun is making sure that every mpirun command passes through mympirun. This is accomplished by prepending a fake mpirun path to `$PATH`, which will catch the attempt to execute mpirun and forward it to mympirun.
+
+Next, the script will import every MPI flavor implementation from `lib/vsc/mympirun/mpi`. This way it is possible to deduce the MPI flavor that is requested by observing the path of the executable that called mympirun.
+
+It will follow the same process for determining the scheduler. Both MPI flavor and scheduler flavor can be overwritten by using the `--setmpi`/`-M` and `--schedtype`/`-S` options respectively.
+
+Once both flavors have been set, the script will get some standard MPI configuration variables, such as usable nodes, netmask,... It will handle CPU pinning if enabled.
+
+After setting up, it will transform the command line arguments and other global environment variables to a dict with options that the chosen MPI flavor can understand.
+
+Finally, it passes these options to the correct mpirun executable of the selected MPI flavor.
