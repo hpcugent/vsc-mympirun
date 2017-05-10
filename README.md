@@ -150,7 +150,7 @@ To add other variables to this list, you can use the mympirun option  `--variabl
 
 # Controlling launcher
 
-In recent Intel MPI versions (> 4.1), mpirun uses Hydra as its process manager. It is possible to change the launcher Hydra uses using the `--launcher` option. 
+In recent Intel MPI versions (> 4.1), mpirun uses Hydra as its process manager. It is possible to change the launcher Hydra uses using the `--launcher` option (see [Bootstrap Options](https://software.intel.com/en-us/node/589997)). 
 
 FIXME: explain difference between `pbsdsh` and `ssh`
 
