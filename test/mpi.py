@@ -210,7 +210,7 @@ class TestMPI(TestCase):
         # disable make_mympirundir
         mpi_instance.make_mympirundir = lambda: True
         mpi_instance.mympirundir = '/does/not/exist/'
-        self.assertErrorRegex(IOError, "failed to write nodefile", mpi_instance.make_node_file)
+        self.assertErrorRegex(IOError, "failed to write nodefile", mpi_instance.make_machine_file)
 
     def test_make_mympirundir(self):
         """test if the mympirundir is made"""
