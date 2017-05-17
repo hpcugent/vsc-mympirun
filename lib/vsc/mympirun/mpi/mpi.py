@@ -592,7 +592,6 @@ class MPI(object):
         if self.mpinodes is None:
             self.set_mpinodes()
 
-
         mpdboottxt = ""
         universe_ppn = self.get_universe_ncpus()
 
@@ -610,7 +609,7 @@ class MPI(object):
             self.mpdboot_node_filename = mpdfn
             self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
         except Exception as err:
-            msg = 'make_node_file: failed to write nodefile %s mpbboot nodefile %s: %s' % (nodefn, mpdfn, err)
+            msg = 'make_node_file: failed to write mpbboot file %s: %s' % (mpdfn, err)
             self.log.raiseException(msg)
 
 
@@ -620,6 +619,9 @@ class MPI(object):
 
         Parses the list of nodes that run an MPI process and writes this information to a machinefile.
         """
+        if not self.mympirundir:
+            self.make_mympirundir()
+
         if self.mpinodes is None:
             self.set_mpinodes()
 

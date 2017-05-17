@@ -108,6 +108,9 @@ class OpenMPI(MPI):
 
         Parses the list of nodes that run an MPI process and writes this information to a machinefile.
         """
+        if not self.mympirundir:
+            self.make_mympirundir()
+
         if self.mpinodes is None:
             self.set_mpinodes()
 
