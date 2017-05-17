@@ -455,6 +455,7 @@ class MPI(object):
         self.set_netmask()
 
         self.make_node_file()
+        self.make_machine_file()
 
         self.set_pinning()
 
@@ -581,10 +582,9 @@ class MPI(object):
 
     def make_node_file(self):
         """
-        Make a nodefile and mpdbootfile.
+        Make an mpdbootfile.
 
-        Parses the list of nodes that run an MPI process and writes this information to a nodefile.
-        Also parses the list of unique nodes and writes this information to a mpdbootfile
+        Parses the list of unique nodes and writes this information to a mpdbootfile
         (based on hydra and universe options).
         """
         self.make_mympirundir()
@@ -604,20 +604,37 @@ class MPI(object):
                 txt += " ifhn=%s" % node
             mpdboottxt += "%s\n" % txt
 
-        nodetxt = '\n'.join(self.mpinodes)
-        nodefn = os.path.join(self.mympirundir, 'nodes')
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
-            open(nodefn, 'w').write(nodetxt)
-            self.mpiexec_node_filename = nodefn
-            self.log.debug("make_node_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
-
             open(mpdfn, 'w').write(mpdboottxt)
             self.mpdboot_node_filename = mpdfn
             self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
         except Exception as err:
             msg = 'make_node_file: failed to write nodefile %s mpbboot nodefile %s: %s' % (nodefn, mpdfn, err)
             self.log.raiseException(msg)
+
+
+    def make_machine_file(self):
+        """
+        Make the machinefile.
+
+        Parses the list of nodes that run an MPI process and writes this information to a machinefile.
+        """
+        if self.mpinodes is None:
+            self.set_mpinodes()
+
+        nodetxt = '\n'.join(self.mpinodes)
+        nodefn = os.path.join(self.mympirundir, 'nodes')
+
+        try:
+            open(nodefn, 'w').write(nodetxt)
+            self.mpiexec_node_filename = nodefn
+            self.log.debug("make_node_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
+
+        except Exception as err:
+            msg = 'make_node_file: failed to write nodefile %s: %s' % (nodefn, err)
+            self.log.raiseException(msg)
+
 
     def get_universe_ncpus(self):
         """Construct dictionary with number of processes to start per node, based on --universe"""

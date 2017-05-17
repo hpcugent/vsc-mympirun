@@ -195,7 +195,7 @@ class TestMPI(TestCase):
     def test_make_node_file(self):
         """test if the nodefile is made and if it contains the same amount of nodes as mpinodes"""
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
-        mpi_instance.make_node_file()
+        mpi_instance.make_machine_file()
         self.assertTrue(os.path.isfile(mpi_instance.mpiexec_node_filename), msg="the nodefile has not been created")
 
         # test if amount of lines in nodefile matches amount of nodes
