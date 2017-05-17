@@ -117,7 +117,7 @@ class OpenMPI(MPI):
         nodetxt = ""
         if self.multiplier > 1:
             for node in nub(self.mpinodes):
-                nodetxt += '%s max-slots=%s\n' % (node, self.ppn)
+                nodetxt += '%s slots=%s\n' % (node, self.ppn)
         else:
             nodetxt = '\n'.join(self.mpinodes)
 
