@@ -124,13 +124,16 @@ class OpenMPI(MPI):
         nodefn = os.path.join(self.mympirundir, 'nodes')
 
         try:
-            open(nodefn, 'w').write(nodetxt)
-            self.mpiexec_node_filename = nodefn
-            self.log.debug("make_node_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
+            fp = open(nodefn, 'w')
+            fp.write(nodetxt)
+            fp.close()
 
-        except Exception as err:
-            msg = 'make_node_file: failed to write nodefile %s: %s' % (nodefn, err)
+        except IOError as err:
+            msg = 'make_mpdboot_file: failed to write nodefile %s: %s' % (nodefn, err)
             self.log.raiseException(msg)
+
+        self.mpiexec_node_filename = nodefn
+        self.log.debug("make_mpdboot_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
 
 class OpenMpiOversubscribe(OpenMPI):

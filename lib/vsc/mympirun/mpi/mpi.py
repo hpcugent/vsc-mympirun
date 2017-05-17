@@ -454,7 +454,7 @@ class MPI(object):
 
         self.set_netmask()
 
-        self.make_node_file()
+        self.make_mpdboot_file()
         self.make_machine_file()
 
         self.set_pinning()
@@ -580,7 +580,7 @@ class MPI(object):
             self.log.warning("Forcing device %s (founddevice %s), but path %s not found.",
                              self.device, founddev, path)
 
-    def make_node_file(self):
+    def make_mpdboot_file(self):
         """
         Make an mpdbootfile.
 
@@ -605,12 +605,15 @@ class MPI(object):
 
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
-            open(mpdfn, 'w').write(mpdboottxt)
-            self.mpdboot_node_filename = mpdfn
-            self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
-        except Exception as err:
-            msg = 'make_node_file: failed to write mpbboot file %s: %s' % (mpdfn, err)
+            fp = open(mpdfn, 'w')
+            fp.write(mpdboottxt)
+            fp.close()
+        except IOError as err:
+            msg = 'make_mpdboot_file: failed to write mpbboot file %s: %s' % (mpdfn, err)
             self.log.raiseException(msg)
+
+        self.mpdboot_node_filename = mpdfn
+        self.log.debug("make_mpdboot_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
 
 
     def make_machine_file(self):
@@ -629,13 +632,16 @@ class MPI(object):
         nodefn = os.path.join(self.mympirundir, 'nodes')
 
         try:
-            open(nodefn, 'w').write(nodetxt)
-            self.mpiexec_node_filename = nodefn
-            self.log.debug("make_node_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
+            fp = open(nodefn, 'w')
+            fp.write(nodetxt)
+            fp.close()
 
-        except Exception as err:
-            msg = 'make_node_file: failed to write nodefile %s: %s' % (nodefn, err)
+        except IOError as err:
+            msg = 'make_mpdboot_file: failed to write nodefile %s: %s' % (nodefn, err)
             self.log.raiseException(msg)
+
+        self.mpiexec_node_filename = nodefn
+        self.log.debug("make_mpdboot_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
 
     def get_universe_ncpus(self):
