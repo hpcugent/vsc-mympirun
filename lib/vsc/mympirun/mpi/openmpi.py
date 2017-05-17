@@ -28,6 +28,7 @@ OpenMPI specific classes
 Documentation can be found at https://www.open-mpi.org/doc/
 """
 import os
+import subprocess
 
 from vsc.mympirun.mpi.mpi import MPI
 
@@ -66,7 +67,20 @@ class OpenMPI(MPI):
         self.log.debug("pinning_override: type %s ", override_type)
 
         ranktxt = ""
-        sockets_per_node = 2
+
+        sockets_per_node = self.options.sockets
+        if not sockets_per_node:
+            try:
+                proc_cpuinfo = open('/proc/cpuinfo').read()
+            except IOError as err:
+                self.log.debug("No info on sockets found; hardcoding to 2 (most likely)")
+                sockets_per_node = 2
+
+            if proc_cpuinfo:
+                res = re.findall('^physical id.*', proc_cpuinfo, re.M)
+                sockets_per_node = len(nub(res))
+                self.log.debug("Sockets per node found in cpuinfo: set to %s" % sockets_per_node)
+
         universe = self.options.universe or len(self.nodes)
 
         try:
