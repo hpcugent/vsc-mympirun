@@ -199,10 +199,6 @@ class IntelHydraMPI(IntelMPI):
         'socket': 'shm:tcp',
     }
 
-    def make_mpiexec_hydra_options(self):
-        super(IntelHydraMPI, self).make_mpiexec_hydra_options()
-        self.mpiexec_options.append("-perhost %d" % self.multiplier)
-
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
         super(IntelHydraMPI, self).set_mpiexec_global_options()
