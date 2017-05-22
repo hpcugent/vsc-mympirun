@@ -24,12 +24,12 @@
 #
 """
 OpenMPI specific classes
-
 Documentation can be found at https://www.open-mpi.org/doc/
 """
 import os
 
-from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.mpi.mpi import MPI, version_in_range
+from vsc.utils.missing import nub
 
 
 class OpenMPI(MPI):
@@ -38,6 +38,7 @@ class OpenMPI(MPI):
 
     _mpiscriptname_for = ['ompirun']
     _mpirun_for = 'OpenMPI'
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, None, '1.7.0'))
 
     DEVICE_MPIDEVICE_MAP = {'ib': 'sm,openib,self', 'det': 'sm,tcp,self', 'shm': 'sm,self', 'socket': 'sm,tcp,self'}
 
@@ -100,3 +101,40 @@ class OpenMPI(MPI):
             self.log.raiseException('pinning_override: failed to write rankfile %s' % rankfn)
 
         return cmd
+
+    def make_machine_file(self, nodetxt=None):
+        """
+        Make the machinefile.
+        Parses the list of nodes that run an MPI process and writes this information to a machinefile.
+        """
+        if self.mpinodes is None:
+            self.set_mpinodes()
+
+        if not nodetxt:
+            nodetxt = ""
+            if self.multiplier > 1 or self.ppn < len(self.mpinodes):
+                for node in nub(self.mpinodes):
+                    nodetxt += '%s slots=%s\n' % (node, self.ppn)
+            else:
+                nodetxt = '\n'.join(self.mpinodes)
+
+        super(OpenMPI, self).make_machine_file(nodetxt=nodetxt)
+
+
+
+class OpenMpiOversubscribe(OpenMPI):
+
+    """
+    An implementation of the MPI class for OpenMPI. Starting from version 1.7, --oversubscribe has to be used
+    when requesting more processes than available processors.
+    """
+
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '1.7.0', None))
+
+
+    def set_mpiexec_options(self):
+
+        super(OpenMPI, self).set_mpiexec_options()
+
+        if self.multiplier > 1 or len(self.mpinodes) > self.ppn:
+            self.mpiexec_options.append("--oversubscribe")
