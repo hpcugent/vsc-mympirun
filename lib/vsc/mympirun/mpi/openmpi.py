@@ -38,6 +38,7 @@ class OpenMPI(MPI):
 
     _mpiscriptname_for = ['ompirun']
     _mpirun_for = 'OpenMPI'
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, None, '1.7.0'))
 
     DEVICE_MPIDEVICE_MAP = {'ib': 'sm,openib,self', 'det': 'sm,tcp,self', 'shm': 'sm,self', 'socket': 'sm,tcp,self'}
 
@@ -111,7 +112,7 @@ class OpenMPI(MPI):
 
         if not nodetxt:
             nodetxt = ""
-            if self.multiplier > 1:
+            if self.multiplier > 1 or self.ppn < len(self.mpinodes):
                 for node in nub(self.mpinodes):
                     nodetxt += '%s slots=%s\n' % (node, self.ppn)
             else:

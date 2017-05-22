@@ -639,11 +639,11 @@ class MPI(object):
             fp.close()
 
         except IOError as err:
-            msg = 'make_mpdboot_file: failed to write nodefile %s: %s' % (nodefn, err)
+            msg = 'make_machine_file: failed to write nodefile %s: %s' % (nodefn, err)
             self.log.raiseException(msg)
 
         self.mpiexec_node_filename = nodefn
-        self.log.debug("make_mpdboot_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
+        self.log.debug("make_machine_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
 
     def get_universe_ncpus(self):
