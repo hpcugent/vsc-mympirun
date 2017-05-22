@@ -61,15 +61,10 @@ class OpenMPI(MPI):
         """
         self.mpirun_cmd += self.mpiexec_options
 
-    def pinning_override(self):
-        """ pinning """
-
-        override_type = self.pinning_override_type
-
-        self.log.debug("pinning_override: type %s ", override_type)
-
-        ranktxt = ""
-
+    def determine_sockets_per_node(self):
+        """
+        Try to determine the number of sockets per node; either specified by --sockets-per-node or using /proc/cupinfo
+        """
         sockets_per_node = self.options.sockets
         if sockets_per_node == 0:
             try:
@@ -86,6 +81,15 @@ class OpenMPI(MPI):
                     sys.exit(1)
                 self.log.debug("Sockets per node found in cpuinfo: set to %s" % sockets_per_node)
 
+    def pinning_override(self):
+        """ pinning """
+
+        override_type = self.pinning_override_type
+
+        self.log.debug("pinning_override: type %s ", override_type)
+
+        ranktxt = ""
+        sockets_per_node = self.determine_sockets_per_node()
         universe = self.options.universe or len(self.nodes)
 
         try:
