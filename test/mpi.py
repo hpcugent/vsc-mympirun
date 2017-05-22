@@ -331,14 +331,16 @@ class TestMPI(TestCase):
         inst.nodes = [
             'node1',
             'node1',
+            'node1',
             'node2',
             'node2',
             'node2',
             'node2',
         ]
         options = {
+            2: {'node1': 1, 'node2': 1},
             3: {'node1': 2, 'node2': 1},
-            5: {'node1': 2, 'node2': 3}
+            6: {'node1': 3, 'node2': 3}
         }
         for opt in options:
             inst.options.universe = opt
