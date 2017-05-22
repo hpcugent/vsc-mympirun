@@ -32,6 +32,7 @@ import re
 import sys
 
 from vsc.mympirun.mpi.mpi import MPI
+from vsc.utils.missing import nub
 
 
 class OpenMPI(MPI):
