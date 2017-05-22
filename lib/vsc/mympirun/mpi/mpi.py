@@ -366,6 +366,15 @@ class MPI(object):
                     # next, check wheter version meets requirements (checked via _mpirun_version function)
                     version_var_name = 'EBVERSION' + mpiname.upper()
                     version = os.getenv(version_var_name)
+
+                    # mympirun is not compatible with OpenMPI version 2.0: this version contains a bug
+                    # see https://github.com/hpcugent/vsc-mympirun/issues/113
+                    if mpiname == "OpenMPI" and version_in_range(version, "2.0", "2.1"):
+                        LOGGER.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
+                                      "compatible with mympirun. This issue is not present in OpenMPI 1.x and it has "
+                                      "been fixed in OpenMPI 2.1 and further."))
+                        sys.exit(1)
+
                     mpirun_version_check = getattr(cls, '_mpirun_version', None)
                     if mpirun_version_check and version:
                         res = mpirun_version_check(version)
@@ -381,7 +390,6 @@ class MPI(object):
                 LOGGER.debug("$%s not defined, no match for %s" % (root_var_name, cls))
 
         return res
-
 
     @classmethod
     def _is_mpiscriptname_for(cls, scriptname):
@@ -446,7 +454,8 @@ class MPI(object):
 
         self.set_netmask()
 
-        self.make_node_file()
+        self.make_mpdboot_file()
+        self.make_machine_file(universe=self.options.universe)
 
         self.set_pinning()
 
@@ -571,12 +580,11 @@ class MPI(object):
             self.log.warning("Forcing device %s (founddevice %s), but path %s not found.",
                              self.device, founddev, path)
 
-    def make_node_file(self):
+    def make_mpdboot_file(self):
         """
-        Make a nodefile and mpdbootfile.
+        Make an mpdbootfile.
 
-        Parses the list of nodes that run an MPI process and writes this information to a nodefile.
-        Also parses the list of unique nodes and writes this information to a mpdbootfile
+        Parses the list of unique nodes and writes this information to a mpdbootfile
         (based on hydra and universe options).
         """
         self.make_mympirundir()
@@ -584,38 +592,46 @@ class MPI(object):
         if self.mpinodes is None:
             self.set_mpinodes()
 
-        nodetxt = ""
-        universe_ppn = self.get_universe_ncpus()
-        universe = self.options.universe
-
-        if universe is not None and universe > 0:
-            for node in nub(self.mpinodes):
-                txt = node
-                if self._mpirun_for == 'impi':
-                    txt += ":%s" % universe_ppn[node]
-                    if not self.has_hydra:
-                        nodetxt += " ifhn=%s" % node
-                else:
-                    txt += " slots=%s" % universe_ppn[node]
-                nodetxt += '%s\n' % txt
-        else:
-            nodetxt = '\n'.join(self.mpinodes)
-
         mpdboottxt = '\n'.join(nub(self.mpinodes))
 
-        nodefn = os.path.join(self.mympirundir, 'nodes')
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
-            open(nodefn, 'w').write(nodetxt)
-            self.mpiexec_node_filename = nodefn
-            self.log.debug("make_node_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
-
-            open(mpdfn, 'w').write(mpdboottxt)
-            self.mpdboot_node_filename = mpdfn
-            self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
-        except Exception as err:
-            msg = 'make_node_file: failed to write nodefile %s mpbboot nodefile %s: %s' % (nodefn, mpdfn, err)
+            fp = open(mpdfn, 'w')
+            fp.write(mpdboottxt)
+            fp.close()
+        except IOError as err:
+            msg = 'make_mpdboot_file: failed to write mpbboot file %s: %s' % (mpdfn, err)
             self.log.raiseException(msg)
+
+        self.mpdboot_node_filename = mpdfn
+        self.log.debug("make_mpdboot_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
+
+    def make_machine_file(self, nodetxt=None, universe=None):
+        """
+        Make the machinefile.
+
+        Parses the list of nodes that run an MPI process and writes this information to a machinefile.
+        """
+        if not self.mympirundir:
+            self.make_mympirundir()
+
+        if self.mpinodes is None:
+            self.set_mpinodes()
+
+        if nodetxt is None:
+            nodetxt = '\n'.join(self.mpinodes)
+
+        nodefn = os.path.join(self.mympirundir, 'nodes')
+        try:
+            fp = open(nodefn, 'w')
+            fp.write(nodetxt)
+            fp.close()
+        except IOError as err:
+            msg = 'make_machine_file: failed to write nodefile %s: %s' % (nodefn, err)
+            self.log.raiseException(msg)
+
+        self.mpiexec_node_filename = nodefn
+        self.log.debug("make_machine_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
     def get_universe_ncpus(self):
         """Construct dictionary with number of processes to start per node, based on --universe"""
@@ -635,7 +651,6 @@ class MPI(object):
             # select next node to assign a process to
             node = nodes.pop(0)
         return universe_ppn
-
 
     def make_mympirundir(self):
         """

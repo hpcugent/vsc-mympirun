@@ -43,7 +43,7 @@ from vsc.utils.missing import get_subclasses, nub
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
-from vsc.mympirun.mpi.openmpi import OpenMPI
+from vsc.mympirun.mpi.openmpi import OpenMPI, OpenMpiOversubscribe
 from vsc.mympirun.mpi.intelmpi import IntelMPI, IntelHydraMPIPbsdsh
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.local import Local
@@ -192,15 +192,14 @@ class TestMPI(TestCase):
                         msg="%s is not a valid netmask type, possible values: %s" %
                         (mpi_instance.netmasktype, mpi_instance.NETMASK_TYPE_MAP.values()))
 
-    def test_make_node_file(self):
-        """test if the nodefile is made and if it contains the same amount of nodes as mpinodes"""
+    def test_make_machine_file(self):
+        """test if the machinefile is made and if it contains the same amount of nodes as mpinodes"""
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
-        mpi_instance.make_node_file()
+        mpi_instance.make_machine_file()
         self.assertTrue(os.path.isfile(mpi_instance.mpiexec_node_filename), msg="the nodefile has not been created")
 
         # test if amount of lines in nodefile matches amount of nodes
         with open(mpi_instance.mpiexec_node_filename) as file:
-            print("nodefile content: %s" % file)
             index = 0
             for index, _ in enumerate(file):
                 pass
@@ -210,7 +209,22 @@ class TestMPI(TestCase):
         # disable make_mympirundir
         mpi_instance.make_mympirundir = lambda: True
         mpi_instance.mympirundir = '/does/not/exist/'
-        self.assertErrorRegex(IOError, "failed to write nodefile", mpi_instance.make_node_file)
+        self.assertErrorRegex(IOError, "failed to write nodefile", mpi_instance.make_machine_file)
+
+        # openmpi oversubscribing
+        mpi_instance = getinstance(OpenMpiOversubscribe, Local, MympirunOption())
+        mpi_instance.options.double = True
+        mpi_instance.set_multiplier()
+        mpi_instance.make_machine_file()
+
+        with open(mpi_instance.mpiexec_node_filename) as file:
+            n_slots = mpi_instance.ppn
+            regex = re.compile("slots=%s" % n_slots)
+            machinefile = file.read()
+            self.assertTrue(regex.search(machinefile), "Regex %s not found in %s" % (regex.pattern, machinefile))
+
+            self.assertEqual(len(nub(mpi_instance.mpinodes)), len(machinefile.strip().split('\n')),
+                             msg="mpinodes doesn't match the amount of nodes in the nodefile")
 
     def test_make_mympirundir(self):
         """test if the mympirundir is made"""
@@ -362,7 +376,6 @@ class TestMPI(TestCase):
             self.assertEqual(hybrid_ppn.count('node1'), opt)
             self.assertEqual(hybrid_ppn.count('node2'), opt)
 
-
     def test_make_mympirundir_basepaths(self):
         """Test if basepaths are different on every run"""
         basepaths = set()
@@ -372,7 +385,6 @@ class TestMPI(TestCase):
             basepaths.add(inst.mympirundir)
 
         self.assertEqual(len(basepaths), 10)
-
 
     def test_version_in_range(self):
         """Test version_in_range function"""

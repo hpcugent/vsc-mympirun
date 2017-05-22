@@ -357,7 +357,7 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple("%s %s --launcher ssh hostname" % (sys.executable, self.mympiscript))
         regexes = [
             (r'-bootstrap ssh', "bootstrap option is not ssh (with option)"),
-            (r'-bootstrap-exec pbsssh', "bootstrap-exec is should be pbsssh when specified launcher is ssh")
+            (r'-bootstrap-exec pbsssh', "bootstrap-exec is pbsssh when specified launcher is ssh")
         ]
         for regex in regexes:
             self.assertTrue(regex[0].find(out), regex[1] + ": " + out)
@@ -371,3 +371,12 @@ class TestEnd2End(unittest.TestCase):
         cmd = "%s %s --sched local hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         self.assertFalse("-bootstrap" in out, "using local scheduler, no bootstrap launcher should be specified: " + out)
+
+
+    def test_launcher_opt_impi_hydra(self):
+        """Test ompi v 2.0 bug (mympirun should produce error and stop)"""
+        install_fake_mpirun('mpirun', self.tmpdir, 'ompi', '2.0')
+        ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
+        self.assertEqual(ec, 1)
+        regex = r"OpenMPI 2\.0\.x uses a different naming protocol for nodes"
+        self.assertTrue(regex.find(out), "mympirun should produce an error with ompi 2.0")

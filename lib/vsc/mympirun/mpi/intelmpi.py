@@ -31,9 +31,9 @@ Documentation can be found at https://software.intel.com/en-us/node/528769
 import os
 import socket
 import tempfile
+from vsc.utils.missing import nub
 
 from vsc.mympirun.mpi.mpi import MPI, version_in_range, which
-from vsc.utils.missing import nub
 
 SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
 
@@ -95,24 +95,6 @@ class IntelMPI(MPI):
             mpd = which(['mpd.py'])
             self.mpdboot_options.append('-m "\\\"%s --bulletproof\\\""' % mpd)
 
-    def check_usable_cpus(self):
-        """
-        Check and act on fact of non-standard cpus (eg due to cpusets)
-          - default: do nothing more then log
-        """
-        if not self.cores_per_node == len(self.cpus):
-            # following works: taskset -c 1,3 mympirun --sched=local /usr/bin/env |grep I_MPI_PIN_INFO
-            self.log.info("check_usable_cpus: non-standard cpus found: found cpus %s, usable cpus %s",
-                           self.cores_per_node, len(self.cpus))
-
-            if len(nub(self.nodes)) > 1:
-                self.log.info(("check_usable_cpus: more then one unique node requested. "
-                               "Not setting I_MPI_PIN_PROCESSOR_LIST."))
-            else:
-                txt = ",".join(["%d" % x for x in self.cpus])
-                self.mpiexec_global_options['I_MPI_PIN_PROCESSOR_LIST'] = txt
-                os.environ['I_MPI_PIN_PROCESSOR_LIST'] = txt
-                self.log.info("check_usable_cpus: one node requested. Setting I_MPI_PIN_PROCESSOR_LIST to %s", txt)
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
@@ -197,6 +179,28 @@ class IntelMPI(MPI):
 
         return cmd
 
+    def make_machine_file(self, nodetxt=None, universe=None):
+        """
+        Make the machinefile.
+        Parses the list of nodes that run an MPI process and writes this information to a machinefile.
+        """
+        if self.mpinodes is None:
+            self.set_mpinodes()
+
+        if nodetxt is None:
+            nodetxt = ''
+            if universe is not None and universe > 0:
+                universe_ppn = self.get_universe_ncpus()
+                for node in nub(self.mpinodes):
+                    nodetxt += "%s:%s" % (node, universe_ppn[node])
+                    if not self.has_hydra:
+                        nodetxt += " ifhn=%s" % node
+                    nodetxt += '\n'
+            else:
+                nodetxt = '\n'.join(self.mpinodes)
+
+        super(IntelMPI, self).make_machine_file(nodetxt=nodetxt, universe=universe)
+
 
 class IntelHydraMPI(IntelMPI):
 
@@ -217,10 +221,6 @@ class IntelHydraMPI(IntelMPI):
         'shm': 'shm',
         'socket': 'shm:tcp',
     }
-
-    def make_mpiexec_hydra_options(self):
-        super(IntelHydraMPI, self).make_mpiexec_hydra_options()
-        self.mpiexec_options.append("-perhost %d" % self.multiplier)
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
