@@ -200,7 +200,6 @@ class TestMPI(TestCase):
 
         # test if amount of lines in nodefile matches amount of nodes
         with open(mpi_instance.mpiexec_node_filename) as file:
-            print("nodefile: %s" % file)
             index = 0
             for index, _ in enumerate(file):
                 pass
