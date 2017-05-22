@@ -219,15 +219,16 @@ class TestMPI(TestCase):
         mpi_instance.make_machine_file()
 
         with open(mpi_instance.mpiexec_node_filename) as file:
+            n_slots = mpi_instance.ppn
+            regex = re.compile("slots=%s" % n_slots)
+            machinefile = file.read()
+            self.assertTrue(regex.search(machinefile), "Regex %s not found in %s" % (regex.pattern, machinefile))
+
             index = 0
             for index, _ in enumerate(file):
                 pass
             self.assertEqual(len(nub(mpi_instance.mpinodes)), index+1,
                              msg="mpinodes doesn't match the amount of nodes in the nodefile")
-            n_slots = mpi_instance.ppn
-            regex = re.compile("slots=%s" % n_slots)
-            self.assertTrue(regex.search(file.read()))
-
 
     def test_make_mympirundir(self):
         """test if the mympirundir is made"""

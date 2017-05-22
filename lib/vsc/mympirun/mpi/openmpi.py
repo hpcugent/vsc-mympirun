@@ -112,7 +112,6 @@ class OpenMPI(MPI):
         if not nodetxt:
             nodetxt = ""
             if self.multiplier > 1:
-                print("found multiplier: %s" % self.multiplier)
                 for node in nub(self.mpinodes):
                     nodetxt += '%s slots=%s\n' % (node, self.ppn)
             else:
