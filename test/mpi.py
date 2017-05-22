@@ -224,10 +224,7 @@ class TestMPI(TestCase):
             machinefile = file.read()
             self.assertTrue(regex.search(machinefile), "Regex %s not found in %s" % (regex.pattern, machinefile))
 
-            index = 0
-            for index, _ in enumerate(file):
-                pass
-            self.assertEqual(len(nub(mpi_instance.mpinodes)), index+1,
+            self.assertEqual(len(nub(mpi_instance.mpinodes)), len(machinefile.strip().split('\n')),
                              msg="mpinodes doesn't match the amount of nodes in the nodefile")
 
     def test_make_mympirundir(self):
