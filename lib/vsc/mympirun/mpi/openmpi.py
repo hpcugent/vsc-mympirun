@@ -65,7 +65,7 @@ class OpenMPI(MPI):
         """
         Try to determine the number of sockets per node; either specified by --sockets-per-node or using /proc/cupinfo
         """
-        sockets_per_node = self.options.sockets
+        sockets_per_node = self.options.sockets_per_node
         if sockets_per_node == 0:
             try:
                 proc_cpuinfo = open('/proc/cpuinfo').read()
@@ -80,6 +80,8 @@ class OpenMPI(MPI):
                     self.log.error("Something went wrong: found sockets per node = 0. Please use --sockets-per-node")
                     sys.exit(1)
                 self.log.debug("Sockets per node found in cpuinfo: set to %s" % sockets_per_node)
+
+        return sockets_per_node
 
     def pinning_override(self):
         """ pinning """
