@@ -24,7 +24,6 @@
 #
 """
 OpenMPI specific classes
-
 Documentation can be found at https://www.open-mpi.org/doc/
 """
 import os
@@ -102,38 +101,25 @@ class OpenMPI(MPI):
 
         return cmd
 
-    def make_machine_file(self):
+    def make_machine_file(self, nodetxt=None):
         """
         Make the machinefile.
-
         Parses the list of nodes that run an MPI process and writes this information to a machinefile.
         """
-        if not self.mympirundir:
-            self.make_mympirundir()
-
         if self.mpinodes is None:
             self.set_mpinodes()
 
-        nodetxt = ""
-        if self.multiplier > 1:
-            for node in nub(self.mpinodes):
-                nodetxt += '%s slots=%s\n' % (node, self.ppn)
-        else:
-            nodetxt = '\n'.join(self.mpinodes)
+        if not nodetxt:
+            nodetxt = ""
+            if self.multiplier > 1:
+                print("found multiplier: %s" % self.multiplier)
+                for node in nub(self.mpinodes):
+                    nodetxt += '%s slots=%s\n' % (node, self.ppn)
+            else:
+                nodetxt = '\n'.join(self.mpinodes)
 
-        nodefn = os.path.join(self.mympirundir, 'nodes')
+        super(OpenMPI, self).make_machine_file(nodetxt=nodetxt)
 
-        try:
-            fp = open(nodefn, 'w')
-            fp.write(nodetxt)
-            fp.close()
-
-        except IOError as err:
-            msg = 'make_mpdboot_file: failed to write nodefile %s: %s' % (nodefn, err)
-            self.log.raiseException(msg)
-
-        self.mpiexec_node_filename = nodefn
-        self.log.debug("make_mpdboot_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
 
 class OpenMpiOversubscribe(OpenMPI):
@@ -152,4 +138,3 @@ class OpenMpiOversubscribe(OpenMPI):
 
         if self.multiplier > 1 or len(self.mpinodes) > self.ppn:
             self.mpiexec_options.append("--oversubscribe")
-

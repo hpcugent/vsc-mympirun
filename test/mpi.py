@@ -43,7 +43,7 @@ from vsc.utils.missing import get_subclasses, nub
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
-from vsc.mympirun.mpi.openmpi import OpenMPI
+from vsc.mympirun.mpi.openmpi import OpenMPI, OpenMpiOversubscribe
 from vsc.mympirun.mpi.intelmpi import IntelMPI, IntelHydraMPIPbsdsh
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.local import Local
@@ -200,7 +200,7 @@ class TestMPI(TestCase):
 
         # test if amount of lines in nodefile matches amount of nodes
         with open(mpi_instance.mpiexec_node_filename) as file:
-            print("nodefile content: %s" % file)
+            print("nodefile: %s" % file)
             index = 0
             for index, _ in enumerate(file):
                 pass
@@ -211,6 +211,23 @@ class TestMPI(TestCase):
         mpi_instance.make_mympirundir = lambda: True
         mpi_instance.mympirundir = '/does/not/exist/'
         self.assertErrorRegex(IOError, "failed to write nodefile", mpi_instance.make_machine_file)
+
+        # openmpi oversubscribing
+        mpi_instance = getinstance(OpenMpiOversubscribe, Local, MympirunOption())
+        mpi_instance.options.double = True
+        mpi_instance.set_multiplier()
+        mpi_instance.make_machine_file()
+
+        with open(mpi_instance.mpiexec_node_filename) as file:
+            index = 0
+            for index, _ in enumerate(file):
+                pass
+            self.assertEqual(len(nub(mpi_instance.mpinodes)), index+1,
+                             msg="mpinodes doesn't match the amount of nodes in the nodefile")
+            n_slots = mpi_instance.ppn
+            regex = re.compile("slots=%s" % n_slots)
+            self.assertTrue(regex.search(file.read()))
+
 
     def test_make_mympirundir(self):
         """test if the mympirundir is made"""

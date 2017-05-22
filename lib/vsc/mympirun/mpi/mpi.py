@@ -616,7 +616,7 @@ class MPI(object):
         self.log.debug("make_mpdboot_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
 
 
-    def make_machine_file(self):
+    def make_machine_file(self, nodetxt=None):
         """
         Make the machinefile.
 
@@ -628,7 +628,9 @@ class MPI(object):
         if self.mpinodes is None:
             self.set_mpinodes()
 
-        nodetxt = '\n'.join(self.mpinodes)
+        if not nodetxt:
+            nodetxt = '\n'.join(self.mpinodes)
+
         nodefn = os.path.join(self.mympirundir, 'nodes')
 
         try:
