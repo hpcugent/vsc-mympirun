@@ -28,7 +28,7 @@ OpenMPI specific classes
 Documentation can be found at https://www.open-mpi.org/doc/
 """
 import os
-import subprocess
+import sys
 
 from vsc.mympirun.mpi.mpi import MPI
 
@@ -69,16 +69,19 @@ class OpenMPI(MPI):
         ranktxt = ""
 
         sockets_per_node = self.options.sockets
-        if not sockets_per_node:
+        if sockets_per_node == 0:
             try:
                 proc_cpuinfo = open('/proc/cpuinfo').read()
             except IOError as err:
-                self.log.debug("No info on sockets found; hardcoding to 2 (most likely)")
-                sockets_per_node = 2
+                self.log.error("Number of sockets per node not found: please use --sockets-per-node")
+                sys.exit(1)
 
             if proc_cpuinfo:
                 res = re.findall('^physical id.*', proc_cpuinfo, re.M)
                 sockets_per_node = len(nub(res))
+                if sockets_per_node == 0:
+                    self.log.error("Something went wrong: found sockets per node = 0. Please use --sockets-per-node")
+                    sys.exit(1)
                 self.log.debug("Sockets per node found in cpuinfo: set to %s" % sockets_per_node)
 
         universe = self.options.universe or len(self.nodes)
