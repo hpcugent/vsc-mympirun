@@ -69,6 +69,7 @@ class OpenMPI(MPI):
         if sockets_per_node == 0:
             try:
                 proc_cpuinfo = open('/proc/cpuinfo').read()
+                print "CPUINFO: %s" % proc_cpuinfo
             except IOError:
                 self.log.error("Number of sockets per node not found: please use --sockets-per-node")
                 sys.exit(1)
