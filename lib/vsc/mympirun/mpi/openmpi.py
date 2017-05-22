@@ -28,6 +28,7 @@ OpenMPI specific classes
 Documentation can be found at https://www.open-mpi.org/doc/
 """
 import os
+import re
 import sys
 
 from vsc.mympirun.mpi.mpi import MPI
@@ -72,7 +73,7 @@ class OpenMPI(MPI):
         if sockets_per_node == 0:
             try:
                 proc_cpuinfo = open('/proc/cpuinfo').read()
-            except IOError as err:
+            except IOError:
                 self.log.error("Number of sockets per node not found: please use --sockets-per-node")
                 sys.exit(1)
 
