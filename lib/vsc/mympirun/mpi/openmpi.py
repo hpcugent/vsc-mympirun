@@ -102,7 +102,7 @@ class OpenMPI(MPI):
 
         return cmd
 
-    def make_machine_file(self, nodetxt=None):
+    def make_machine_file(self, nodetxt=None, universe=None):
         """
         Make the machinefile.
         Parses the list of nodes that run an MPI process and writes this information to a machinefile.
@@ -110,15 +110,22 @@ class OpenMPI(MPI):
         if self.mpinodes is None:
             self.set_mpinodes()
 
-        if not nodetxt:
-            nodetxt = ""
-            if self.multiplier > 1 or self.ppn < len(self.mpinodes):
+        if nodetxt is None:
+            nodetxt = ''
+            # if --universe is specified, we control how many processes per node are run via 'slots='
+            if universe is not None and universe > 0:
+                universe_ppn = self.get_universe_ncpus()
+                for node in nub(self.mpinodes):
+                    nodetxt += "%s slots=%s\n" % (node, universe_ppn[node])
+
+            # in case of oversubscription or multinode, also use 'slots='
+            elif self.multiplier > 1 or self.ppn < len(self.mpinodes):
                 for node in nub(self.mpinodes):
                     nodetxt += '%s slots=%s\n' % (node, self.ppn)
             else:
                 nodetxt = '\n'.join(self.mpinodes)
 
-        super(OpenMPI, self).make_machine_file(nodetxt=nodetxt)
+        super(OpenMPI, self).make_machine_file(nodetxt=nodetxt, universe=universe)
 
 
 

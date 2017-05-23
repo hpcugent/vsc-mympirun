@@ -455,7 +455,7 @@ class MPI(object):
         self.set_netmask()
 
         self.make_mpdboot_file()
-        self.make_machine_file()
+        self.make_machine_file(universe=self.options.universe)
 
         self.set_pinning()
 
@@ -592,16 +592,7 @@ class MPI(object):
         if self.mpinodes is None:
             self.set_mpinodes()
 
-        mpdboottxt = ""
-        universe_ppn = self.get_universe_ncpus()
-
-        for node in nub(self.mpinodes):
-            txt = node
-            if not self.has_hydra:
-                if self.options.universe is not None and self.options.universe > 0:
-                    txt += ":%s" % universe_ppn[node]
-                txt += " ifhn=%s" % node
-            mpdboottxt += "%s\n" % txt
+        mpdboottxt = '\n'.join(nub(self.mpinodes))
 
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
@@ -615,8 +606,7 @@ class MPI(object):
         self.mpdboot_node_filename = mpdfn
         self.log.debug("make_mpdboot_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
 
-
-    def make_machine_file(self, nodetxt=None):
+    def make_machine_file(self, nodetxt=None, universe=None):
         """
         Make the machinefile.
 
@@ -628,23 +618,28 @@ class MPI(object):
         if self.mpinodes is None:
             self.set_mpinodes()
 
-        if not nodetxt:
-            nodetxt = '\n'.join(self.mpinodes)
+        if nodetxt is None:
+            if universe is not None and universe > 0:
+                universe_ppn = self.get_universe_ncpus()
+                nodes = []
+                for node in nub(self.mpinodes):
+                    nodes.extend([node] * universe_ppn[node])
+            else:
+                nodes = self.mpinodes
+
+            nodetxt = '\n'.join(nodes)
 
         nodefn = os.path.join(self.mympirundir, 'nodes')
-
         try:
             fp = open(nodefn, 'w')
             fp.write(nodetxt)
             fp.close()
-
         except IOError as err:
             msg = 'make_machine_file: failed to write nodefile %s: %s' % (nodefn, err)
             self.log.raiseException(msg)
 
         self.mpiexec_node_filename = nodefn
         self.log.debug("make_machine_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
-
 
     def get_universe_ncpus(self):
         """Construct dictionary with number of processes to start per node, based on --universe"""
@@ -664,7 +659,6 @@ class MPI(object):
             # select next node to assign a process to
             node = nodes.pop(0)
         return universe_ppn
-
 
     def make_mympirundir(self):
         """

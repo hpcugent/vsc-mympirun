@@ -31,6 +31,7 @@ Documentation can be found at https://software.intel.com/en-us/node/528769
 import os
 import socket
 import tempfile
+from vsc.utils.missing import nub
 
 from vsc.mympirun.mpi.mpi import MPI, version_in_range, which
 
@@ -177,6 +178,28 @@ class IntelMPI(MPI):
                                     self.pinning_override_type)
 
         return cmd
+
+    def make_machine_file(self, nodetxt=None, universe=None):
+        """
+        Make the machinefile.
+        Parses the list of nodes that run an MPI process and writes this information to a machinefile.
+        """
+        if self.mpinodes is None:
+            self.set_mpinodes()
+
+        if nodetxt is None:
+            nodetxt = ''
+            if universe is not None and universe > 0:
+                universe_ppn = self.get_universe_ncpus()
+                for node in nub(self.mpinodes):
+                    nodetxt += "%s:%s" % (node, universe_ppn[node])
+                    if not self.has_hydra:
+                        nodetxt += " ifhn=%s" % node
+                    nodetxt += '\n'
+            else:
+                nodetxt = '\n'.join(self.mpinodes)
+
+        super(IntelMPI, self).make_machine_file(nodetxt=nodetxt, universe=universe)
 
 
 class IntelHydraMPI(IntelMPI):
