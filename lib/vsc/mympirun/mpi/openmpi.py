@@ -27,6 +27,8 @@ OpenMPI specific classes
 Documentation can be found at https://www.open-mpi.org/doc/
 """
 import os
+import re
+import sys
 
 from vsc.mympirun.mpi.mpi import MPI, version_in_range
 from vsc.utils.missing import nub
@@ -59,6 +61,32 @@ class OpenMPI(MPI):
         """
         self.mpirun_cmd += self.mpiexec_options
 
+    def determine_sockets_per_node(self):
+        """
+        Try to determine the number of sockets per node; either specified by --sockets-per-node or using /proc/cupinfo
+        """
+        sockets_per_node = self.options.sockets_per_node
+        if sockets_per_node == 0:
+            try:
+                proc_cpuinfo = open('/proc/cpuinfo').read()
+            except IOError as err:
+                error_msg = "Failed to read /proc/cpuinfo to determine number of sockets per node: %s" % err
+                error_msg += "; use --sockets-per-node to override"
+                self.log.error(error_msg)
+                sys.exit(1)
+
+            if proc_cpuinfo:
+                res = re.findall('^physical id.*', proc_cpuinfo, re.M)
+                sockets_per_node = len(nub(res))
+                self.log.debug("Sockets per node found in cpuinfo: set to %s" % sockets_per_node)
+
+            if sockets_per_node == 0:
+                self.log.warning("Could not derive number of sockets per node from /proc/cpuinfo. "
+                                 "Assuming a single socket, use --sockets-per-node to override.")
+                sockets_per_node = 1
+
+        return sockets_per_node
+
     def pinning_override(self):
         """ pinning """
 
@@ -67,7 +95,7 @@ class OpenMPI(MPI):
         self.log.debug("pinning_override: type %s ", override_type)
 
         ranktxt = ""
-        sockets_per_node = 2
+        sockets_per_node = self.determine_sockets_per_node()
         universe = self.options.universe or len(self.nodes)
 
         try:

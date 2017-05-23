@@ -123,8 +123,8 @@ class MympirunOption(GeneralOption):
 
             "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
 
-
-            "socket": ("Force socket device", None, "store_true", None),
+            "sockets-per-node": ("Number of sockets per node (default: 0, i.e. try to detect #sockets "
+                                 "from /proc/cpuinfo)", "int", "store", 0),
 
             "ssh": ("Force ssh for mpd startup (will try to use optimised method by default)",
                     None, "store_false", True),
