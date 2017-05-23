@@ -69,18 +69,21 @@ class OpenMPI(MPI):
         if sockets_per_node == 0:
             try:
                 proc_cpuinfo = open('/proc/cpuinfo').read()
-                print "CPUINFO: %s" % proc_cpuinfo
-            except IOError:
-                self.log.error("Number of sockets per node not found: please use --sockets-per-node")
+            except IOError as err:
+                error_msg = "Failed to read /proc/cpuinfo to determine number of sockets per node: %s" % err
+                error_msg += "; use --sockets-per-node to override"
+                self.log.error(error_msg)
                 sys.exit(1)
 
             if proc_cpuinfo:
                 res = re.findall('^physical id.*', proc_cpuinfo, re.M)
                 sockets_per_node = len(nub(res))
-                if sockets_per_node == 0:
-                    self.log.error("Something went wrong: found sockets per node = 0. Please use --sockets-per-node")
-                    sys.exit(1)
                 self.log.debug("Sockets per node found in cpuinfo: set to %s" % sockets_per_node)
+
+            if sockets_per_node == 0:
+                self.log.warning("Could not derive number of sockets per node from /proc/cpuinfo. "
+                                 "Assuming a single socket, use --sockets-per-node to override.")
+                sockets_per_node = 1
 
         return sockets_per_node
 
