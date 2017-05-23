@@ -454,7 +454,8 @@ class MPI(object):
 
         self.set_netmask()
 
-        self.make_node_file()
+        self.make_mpdboot_file()
+        self.make_machine_file(universe=self.options.universe)
 
         self.set_pinning()
 
@@ -579,12 +580,11 @@ class MPI(object):
             self.log.warning("Forcing device %s (founddevice %s), but path %s not found.",
                              self.device, founddev, path)
 
-    def make_node_file(self):
+    def make_mpdboot_file(self):
         """
-        Make a nodefile and mpdbootfile.
+        Make an mpdbootfile.
 
-        Parses the list of nodes that run an MPI process and writes this information to a nodefile.
-        Also parses the list of unique nodes and writes this information to a mpdbootfile
+        Parses the list of unique nodes and writes this information to a mpdbootfile
         (based on hydra and universe options).
         """
         self.make_mympirundir()
@@ -592,32 +592,54 @@ class MPI(object):
         if self.mpinodes is None:
             self.set_mpinodes()
 
+        mpdboottxt = '\n'.join(nub(self.mpinodes))
 
-        mpdboottxt = ""
-        universe_ppn = self.get_universe_ncpus()
-
-        for node in nub(self.mpinodes):
-            txt = node
-            if not self.has_hydra:
-                if self.options.universe is not None and self.options.universe > 0:
-                    txt += ":%s" % universe_ppn[node]
-                txt += " ifhn=%s" % node
-            mpdboottxt += "%s\n" % txt
-
-        nodetxt = '\n'.join(self.mpinodes)
-        nodefn = os.path.join(self.mympirundir, 'nodes')
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
-            open(nodefn, 'w').write(nodetxt)
-            self.mpiexec_node_filename = nodefn
-            self.log.debug("make_node_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
-
-            open(mpdfn, 'w').write(mpdboottxt)
-            self.mpdboot_node_filename = mpdfn
-            self.log.debug("make_node_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
-        except Exception as err:
-            msg = 'make_node_file: failed to write nodefile %s mpbboot nodefile %s: %s' % (nodefn, mpdfn, err)
+            fp = open(mpdfn, 'w')
+            fp.write(mpdboottxt)
+            fp.close()
+        except IOError as err:
+            msg = 'make_mpdboot_file: failed to write mpbboot file %s: %s' % (mpdfn, err)
             self.log.raiseException(msg)
+
+        self.mpdboot_node_filename = mpdfn
+        self.log.debug("make_mpdboot_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
+
+    def make_machine_file(self, nodetxt=None, universe=None):
+        """
+        Make the machinefile.
+
+        Parses the list of nodes that run an MPI process and writes this information to a machinefile.
+        """
+        if not self.mympirundir:
+            self.make_mympirundir()
+
+        if self.mpinodes is None:
+            self.set_mpinodes()
+
+        if nodetxt is None:
+            if universe is not None and universe > 0:
+                universe_ppn = self.get_universe_ncpus()
+                nodes = []
+                for node in nub(self.mpinodes):
+                    nodes.extend([node] * universe_ppn[node])
+            else:
+                nodes = self.mpinodes
+
+            nodetxt = '\n'.join(nodes)
+
+        nodefn = os.path.join(self.mympirundir, 'nodes')
+        try:
+            fp = open(nodefn, 'w')
+            fp.write(nodetxt)
+            fp.close()
+        except IOError as err:
+            msg = 'make_machine_file: failed to write nodefile %s: %s' % (nodefn, err)
+            self.log.raiseException(msg)
+
+        self.mpiexec_node_filename = nodefn
+        self.log.debug("make_machine_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
     def get_universe_ncpus(self):
         """Construct dictionary with number of processes to start per node, based on --universe"""
@@ -637,7 +659,6 @@ class MPI(object):
             # select next node to assign a process to
             node = nodes.pop(0)
         return universe_ppn
-
 
     def make_mympirundir(self):
         """
