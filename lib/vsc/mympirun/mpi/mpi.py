@@ -619,7 +619,15 @@ class MPI(object):
             self.set_mpinodes()
 
         if nodetxt is None:
-            nodetxt = '\n'.join(self.mpinodes)
+            if universe is not None and universe > 0:
+                universe_ppn = self.get_universe_ncpus()
+                nodes = []
+                for node in nub(self.mpinodes):
+                    nodes.extend([node] * universe_ppn[node])
+            else:
+                nodes = self.mpinodes
+
+            nodetxt = '\n'.join(nodes)
 
         nodefn = os.path.join(self.mympirundir, 'nodes')
         try:
