@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,30 +25,35 @@
 """
 Local scheduler : no scheduler, act on single node
 """
-
 from vsc.mympirun.rm.sched import Sched
-import time
-import random
+
 
 class Local(Sched):
+
     """
     Local class for local debugging (ie no scheduler settings)
-    - will use the amount of cores found on localhost.
+      - will use the amount of cores found on localhost.
     """
     _sched_for = ['local']
-    SCHED_ENVIRON_ID = 'LOCAL_JOBID'
-    SCHED_ENVIRON_ID_AUTOGENERATE_JOBID = True
+    SCHED_ENVIRON_ID = None
+    SCHED_ENVIRON_NODEFILE = None
+    AUTOGENERATE_JOBID = True
 
-    HYDRA_LAUNCHER = ['local']
+    HYDRA_LAUNCHER = 'local'
 
-    def get_node_list(self):
-        """Get the hostnames for the localnode
-            MPIRUN_LOCALHOSTNAME is from multiple inheritance with MPI class
+    def set_nodes(self):
+        """
+        Get the hostnames for the localnode
+        MPIRUN_LOCALHOSTNAME is from multiple inheritance with MPI class
         """
 
         localhostname = getattr(self, 'MPIRUN_LOCALHOSTNAME', 'localhost')
         self.nodes = [localhostname] * len(self.cpus)
-        self.nrnodes = len(self.nodes)  # same as len(self.cpus)
 
-        self.log.debug("get_node_list: set %s nodes: %s" % (self.nrnodes, self.nodes))
+        self.log.debug("set_nodes: %s", self.nodes)
 
+    def is_local(self):
+        """
+        Return whether this is a local scheduler or not.
+        """
+        return True

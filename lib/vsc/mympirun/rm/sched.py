@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,43 +25,75 @@
 """
 Main sched class
 """
-
-
 import os
+import time
 import random
 import re
-import time
-from vsc.utils.fancylogger import getLogger
-from vsc.mympirun.mpi.mpi import get_subclasses
+
 from vsc.utils.affinity import sched_getaffinity
-from vsc.utils.missing import nub
+from vsc.utils.fancylogger import getLogger
+from vsc.utils.missing import get_subclasses, nub
 
+LOGGER = getLogger()
 
-def whatSched(requested):
-    """Return the scheduler class"""
-    found_sched = get_subclasses(Sched)
+def what_sched(requested):
+    """Return the scheduler class """
+
+    # The coupler is also a subclass of sched, but we don't want it
+    found_sched = [x for x in get_subclasses(Sched) if x.__name__ != 'Coupler']
+
+    # Get local scheduler
+    local_sched = get_local_sched(found_sched)
+
+    # first, try to use the scheduler that was requested
+    if requested:
+        for sched in found_sched:
+            if sched._is_sched_for(requested):
+                return sched, found_sched
+        LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
+
+    # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
-        # print sched.__name__, requested
-        if sched._is_sched_for(requested):
+        if sched.SCHED_ENVIRON_NODEFILE in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
             return sched, found_sched
-    return None, found_sched
+
+    # If that fails, try to force the local scheduler
+    LOGGER.debug("No scheduler found in environment, trying local")
+    return local_sched, found_sched
+
+
+def get_local_sched(found_sched):
+    """Helper function to get local scheduler (or None, if there is no local scheduler)"""
+    res = None
+    for sched in found_sched:
+        if sched._is_sched_for("local"):
+            res = sched
+            break
+    return res
 
 
 class Sched(object):
+
     """General class for scheduler/resource manager related functions."""
     _sched_for = []  # classname is default added
     _sched_environ_test = []
     SCHED_ENVIRON_ID = None
-    SCHED_ENVIRON_ID_AUTOGENERATE_JOBID = False  # if the SCHED_ENVIRON_ID is not found, create one yourself
+    SCHED_ENVIRON_NODEFILE = None
+
+    # if the SCHED_ENVIRON_ID is not found, create one yourself
+    AUTOGENERATE_JOBID = False
 
     SAFE_RSH_CMD = 'ssh'
     SAFE_RSH_LARGE_CMD = 'sshsleep'
     RSH_CMD = None
     RSH_LARGE_CMD = None
-    RSH_LARGE_LIMIT = 16  # nr of nodes considered large (relevant for internode communication for eg mpdboot)
+
+    # nr of nodes considered large
+    # relevant for internode communication for eg mpdboot
+    RSH_LARGE_LIMIT = 16
 
     HYDRA_RMK = []
-    HYDRA_LAUNCHER = ['ssh']
+    HYDRA_LAUNCHER = 'ssh'
     HYDRA_LAUNCHER_EXEC = None
 
     def __init__(self, options=None, **kwargs):
@@ -70,43 +102,43 @@ class Sched(object):
         if not hasattr(self, 'options'):
             self.options = options
 
-        self.nodes = None
-        self.nrnodes = None
+        self.cores_per_node = None
+        self.set_cores_per_node()
 
-        self.uniquenodes = None
-        self.nruniquenodes = None
-
-        self.mpinodes = None
-        self.mpinrnodes = None
-        self.mpitotalppn = None
-
-        self.id = None
-
-        self.foundppn = None
-        self.ppn = None
-        self.totalppn = None
+        self.sched_id = None
+        self.set_sched_id()
 
         self.cpus = []
+        self.set_cpus()
 
-        # collect data
-        self.get_id()
-        self._cores_on_this_node()
-        self.which_cpus()
+        self.nodes = None
+        self.set_nodes()
 
-        self.get_node_list()
-        self.get_unique_nodes()
+        self.multiplier = None
+        self.set_multiplier()
+
+        ppn = os.environ.get('PBS_NUM_PPN')
+        if ppn is not None:
+            self.ppn = int(ppn)
+            self.log.debug("Determined # cores per node via $PBS_NUM_PPN: %s" % self.ppn)
+        else:
+            self.ppn = len(self.cpus)
+            self.log.debug("Failed to determine # cores per node via $PBS_NUM_PPN, using affinity: found %s" % self.ppn)
         self.set_ppn()
+
+        self.mpinodes = None
+        self.set_mpinodes()
 
         super(Sched, self).__init__(**kwargs)
 
-    # factory methods for MPI
-    # to add a new MPI class just create a new class that extends the cluster class
+    # factory methods for Sched. To add a new Sched class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
-    # classmethod
+    @classmethod
     def _is_sched_for(cls, name=None):
         """see if this class can provide support for sched class"""
         if name is not None:
-            return name in cls._sched_for + [cls.__name__]  # add class name as default
+            # add class name as default
+            return name in cls._sched_for + [cls.__name__]
 
         # guess it from environment
         totest = cls._sched_environ_test
@@ -115,103 +147,69 @@ class Sched(object):
 
         for envvar in totest:
             envval = os.environ.get(envvar, None)
-            if envval is None or len(envval) == 0:
+            if not envval:
                 continue
             else:
                 return True
 
         return False
-    _is_sched_for = classmethod(_is_sched_for)
 
     # other methods
-    def get_unique_nodes(self, nodes=None):
-        """Set unique nodes from self.nodes"""
-        if nodes is None:
-            nodes = self.nodes
-
-        # don't use set(), preserve order!
-        self.uniquenodes = nub(nodes)
-        self.nruniquenodes = len(self.uniquenodes)
-
-        self.log.debug("get_unique_nodes: %s uniquenodes: %s from %s" %
-                       (self.nruniquenodes, self.uniquenodes, nodes))
-
-    def get_node_list(self):
-        """get list of nodes (one node per requested processor/core)"""
-        self.log.raiseException("get_node_list not implemented")
-
-    def get_id(self):
-        """get unique id"""
+    def set_sched_id(self):
+        """get a unique id for this scheduler"""
         if self.SCHED_ENVIRON_ID is not None:
-            self.id = os.environ.get(self.SCHED_ENVIRON_ID, None)
+            self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
-        if self.id is None:
-            if self.SCHED_ENVIRON_ID is not None:
-                if self.SCHED_ENVIRON_ID_AUTOGENERATE_JOBID:
-                    self.log.info("get_id: failed to get id from environment variable %s, will generate one." %
-                                  self.SCHED_ENVIRON_ID)
-                    self.id = "SCHED_%s%s%05d" % (self.__class__.__name__,
-                                                  time.strftime("%Y%m%d%H%M%S"),
-                                                  random.randint(0, 10 ** 5 - 1))
-                    self.log.debug("get_id: using generated id %s" % self.id)
-                else:
-                    self.log.raiseException("get_id: failed to get id from environment variable %s" %
-                                            self.SCHED_ENVIRON_ID)
+        if self.sched_id is None:
+            if self.AUTOGENERATE_JOBID:
+                self.log.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
+                              self.SCHED_ENVIRON_ID)
+                self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
+                                                    random.randint(0, 10 ** 5 - 1))
+                self.log.debug("set_sched_id: using generated id %s", self.sched_id)
+            else:
+                self.log.raiseException("set_sched_id: failed to get id from environment variable %s" %
+                                        self.SCHED_ENVIRON_ID)
 
-    def set_ppn(self):
-        """Determine the ppn from nodes and unique nodes"""
-        if self.nrnodes is None:
-            self.get_node_list()
-        if self.nruniquenodes is None:
-            self.get_unique_nodes()
+    def set_cores_per_node(self):
+        """Determine the number of available cores on this node, based on /proc/cpuinfo"""
 
-        self.ppn = self.nrnodes // self.nruniquenodes
-        # set default
-        self.totalppn = self.ppn
-
-        self.log.debug("Set ppn to %s (totalppn %s)" % (self.ppn, self.totalppn))
-
-    def _cores_on_this_node(self):
-        """Determine the number of available cores on this node based on /proc/cpuinfo"""
-        fn = '/proc/cpuinfo'
+        filename = '/proc/cpuinfo'
         regcores = re.compile(r"^processor\s*:\s*\d+\s*$", re.M)
 
-        self.foundppn = len(regcores.findall(file(fn).read()))
+        self.cores_per_node = len(regcores.findall(open(filename).read()))
 
-        self.log.debug("_cores_on_thisnode: found %s" % self.foundppn)
+        self.log.debug("set_cores_per_node: found %s", self.cores_per_node)
 
-    def which_cpus(self):
+    def set_cpus(self):
         """
-        Determine which cpus can be used
+        Determine which cpus on the node can be used
 
         are we running in a cpuset?
-        - and how big is it (nr of procs compared to local number of cores)
+          - and how big is it (nr of procs compared to local number of cores)
 
         stores local core ids in array
-        # TODO fix remote cpusets
-        - what with remote ones?
         """
-        if self.foundppn is None:
-            self._cores_on_this_node()
 
         try:
-            cs = sched_getaffinity()  # get affinity for current proc
-            self.cpus = [idx for idx, cpu in enumerate(cs.cpus) if cpu == 1]
-        except:
-            self.cpus = range(self.foundppn)
+            proc_affinity = sched_getaffinity()  # get affinity for current proc
+            self.cpus = [idx for idx, cpu in enumerate(proc_affinity.cpus) if cpu == 1]
+            self.log.debug("found cpus from affinity: %s", self.cpus)
+        except Exception:
+            self.cpus = range(self.cores_per_node)
+            self.log.debug("could not find cpus from affinity, simulating with range(cores_per_node): %s", self.cpus)
 
-        self.log.debug("which_cpus: using cpus %s" % (self.cpus))
+    def set_nodes(self):
+        """get a list with the node of every requested processor/core"""
+        self.log.raiseException("set_nodes not implemented")
 
-    def is_large(self):
-        """Determine if this is a large job or not"""
-        if self.nrnodes is None:
-            self.get_node_list()
-        if self.foundppn is None:
-            self.which_cpus()
-
-        res = (self.nrnodes > self.RSH_LARGE_LIMIT) and (self.ppn == self.foundppn)
-        self.log.debug("is_large returns %s" % res)
-        return res
+    def set_ppn(self):
+        """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
+        self.ppn_dict = {}
+        for node in self.nodes:
+            self.ppn_dict.setdefault(node, 0)
+            self.ppn_dict[node] += 1
+        self.log.debug("Number of processors per node: %s" % self.ppn_dict)
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -223,57 +221,48 @@ class Sched(object):
                 rsh = self.SAFE_RSH_CMD
         else:
             # optimised
-            default_rsh = getattr(self, 'DEFAULT_RSH', None)  # set in MPI, not in RM
-            if default_rsh is not None:
-                rsh = default_rsh
-            elif getattr(self, 'has_hydra', None):
+            # set in MPI, not in RM
+            if getattr(self, 'has_hydra', None):
                 rsh = 'ssh'  # default anyway
             elif self.is_large():
                 rsh = self.RSH_LARGE_CMD
             else:
                 rsh = self.RSH_CMD
 
-        self.log.debug("get_rsh returns %s" % rsh)
+        self.log.debug("get_rsh returns %s", rsh)
         return rsh
 
-    def make_node_list(self):
-        """Make a modified list of nodes based on requested options"""
-        if self.nodes is None:
-            self.get_node_list()
-        if self.totalppn is None or self.ppn is None:
-            self.set_ppn()
-        if self.uniquenodes is None:
-            self.get_unique_nodes()
+    def is_large(self):
+        """Determine if this is a large job or not"""
 
-        # get the working mode from options
-        hybrid = getattr(self.options, 'hybrid', None)
-        double = getattr(self.options, 'double', False)
+        res = ((len(self.nodes) > self.RSH_LARGE_LIMIT) and
+               (any(c == self.cores_per_node for c in self.ppn_dict.values())))
+        self.log.debug("is_large returns %s", res)
+        return res
 
-        # set the multiplier
-        if hybrid:
-            multi = hybrid
-        elif double:
-            multi = 2
+    def set_multiplier(self):
+        """set multiplier """
+        if self.options.multi:
+            self.multiplier = self.options.multi
+        elif self.options.double:
+            self.multiplier = 2
         else:
-            multi = 1
+            self.multiplier = 1
 
-        self.log.debug("make_node_list: hybrid %s double %s multi %s" % (hybrid, double, multi))
+    def set_mpinodes(self):
+        """
+        Make a list of nodes that MPI should use
+
+        Calculates the amount of mpi processes based on the processors per node and options like double and hybrid
+        Will also make a list with nodes, where each entry is supposed to run an mpi process
+        """
 
         res = []
-        if double:
-            self.mpitotalppn = self.ppn * multi
-            res = self.nodes * multi
-        elif hybrid:
-            # return multi unique nodes
-            # mpitotalppn = 1 per node * multi
-            self.mpitotalppn = multi
-            for n in self.uniquenodes:
-                res.extend([n] * multi)
+        if self.options.hybrid is None:
+            res = self.nodes * self.multiplier
         else:
-            # default mode
-            self.mpitotalppn = self.ppn * multi
-            for n in self.uniquenodes:
-                res.extend([n] * self.mpitotalppn)
+            for uniquenode in nub(self.nodes):
+                res.extend([uniquenode] * self.options.hybrid * self.multiplier)
 
         # reorder
         ordermode = getattr(self.options, 'order', None)
@@ -282,22 +271,25 @@ class Sched(object):
         ordermode = ordermode.split("_")
         if ordermode[0] in ('normal',):
             # do nothing
-            self.log.debug("make_node_list: no reordering (mode %s)" % ordermode)
+            self.log.debug("set_mpinodes: no reordering (mode %s)", ordermode)
         elif ordermode[0] in ('random',):
             if len(ordermode) == 2:
                 seed = int(ordermode[1])
                 random.seed(seed)
-                self.log.debug("make_node_list: setting random seed %s" % seed)
+                self.log.debug("set_mpinodes: setting random seed %s", seed)
             random.shuffle(res)
-            self.log.debug("make_node_list shuffled nodes (mode %s)" % ordermode)
+            self.log.debug("set_mpinodes shuffled nodes (mode %s)" %
+                           ordermode)
         elif ordermode[0] in ('sort',):
             res.sort()
-            self.log.debug("make_node_list sort nodes (mode %s)" % ordermode)
+            self.log.debug("set_mpinodes sort nodes (mode %s)", ordermode)
         else:
-            self.log.raiseExcepetion("make_node_list unknown ordermode %s" % ordermode)
-
-        self.log.debug("make_node_list: ordered node list %s (mpitotalppn %s)" %
-                       (res, self.mpitotalppn))
+            self.log.raiseException("set_mpinodes unknown ordermode %s" % ordermode)
 
         self.mpinodes = res
-        self.nrmpinodes = len(res)
+
+    def is_local(self):
+        """
+        Return whether this is a local scheduler or not.
+        """
+        return False

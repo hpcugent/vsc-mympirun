@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2016 Ghent University
+# Copyright 2009-2017 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,38 +25,36 @@
 """
 Torque / PBS
 """
-
-from vsc.mympirun.rm.sched import Sched
 import os
 
+from vsc.mympirun.rm.sched import Sched
+
+
 class PBS(Sched):
+
     """Torque/PBS based"""
     _sched_for = ['pbs', 'torque']
     SCHED_ENVIRON_ID = 'PBS_JOBID'
+    SCHED_ENVIRON_NODEFILE = 'PBS_NODEFILE'
 
+    # pbsssh is only used if native support for pbsdsh is not supported in the MPI library;
+    # e.g. Intel MPI v5.x and newer supports using pbsdsh as launcher natively, no need for pbsssh wrapper
     RSH_LARGE_CMD = 'pbsssh'
     RSH_LARGE_LIMIT = 'pbsssh'
     HYDRA_LAUNCHER_EXEC = 'pbsssh'
     HYDRA_RMK = ['pbs']
 
-    def get_node_list(self):
+    def set_nodes(self):
 
         nodevar = 'PBS_NODEFILE'
-        fn = os.environ.get(nodevar, None)
-        if fn is None:
-            self.log.raiseException("get_node_list: failed to get %s from environment" % nodevar)
+        filename = os.environ.get(nodevar, None)
+        if filename is None:
+            self.log.raiseException("set_nodes: failed to get %s from environment"  % nodevar)
 
         try:
-            self.nodes = [ x.strip() for x in file(fn).read().split("\n") if len(x.strip()) > 0]
-            self.nrnodes = len(self.nodes)
-            self.log.debug("get_node_list: found %s nodes in %s: %s" % (self.nrnodes, fn, self.nodes))
-        except:
-            self.log.raiseException("get_node_list: failed to get nodes from nodefile %s" % fn)
+            self.nodes = [x.strip() for x in open(filename).read().split("\n") if len(x.strip()) > 0]
+            self.log.debug("set_nodes: from %s: %s", filename, self.nodes)
+        except IOError:
+            self.log.raiseException("set_nodes: failed to get nodes from nodefile %s" % filename)
 
-        self.log.debug("get_node_list: set %s nodes: %s" % (self.nrnodes, self.nodes))
-
-
-
-
-
-
+        self.log.debug("set_nodes: %s", self.nodes)

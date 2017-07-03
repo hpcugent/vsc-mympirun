@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2016 Ghent University
+# Copyright 2011-2017 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -31,20 +31,36 @@ mpi and scheduler class
 
 from vsc.utils import fancylogger
 
-_logger = fancylogger.getLogger()
+
+_coupler_class_cache = {}
+
+
+_log = fancylogger.getLogger('mympirun.factory', fname=False)
 
 
 def getinstance(mpi, sched, options):
-    """Make an instance of the relevant MPI class. Also set the RM instance
-
-    @param mpi: a class subclassing from MPI (e.g. retunred by whatMPI)
-    @param sched: a class subclassing from sched (e.g. returned by whatSched)
-    @param mo: an instance of MympirunOption
     """
-    class M(mpi, sched):
-        """Temporary class to couple MPI and local sched"""
-        def __init__(self, **kwargs):
-            self.log = fancylogger.getLogger("%s_%s" % (mpi.__name__, sched.__name__))
-            super(M, self).__init__(**kwargs)
+    Make an instance of the relevant MPI class. Also set the RM instance
 
-    return M(options=options.options, cmdargs=options.args)
+    @param mpi: a class subclassing from MPI (e.g. returned by whatMPI)
+    @param sched: a class subclassing from sched (e.g. returned by whatSched)
+    @param options: an instance of MympirunOption
+
+    @return: an instance that is a subclass of the selected MPI and Scheduler
+    """
+    cache_key = (mpi, sched)
+
+    if cache_key not in _coupler_class_cache:
+        class Coupler(mpi, sched):
+            """Temporary class to couple MPI and local sched"""
+            def __init__(self, **kwargs):
+                self.log = fancylogger.getLogger("%s_%s" % (mpi.__name__, sched.__name__))
+                super(Coupler, self).__init__(**kwargs)
+
+        _coupler_class_cache[cache_key] = Coupler
+        _log.debug("Created new 'Coupler' class for %s: %s", cache_key, id(Coupler))
+
+    coupler_class = _coupler_class_cache[cache_key]
+    _log.debug("Fetched Coupler class from cache %s: %s", cache_key, id(coupler_class))
+
+    return coupler_class(options=options.options, cmdargs=options.args)
