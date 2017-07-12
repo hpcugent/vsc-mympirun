@@ -102,7 +102,7 @@ class MympirunOption(GeneralOption):
                                      "disables this test", "int", "store", DEFAULT_TIMEOUT),
 
             "output-check-fatal": ("Exit with code %s instead of warn in case of output check timeout" % TIMEOUT_CODE,
-                                    None, "store_true", True),
+                                    None, "store_true", False),
 
             "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
                              "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "

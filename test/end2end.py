@@ -169,7 +169,6 @@ class TestEnd2End(unittest.TestCase):
             sys.executable,
             self.mympiscript,
             "--output-check-timeout 2",
-            "--disable-output-check-fatal",
             "hostname",
             ])
         ec, out = run_simple(cmd)
@@ -198,7 +197,6 @@ class TestEnd2End(unittest.TestCase):
             self.mympiscript,
             "--output %s" % f_out,
             "--output-check-timeout 2",
-            "--disable-output-check-fatal",
             "hostname",
             ])
         ec, out = run_simple(cmd)
@@ -216,10 +214,10 @@ class TestEnd2End(unittest.TestCase):
         ])
 
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=no_output_mpirun)
-        # --output-check-fatal is True by default
         cmd = ' '.join([
             sys.executable,
             self.mympiscript,
+            "--output-check-fatal",
             "--output-check-timeout 2",
             "hostname",
             ])
