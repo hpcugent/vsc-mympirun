@@ -90,7 +90,8 @@ class TestEnd2End(unittest.TestCase):
 
         # add /bin to $PATH, /lib to $PYTHONPATH
         self.topdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        self.mympiscript = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
+        # needs to be wrapped in quotes since topdir could include spaces... 0_o
+        self.mympiscript = "'%s'" % os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
         lib = os.path.join(self.topdir, 'lib')
         # make sure subshell finds .egg files by adding them to the pythonpath
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
@@ -258,22 +259,32 @@ class TestEnd2End(unittest.TestCase):
 
     def test_option_universe(self):
         """Test --universe command line option"""
-        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '4.0.3')
+        # test with Intel MPI versions where mpd & hydra as the default process managers
+        for impi_ver in ['4.0.3', '4.2', '5.1.2']:
 
-        self.change_env(5)
-        ec, out = run_simple("%s %s --universe 4 hostname" % (sys.executable, self.mympiscript))
-        regex = re.compile('-np 4')
-        self.assertTrue(regex.search(out))
+            mpirun = os.path.join(self.tmpdir, 'mpirun')
+            if os.path.exists(mpirun):
+                os.remove(mpirun)
+            install_fake_mpirun('mpirun', self.tmpdir, 'impi', impi_ver)
 
-        self.change_env(1)
-        # intel mpi without hydra
-        ec, out = run_simple("%s %s --universe 1 hostname" % (sys.executable, self.mympiscript))
-        os.environ['I_MPI_PROCESS_MANAGER'] = 'mpd'
+            self.change_env(5)
+            ec, out = run_simple("%s %s --universe 4 hostname" % (sys.executable, self.mympiscript))
+            self.assertEqual(ec, 0)
+            regex = re.compile('-np 4')
+            self.assertTrue(regex.search(out))
 
-        np_regex = re.compile('-np 1')
-        ncpus_regex = re.compile('--ncpus=1')
-        self.assertTrue(np_regex.search(out))
-        self.assertTrue(ncpus_regex.search(out))
+            self.change_env(1)
+            # intel mpi without hydra
+            os.environ['I_MPI_PROCESS_MANAGER'] = 'mpd'
+            ec, out = run_simple("%s %s --universe 1 hostname" % (sys.executable, self.mympiscript))
+            self.assertEqual(ec, 0)
+
+            np_regex = re.compile('-np 1')
+            ncpus_regex = re.compile('--ncpus=1')
+            self.assertTrue(np_regex.search(out))
+            self.assertTrue(ncpus_regex.search(out))
+
+            del os.environ['I_MPI_PROCESS_MANAGER']
 
     def test_option_universe_hydra(self):
         """Test --universe command line option with hydra impi"""

@@ -811,7 +811,8 @@ class MPI(object):
 
         # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0 and not self.has_hydra:
-            self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus()[localmachine])
+            local_nodename = self.mpdboot_localhost_interface[0]
+            self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus()[local_nodename])
 
         # set verbosity
         if self.options.mpdbootverbose:
