@@ -90,7 +90,8 @@ class TestEnd2End(unittest.TestCase):
 
         # add /bin to $PATH, /lib to $PYTHONPATH
         self.topdir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        self.mympiscript = os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
+        # needs to be wrapped in quotes since topdir could include spaces... 0_o
+        self.mympiscript = "'%s'" % os.path.join(os.path.join(self.topdir, 'bin'), 'mympirun.py')
         lib = os.path.join(self.topdir, 'lib')
         # make sure subshell finds .egg files by adding them to the pythonpath
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
