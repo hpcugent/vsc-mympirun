@@ -27,6 +27,7 @@ Torque / PBS
 """
 import os
 
+from vsc.mympirun.mpi.mpi import which
 from vsc.mympirun.rm.sched import Sched
 
 
@@ -37,12 +38,21 @@ class PBS(Sched):
     SCHED_ENVIRON_ID = 'PBS_JOBID'
     SCHED_ENVIRON_NODEFILE = 'PBS_NODEFILE'
 
-    # pbsssh is only used if native support for pbsdsh is not supported in the MPI library;
-    # e.g. Intel MPI v5.x and newer supports using pbsdsh as launcher natively, no need for pbsssh wrapper
-    RSH_LARGE_CMD = 'pbsssh'
-    RSH_LARGE_LIMIT = 'pbsssh'
-    HYDRA_LAUNCHER_EXEC = 'pbsssh'
     HYDRA_RMK = ['pbs']
+
+    def __init__(self, *args, **kwargs):
+        """PBS constructor"""
+        super(PBS, self).__init__(*args, **kwargs)
+
+        # pbsssh is only used if native support for pbsdsh is not supported in the MPI library;
+        # e.g. Intel MPI v5.x and newer supports using pbsdsh as launcher natively, no need for pbsssh wrapper
+        if which('pbsssh') and which('pbsdsh'):
+            self.log.debug("Both 'pbsssh' and 'pbsdsh' found, so use 'pbsssh' as remote shell command.")
+            self.RSH_LARGE_CMD = 'pbsssh'
+            self.RSH_LARGE_LIMIT = 'pbsssh'
+            self.HYDRA_LAUNCHER_EXEC = 'pbsssh'
+        else:
+            self.log.debug("Either 'pbsssh' or 'pbsdsh' not available, not using 'pbsssh' as remote shell command.")
 
     def set_nodes(self):
 
