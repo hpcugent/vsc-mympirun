@@ -42,7 +42,7 @@ import vsc.mympirun.rm.sched as schedm
 from vsc.utils.missing import nub
 from vsc.utils.run import run_simple
 
-from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.mpi.mpi import MPI, which
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
 from sched import cleanup_PBS_env, set_PBS_env
@@ -371,12 +371,13 @@ class TestEnd2End(unittest.TestCase):
 
         # forced behavior
         ec, out = run_simple("%s %s --launcher ssh hostname" % (sys.executable, self.mympiscript))
-        print "output of (mocked) '%s --launcher ssh hostname': %s" % (self.mympiscript, out)
         regexes = [
             (r'-bootstrap ssh', "bootstrap option is not ssh (with option)"),
         ]
         for regex in regexes:
             self.assertTrue(re.search(regex[0], out), regex[1] + ": " + out)
+
+        self.assertEqual(which('pbsdsh'), None)
 
         fail_msg = "No -bootstrap-exec option when launcher is ssh and no pbsdsh: %s" % out
         self.assertFalse(re.search(r'-bootstrap-exec', out), fail_msg)
