@@ -102,6 +102,11 @@ class TestEnd2End(unittest.TestCase):
         mpdconf.write("password=topsecretpassword")
         mpdconf.close()
 
+        # add location of symlink 'pbsssh' to actual pbsssh.sh script to $PATH too
+        os.mkdir(os.path.join(self.tmpdir, 'bin'))
+        os.symlink(os.path.join(self.topdir, 'bin', 'pbsssh.sh'), os.path.join(self.tmpdir, 'bin', 'pbsssh'))
+        os.environ['PATH'] = '%s:%s' % (os.path.join(self.tmpdir, 'bin'), os.getenv('PATH', ''))
+
         # make sure we're using the right mympirun installation...
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
         expected_path = os.path.join(self.topdir, 'lib', 'vsc', 'mympirun')
@@ -235,8 +240,8 @@ class TestEnd2End(unittest.TestCase):
         cmd = "%s %s --double hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         # set_pbs_env() sets 2 cores, so double is 4
-        self.assertEqual(len(out.split('\n')), 4)
         self.assertEqual(out, ('\n'.join(['localhost'] * 4)))
+        self.assertEqual(len(out.split('\n')), 4)
 
 
     def test_option_multi(self):
@@ -245,16 +250,16 @@ class TestEnd2End(unittest.TestCase):
         cmd = "%s %s --multi 3 -- hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         # set_pbs_env() sets 2 cores, so *3 = 6
-        self.assertEqual(len(out.split('\n')), 6)
         self.assertEqual(out, ('\n'.join(['localhost'] * 6)))
+        self.assertEqual(len(out.split('\n')), 6)
 
 
     def test_option_hybrid(self):
         """Test --hybrid command line option"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
         ec, out = run_simple("%s %s --hybrid 5 hostname" % (sys.executable, self.mympiscript))
-        self.assertEqual(len(out.split('\n')), 5)
         self.assertEqual(out, ('\n'.join(['localhost'] * 5)))
+        self.assertEqual(len(out.split('\n')), 5)
 
 
     def test_option_universe(self):
@@ -308,6 +313,9 @@ class TestEnd2End(unittest.TestCase):
         env
         """
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=fake_mpirun_env)
+
+        os.environ['PYTHONPATH'] = '/just/an/example:%s' % os.getenv('PYTHONPATH', '')
+
         command = ' '.join([
             sys.executable,
             self.mympiscript,
@@ -322,7 +330,6 @@ class TestEnd2End(unittest.TestCase):
         regex = r'.*-envlist [^ ]*USER.*'
         self.assertTrue(re.search(regex, out), "Variablesprefix USER isn't passed to mympirun script env")
 
-        os.environ['PYTHONPATH'] = '/just/an/example:%s' % os.getenv('PYTHONPATH', '')
         regex = r'PYTHONPATH=/just/an/example:.*'
         self.assertTrue(re.search(regex, out), "PYTHONPATH isn't passed to mympirun script env correctly: %s" % out)
 
@@ -384,7 +391,7 @@ class TestEnd2End(unittest.TestCase):
 
     def test_launcher_opt_impi_hydra(self):
         """Test ompi v 2.0 bug (mympirun should produce error and stop)"""
-        install_fake_mpirun('mpirun', self.tmpdir, 'ompi', '2.0')
+        install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '2.0')
         ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(ec, 1)
         regex = r"OpenMPI 2\.0\.x uses a different naming protocol for nodes"
