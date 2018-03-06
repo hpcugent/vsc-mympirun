@@ -369,20 +369,21 @@ class TestEnd2End(unittest.TestCase):
         regex = r'-bootstrap pbsdsh'
         self.assertTrue(re.search(regex, out), "-bootstrap option is pbsdsh (default for impi/5.1): " + out)
 
-        # forced behavior
+        # if --launcher ssh is used, behaviour depends on whether or not pbsdsh are available
         ec, out = run_simple("%s %s --launcher ssh hostname" % (sys.executable, self.mympiscript))
+
         regexes = [
-            (r'-bootstrap ssh', "bootstrap option is not ssh (with option)"),
+            (r'-bootstrap ssh', "bootstrap option is ssh (possibly with -bootstrap-exec option)"),
         ]
-        for regex in regexes:
-            self.assertTrue(re.search(regex[0], out), regex[1] + ": " + out)
+        pbsdsh = which('pbsdsh')
+        if pbsdsh:
+            # '-bootstrap-exec pbsssh' is used only when pbsdsh is available
+            regexes.append((r'-bootstrap-exec pbsssh', "pbsssh is used when launcher is ssh and pbsdsh is there"))
+        else:
+            # withtout pbsdsh, no -bootstrap-exec
+            fail_msg = "No -bootstrap-exec option when launcher is ssh and no pbsdsh: %s" % out
+            self.assertFalse(re.search(r'-bootstrap-exec', out), fail_msg)
 
-        self.assertEqual(which('pbsdsh'), None)
-
-        fail_msg = "No -bootstrap-exec option when launcher is ssh and no pbsdsh: %s" % out
-        self.assertFalse(re.search(r'-bootstrap-exec', out), fail_msg)
-
-        regexes.append((r'-bootstrap-exec pbsssh', "bootstrap-exec is pbsssh when launcher is ssh and pbsdsh is there"))
         for regex in regexes:
             self.assertTrue(re.search(regex[0], out), regex[1] + ": " + out)
 
