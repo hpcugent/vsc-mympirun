@@ -396,7 +396,7 @@ class TestEnd2End(unittest.TestCase):
         self.assertFalse("-bootstrap" in out, "using local scheduler, no bootstrap launcher should be specified: " + out)
 
 
-    def test_launcher_opt_impi_hydra(self):
+    def test_launcher_opt_ompi(self):
         """Test ompi v 2.0 bug (mympirun should produce error and stop)"""
         install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '2.0')
         ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
