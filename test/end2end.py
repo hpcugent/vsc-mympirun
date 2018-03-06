@@ -324,7 +324,7 @@ class TestEnd2End(unittest.TestCase):
 
         os.environ['PYTHONPATH'] = '/just/an/example:%s' % os.getenv('PYTHONPATH', '')
         regex = r'PYTHONPATH=/just/an/example:.*'
-        self.assertTrue(re.search(regex, out), "PYTHONPATH isn't passed to mympirun script env correctly")
+        self.assertTrue(re.search(regex, out), "PYTHONPATH isn't passed to mympirun script env correctly: %s" % out)
 
     def change_env(self, cores):
         """Helper method for changing the number of cores in the machinefile"""
@@ -388,4 +388,4 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(ec, 1)
         regex = r"OpenMPI 2\.0\.x uses a different naming protocol for nodes"
-        self.assertTrue(re.search(regex, out), "mympirun should produce an error with ompi 2.0")
+        self.assertTrue(re.search(regex, out), "mympirun should produce an error with ompi 2.0: %s" % out)
