@@ -905,6 +905,7 @@ class MPI(object):
 
         if self.options.launcher:
             launcher = self.options.launcher
+            self.log.debug("Using specified launcher: %s", launcher)
             if launcher not in avail_launchers:
                 err = "Specified launcher %s does not exist, available launchers: %s"
                 self.log.warning(err % (launcher, avail_launchers))
@@ -914,6 +915,9 @@ class MPI(object):
                 launcher = default_launcher
             else:
                 self.log.raiseException("There is no launcher specified, and no default launcher found")
+
+        if which(launcher) is None:
+            self.log.raiseException("Specified launcher '%s' not found in $PATH" % launcher)
 
         if not self.is_local():
             self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher))
@@ -927,8 +931,17 @@ class MPI(object):
             else:
                 launcher_exec = self.get_rsh()
 
-            self.mpiexec_options.append("-%s-exec %s" % (self.HYDRA_LAUNCHER_NAME, launcher_exec))
-
+            launcher_exec_opt = '-%s-exec %s' % (self.HYDRA_LAUNCHER_NAME, launcher_exec)
+            if which(launcher_exec):
+                # only specify launcher exec if specified command is available;
+                # only use pbsssh as launcher exec if pbsdsh is also available
+                if launcher_exec == 'pbsssh' and which('pbsdsh') is None:
+                    self.log.warning("Not using 'pbsssh' since 'pbsdsh' is not available in $PATH")
+                else:
+                    self.mpiexec_options.append(launcher_exec_opt)
+            else:
+                self.log.warning("Specified launcher exec '%s' is not available, so not adding '%s' option",
+                                 launcher_exec, launcher_exec_opt)
 
     def get_hydra_info(self):
         """Get a dict with hydra info."""
@@ -1060,5 +1073,5 @@ class MPI(object):
         try:
             shutil.rmtree(self.mympirundir)
             self.log.debug("cleanup: removed mympirundir %s", self.mympirundir)
-        except OSError:
-            self.log.raiseException("cleanup: cleaning up mympirundir %s failed" % self.mympirundir)
+        except OSError as err:
+            self.log.raiseException("cleanup: cleaning up mympirundir %s failed: %s", self.mympirundir, err)
