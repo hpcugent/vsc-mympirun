@@ -42,7 +42,7 @@ import vsc.mympirun.rm.sched as schedm
 from vsc.utils.missing import nub
 from vsc.utils.run import run_simple
 
-from vsc.mympirun.mpi.mpi import MPI
+from vsc.mympirun.mpi.mpi import MPI, which
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
 from sched import cleanup_PBS_env, set_PBS_env
@@ -101,6 +101,11 @@ class TestEnd2End(unittest.TestCase):
         mpdconf = open(os.path.join(self.tmpdir, '.mpd.conf'), 'w')
         mpdconf.write("password=topsecretpassword")
         mpdconf.close()
+
+        # add location of symlink 'pbsssh' to actual pbsssh.sh script to $PATH too
+        os.mkdir(os.path.join(self.tmpdir, 'bin'))
+        os.symlink(os.path.join(self.topdir, 'bin', 'pbsssh.sh'), os.path.join(self.tmpdir, 'bin', 'pbsssh'))
+        os.environ['PATH'] = '%s:%s' % (os.path.join(self.tmpdir, 'bin'), os.getenv('PATH', ''))
 
         # make sure we're using the right mympirun installation...
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
@@ -235,8 +240,8 @@ class TestEnd2End(unittest.TestCase):
         cmd = "%s %s --double hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         # set_pbs_env() sets 2 cores, so double is 4
-        self.assertEqual(len(out.split('\n')), 4)
         self.assertEqual(out, ('\n'.join(['localhost'] * 4)))
+        self.assertEqual(len(out.split('\n')), 4)
 
 
     def test_option_multi(self):
@@ -245,16 +250,16 @@ class TestEnd2End(unittest.TestCase):
         cmd = "%s %s --multi 3 -- hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         # set_pbs_env() sets 2 cores, so *3 = 6
-        self.assertEqual(len(out.split('\n')), 6)
         self.assertEqual(out, ('\n'.join(['localhost'] * 6)))
+        self.assertEqual(len(out.split('\n')), 6)
 
 
     def test_option_hybrid(self):
         """Test --hybrid command line option"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
         ec, out = run_simple("%s %s --hybrid 5 hostname" % (sys.executable, self.mympiscript))
-        self.assertEqual(len(out.split('\n')), 5)
         self.assertEqual(out, ('\n'.join(['localhost'] * 5)))
+        self.assertEqual(len(out.split('\n')), 5)
 
 
     def test_option_universe(self):
@@ -308,6 +313,9 @@ class TestEnd2End(unittest.TestCase):
         env
         """
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=fake_mpirun_env)
+
+        os.environ['PYTHONPATH'] = '/just/an/example:%s' % os.getenv('PYTHONPATH', '')
+
         command = ' '.join([
             sys.executable,
             self.mympiscript,
@@ -320,11 +328,10 @@ class TestEnd2End(unittest.TestCase):
             self.assertTrue(key in out, "%s is not in out" % key)
 
         regex = r'.*-envlist [^ ]*USER.*'
-        self.assertTrue(regex.find(out), "Variablesprefix USER isn't passed to mympirun script env")
+        self.assertTrue(re.search(regex, out), "Variablesprefix USER isn't passed to mympirun script env")
 
-        os.environ['PYTHONPATH'] = '/just/an/example:%s' % os.getenv('PYTHONPATH', '')
         regex = r'PYTHONPATH=/just/an/example:.*'
-        self.assertTrue(regex.find(out), "PYTHONPATH isn't passed to mympirun script env correctly")
+        self.assertTrue(re.search(regex, out), "PYTHONPATH isn't passed to mympirun script env correctly: %s" % out)
 
     def change_env(self, cores):
         """Helper method for changing the number of cores in the machinefile"""
@@ -351,7 +358,7 @@ class TestEnd2End(unittest.TestCase):
 
         ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
         regex = r'-bootstrap ssh'
-        self.assertTrue(regex.find(out), "-bootstrap option is not ssh (default for impi/4.2)" + out)
+        self.assertTrue(re.search(regex, out), "-bootstrap option is not ssh (default for impi/4.2)" + out)
 
     def test_launcher_opt_impi_hydra(self):
         """Test --launcher command line option with impi >= 5.0.3 (supports pbsdsh)"""
@@ -360,32 +367,41 @@ class TestEnd2End(unittest.TestCase):
         # default behavior
         ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
         regex = r'-bootstrap pbsdsh'
-        self.assertTrue(regex.find(out), "-bootstrap option is not pbsdsh (default for impi/5.1): " + out)
+        self.assertTrue(re.search(regex, out), "-bootstrap option is pbsdsh (default for impi/5.1): " + out)
 
-        # forced behavior
+        # if --launcher ssh is used, behaviour depends on whether or not pbsdsh are available
         ec, out = run_simple("%s %s --launcher ssh hostname" % (sys.executable, self.mympiscript))
+
         regexes = [
-            (r'-bootstrap ssh', "bootstrap option is not ssh (with option)"),
-            (r'-bootstrap-exec pbsssh', "bootstrap-exec is pbsssh when specified launcher is ssh")
+            (r'-bootstrap ssh', "bootstrap option is ssh (possibly with -bootstrap-exec option)"),
         ]
+        pbsdsh = which('pbsdsh')
+        if pbsdsh:
+            # '-bootstrap-exec pbsssh' is used only when pbsdsh is available
+            regexes.append((r'-bootstrap-exec pbsssh', "pbsssh is used when launcher is ssh and pbsdsh is there"))
+        else:
+            # withtout pbsdsh, no -bootstrap-exec
+            fail_msg = "No -bootstrap-exec option when launcher is ssh and no pbsdsh: %s" % out
+            self.assertFalse(re.search(r'-bootstrap-exec', out), fail_msg)
+
         for regex in regexes:
-            self.assertTrue(regex[0].find(out), regex[1] + ": " + out)
+            self.assertTrue(re.search(regex[0], out), regex[1] + ": " + out)
 
         # unknown launcher being specified only results in a warning (we allow specifying launchers that are not listed)
         cmd = "%s %s --launcher doesnotexist hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         regex = r'WARNING .* Specified launcher doesnotexist does not exist'
-        self.assertTrue(regex.find(out), "mympirun should warn for non-existing launcher")
+        self.assertTrue(re.search(regex, out), "mympirun should warn for non-existing launcher")
 
         cmd = "%s %s --sched local hostname"
         ec, out = run_simple(cmd % (sys.executable, self.mympiscript))
         self.assertFalse("-bootstrap" in out, "using local scheduler, no bootstrap launcher should be specified: " + out)
 
 
-    def test_launcher_opt_impi_hydra(self):
+    def test_launcher_opt_ompi(self):
         """Test ompi v 2.0 bug (mympirun should produce error and stop)"""
-        install_fake_mpirun('mpirun', self.tmpdir, 'ompi', '2.0')
+        install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '2.0')
         ec, out = run_simple("%s %s hostname" % (sys.executable, self.mympiscript))
         self.assertEqual(ec, 1)
         regex = r"OpenMPI 2\.0\.x uses a different naming protocol for nodes"
-        self.assertTrue(regex.find(out), "mympirun should produce an error with ompi 2.0")
+        self.assertTrue(re.search(regex, out), "mympirun should produce an error with ompi 2.0: %s" % out)
