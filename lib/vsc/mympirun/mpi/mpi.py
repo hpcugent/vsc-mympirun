@@ -926,12 +926,14 @@ class MPI(object):
         if launcher == 'ssh':
             launcher_exec = getattr(self, 'HYDRA_LAUNCHER_EXEC', None)
 
-            if launcher_exec is not None:
-                self.log.debug("make_mpiexec_hydra_options: HYDRA using launcher exec %s", launcher_exec)
-            else:
+            if launcher_exec is None:
                 launcher_exec = self.get_rsh()
 
-            self.mpiexec_options.append("-%s-exec %s" % (self.HYDRA_LAUNCHER_NAME, launcher_exec))
+            if launcher_exec:
+                self.log.debug("make_mpiexec_hydra_options: HYDRA using launcher exec %s", launcher_exec)
+                self.mpiexec_options.append("-%s-exec %s" % (self.HYDRA_LAUNCHER_NAME, launcher_exec))
+            else:
+                self.log.debug("make_mpiexec_hydra_options: no launcher exec")
 
     def get_hydra_info(self):
         """Get a dict with hydra info."""
