@@ -72,6 +72,8 @@ class MympirunOption(GeneralOption):
 
             "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
 
+            "dry-run": ("Dry run mode, just print command that will be executed", None, 'store_true', False, 'D'),
+
             "double": ("Run double the amount of processes (equivalent to --multi 2)", None, "store_true", False),
 
             "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),

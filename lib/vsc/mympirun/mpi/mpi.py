@@ -430,6 +430,7 @@ class MPI(object):
 
         run_kwargs = {
             'fatal_no_output': self.options.output_check_fatal,
+            'filename': None,
             'output_timeout': self.options.output_check_timeout,
         }
         if self.options.output:
@@ -437,7 +438,19 @@ class MPI(object):
             run_kwargs.update({'filename': self.options.output})
         else:
             run_mpirun_cmd = RunAsyncMPI.run
-        exitcode, _ = run_mpirun_cmd(self.mpirun_cmd, **run_kwargs)
+
+        if self.options.dry_run:
+            self.log.info("Dry run, only printing generated mpirun command...")
+            dry_run_output = '\n'.join([
+                "* output file            : %(filename)s",
+                "* output timeout         : %(output_timeout)s",
+                "* fail on missing output : %(fatal_no_output)s",
+                "* mpirun command         : %s" % ' '.join(self.mpirun_cmd),
+            ]) % run_kwargs
+            print(dry_run_output)
+            exitcode = 0
+        else:
+            exitcode, _ = run_mpirun_cmd(self.mpirun_cmd, **run_kwargs)
 
         self.cleanup()
 
