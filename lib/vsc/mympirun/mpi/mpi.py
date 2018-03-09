@@ -440,7 +440,10 @@ class MPI(object):
 
         if self.options.dry_run:
             self.log.info("Dry run, only printing generated mpirun command...")
-            run_kwargs['filename'] = None
+
+            if 'filename' not in run_kwargs:
+                run_kwargs['filename'] = None
+
             dry_run_output = '\n'.join([
                 "* output file            : %(filename)s",
                 "* output timeout         : %(output_timeout)s",
