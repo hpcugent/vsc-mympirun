@@ -440,17 +440,7 @@ class MPI(object):
 
         if self.options.dry_run:
             self.log.info("Dry run, only printing generated mpirun command...")
-
-            if 'filename' not in run_kwargs:
-                run_kwargs['filename'] = None
-
-            dry_run_output = '\n'.join([
-                "* output file            : %(filename)s",
-                "* output timeout         : %(output_timeout)s",
-                "* fail on missing output : %(fatal_no_output)s",
-                "* mpirun command         : %s" % ' '.join(self.mpirun_cmd),
-            ]) % run_kwargs
-            print(dry_run_output)
+            print(' '.join(self.mpirun_cmd))
             exitcode = 0
         else:
             exitcode, _ = run_mpirun_cmd(self.mpirun_cmd, **run_kwargs)

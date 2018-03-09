@@ -413,21 +413,13 @@ class TestEnd2End(unittest.TestCase):
         for dry_run_opt in ['--dry-run', '-D']:
             ec, out = run_simple("%s %s %s hostname" % (sys.executable, self.mympiscript, dry_run_opt))
             self.assertEqual(ec, 0)
-            patterns = [
-                r"\* output file\s*:\s*None$",
-                r"\* mpirun command\s*:\s*mpirun .* hostname$",
-            ]
-            for pattern in patterns:
-                regex = re.compile(pattern, re.M)
-                self.assertTrue(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
 
-            extra_opts = "--output foo --hybrid 9"
+            regex = re.compile('^mpirun .* hostname$')
+            self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+            extra_opts = "--hybrid 9"
             ec, out = run_simple("%s %s %s %s hostname" % (sys.executable, self.mympiscript, dry_run_opt, extra_opts))
             self.assertEqual(ec, 0)
-            patterns = [
-                r"\* output file\s*:\s*foo$",
-                r"\* mpirun command\s*:\s*mpirun .* -np 9 .* hostname$",
-            ]
-            for pattern in patterns:
-                regex = re.compile(pattern, re.M)
-                self.assertTrue(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+            regex = re.compile('^mpirun .* -np 9 .* hostname$')
+            self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
