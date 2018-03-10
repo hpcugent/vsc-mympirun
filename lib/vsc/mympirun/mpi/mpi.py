@@ -434,10 +434,16 @@ class MPI(object):
         }
         if self.options.output:
             run_mpirun_cmd = RunFileLoopMPI.run
-            run_kwargs.update({'filename': self.options.output})
+            run_kwargs['filename'] = self.options.output
         else:
             run_mpirun_cmd = RunAsyncMPI.run
-        exitcode, _ = run_mpirun_cmd(self.mpirun_cmd, **run_kwargs)
+
+        if self.options.dry_run:
+            self.log.info("Dry run, only printing generated mpirun command...")
+            print(' '.join(self.mpirun_cmd))
+            exitcode = 0
+        else:
+            exitcode, _ = run_mpirun_cmd(self.mpirun_cmd, **run_kwargs)
 
         self.cleanup()
 

@@ -405,3 +405,21 @@ class TestEnd2End(unittest.TestCase):
         self.assertEqual(ec, 1)
         regex = r"OpenMPI 2\.0\.x uses a different naming protocol for nodes"
         self.assertTrue(re.search(regex, out), "mympirun should produce an error with ompi 2.0: %s" % out)
+
+    def test_dry_run(self):
+        """Test use of --dry-run/-D option."""
+        install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
+
+        for dry_run_opt in ['--dry-run', '-D']:
+            ec, out = run_simple("%s %s %s hostname" % (sys.executable, self.mympiscript, dry_run_opt))
+            self.assertEqual(ec, 0)
+
+            regex = re.compile('^mpirun .* hostname$')
+            self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+            extra_opts = "--hybrid 9"
+            ec, out = run_simple("%s %s %s %s hostname" % (sys.executable, self.mympiscript, dry_run_opt, extra_opts))
+            self.assertEqual(ec, 0)
+
+            regex = re.compile('^mpirun .* -np 9 .* hostname$')
+            self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
