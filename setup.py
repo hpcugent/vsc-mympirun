@@ -33,7 +33,7 @@ import os
 import pkgutil
 import sys
 import vsc.install.shared_setup as shared_setup
-from vsc.install.shared_setup import vsc_setup, log, sdw
+from vsc.install.shared_setup import vsc_setup, log, sdw, kh
 
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
@@ -47,9 +47,9 @@ PACKAGE = {
         'vsc-install >= 0.10.25', # for modified subclassing
         'IPy',
     ],
-    'version': '4.0.4',
-    'author': [sdw],
-    'maintainer': [sdw],
+    'version': '4.1.0',
+    'author': [sdw, kh],
+    'maintainer': [sdw, kh],
     'zip_safe': False,
 }
 
