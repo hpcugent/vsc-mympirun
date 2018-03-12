@@ -45,6 +45,7 @@ class PBS(Sched):
     SCHED_ENVIRON_NODE_INFO = 'PBS_NODEFILE'
 
     HYDRA_RMK = ['pbs']
+    RM_HYDRA_LAUNCHER = 'pbsdsh'
 
     def __init__(self, *args, **kwargs):
         """PBS constructor"""

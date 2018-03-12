@@ -95,6 +95,7 @@ class Sched(object):
     HYDRA_RMK = []
     HYDRA_LAUNCHER = 'ssh'
     HYDRA_LAUNCHER_EXEC = None
+    RM_HYDRA_LAUNCHER = None
 
     def __init__(self, options=None, **kwargs):
         if not hasattr(self, 'log'):

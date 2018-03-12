@@ -54,6 +54,8 @@ INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
 # also hardcoded in setup.py !
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
+RM_HYDRA_LAUNCHER = 'RM_HYDRA_LAUNCHER'
+
 # size of dir in bytes
 TEMPDIR_WARN_SIZE = 100000
 TEMPDIR_ERROR_SIZE = 1000000
@@ -922,8 +924,8 @@ class MPI(object):
             else:
                 self.log.raiseException("There is no launcher specified, and no default launcher found")
 
-        if which(launcher) is None:
-            self.log.raiseException("Specified launcher '%s' not found in $PATH" % launcher)
+        if launcher == RM_HYDRA_LAUNCHER:
+            launcher = self.RM_HYDRA_LAUNCHER
 
         if not self.is_local():
             self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher))

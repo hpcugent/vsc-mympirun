@@ -42,6 +42,7 @@ class SLURM(Sched):
     SCHED_ENVIRON_NODE_INFO = 'SLURM_NODELIST'
 
     HYDRA_RMK = ['slurm']
+    RM_HYDRA_LAUNCHER = 'slurm'
 
     def set_nodes(self):
         """Set list of nodes available in current environment."""
