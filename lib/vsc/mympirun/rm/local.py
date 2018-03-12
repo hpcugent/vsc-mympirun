@@ -50,6 +50,7 @@ class Local(Sched):
         localhostname = getattr(self, 'MPIRUN_LOCALHOSTNAME', 'localhost')
         self.nodes_tot_cnt = len(self.cpus)
         self.nodes_uniq = [localhostname]
+        self.nodes = self.nodes_uniq * self.nodes_tot_cnt
 
         self.log.debug("set_nodes: cnt: %d; uniq: %s", self.nodes_tot_cnt, self.nodes_uniq)
 

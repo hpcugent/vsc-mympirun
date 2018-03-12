@@ -32,9 +32,11 @@ import re
 
 from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.fancylogger import getLogger
-from vsc.utils.missing import get_subclasses, nub
+from vsc.utils.missing import get_subclasses
+
 
 LOGGER = getLogger()
+
 
 def what_sched(requested):
     """Return the scheduler class """

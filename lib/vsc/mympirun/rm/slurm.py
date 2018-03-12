@@ -28,7 +28,6 @@ SLURM
 import os
 import re
 
-from vsc.mympirun.mpi.mpi import which
 from vsc.mympirun.rm.sched import Sched
 from vsc.utils.run import run_simple
 
@@ -44,12 +43,11 @@ class SLURM(Sched):
     HYDRA_RMK = ['slurm']
     RM_HYDRA_LAUNCHER = 'slurm'
 
-    def set_nodes(self):
-        """Set list of nodes available in current environment."""
+    def _get_uniq_nodes(self):
+        """Get list of unique nodes, via $SLURM_NODELIST."""
 
-        # based on https://github.com/SchedMD/slurm/blob/master/contribs/torque/generate_pbs_nodefile.pl
+        res = None
 
-        # determine list of hostnames involved in job via "scontrol show hostname $SLURM_NODELIST"
         nodelist = os.environ.get(self.SCHED_ENVIRON_NODE_INFO)
         if nodelist is None:
             self.log.raiseException("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
@@ -61,7 +59,16 @@ class SLURM(Sched):
         if ec:
             self.raiseException("set_nodes: failed to get full list of unique hostnames using '%s': %s" % (cmd, out))
         else:
-            self.nodes_uniq = out.strip().split('\n')
+            res = out.strip().split('\n')
+
+        self.log.debug("_get_uniq_nodes: %s" % res)
+        return res
+
+    def _get_tasks_per_node(self):
+        """Get $SLURM_TASKS_PER_NODE from environment and parse it into a list with task count per node."""
+
+        # based on https://github.com/SchedMD/slurm/blob/master/contribs/torque/generate_pbs_nodefile.pl
+        res = None
 
         tpn_key = 'SLURM_TASKS_PER_NODE'
         tpn_spec = os.environ.get(tpn_key)
@@ -69,16 +76,24 @@ class SLURM(Sched):
             self.log.raiseException("set_nodes: failed to get $%s from environment" % tpn_key)
         else:
             self.log.debug("set_nodes: obtained $%s value: %s", tpn_key, tpn_spec)
-            tasks_per_node = []
             # duplicate counts are compacted into something like '2(x3)', so we unroll those
             compact_regex = re.compile(r'^(?P<task_cnt>\d+)\(x(?P<repeat_cnt>\d+)\)$')
+            res = []
             for entry in tpn_spec.split(','):
                 res = compact_regex.match(entry)
                 if res:
-                    tasks_per_node.extend([int(res.group('task_cnt'))] * int(res.group('repeat_cnt')))
+                    res.extend([int(res.group('task_cnt'))] * int(res.group('repeat_cnt')))
                 else:
-                    tasks_per_node.append(int(entry))
-            self.log.debug("set_nodes: tasks_per_node: %s" % tasks_per_node)
+                    res.append(int(entry))
+
+        self.log.debug("_get_tasks_per_node: %s" % res)
+        return res
+
+    def set_nodes(self):
+        """Set list of nodes available in current environment."""
+
+        self.nodes_uniq = self._get_uniq_nodes()
+        tasks_per_node = self._get_tasks_per_node()
 
         if len(self.nodes_uniq) != len(tasks_per_node):
             self.raiseException("nodes_uniq vs tasks_per_node mismatch: %s vs %s" % (self.nodes_uniq, tasks_per_node))

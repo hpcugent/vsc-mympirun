@@ -73,7 +73,7 @@ class PBS(Sched):
 
         try:
             self.nodes = [x.strip() for x in open(filename).read().split("\n") if len(x.strip()) > 0]
-            self.log.debug("set_nodes: from %s: %s", filename, nodes)
+            self.log.debug("set_nodes: from %s: %s", filename, self.nodes)
         except IOError:
             self.log.raiseException("set_nodes: failed to get nodes from nodefile %s" % filename)
 
