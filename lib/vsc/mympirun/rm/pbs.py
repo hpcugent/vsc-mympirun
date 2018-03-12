@@ -29,6 +29,7 @@ import os
 
 from vsc.mympirun.mpi.mpi import which
 from vsc.mympirun.rm.sched import Sched
+from vsc.utils.missing import nub
 
 
 PBSDSH = 'pbsdsh'
@@ -39,8 +40,9 @@ class PBS(Sched):
 
     """Torque/PBS based"""
     _sched_for = ['pbs', 'torque']
+    # these environment variables are used to detect we're running in a SLURM job environment (see what_sched function)
     SCHED_ENVIRON_ID = 'PBS_JOBID'
-    SCHED_ENVIRON_NODEFILE = 'PBS_NODEFILE'
+    SCHED_ENVIRON_NODE_INFO = 'PBS_NODEFILE'
 
     HYDRA_RMK = ['pbs']
 
@@ -64,15 +66,17 @@ class PBS(Sched):
 
     def set_nodes(self):
 
-        nodevar = 'PBS_NODEFILE'
-        filename = os.environ.get(nodevar, None)
+        filename = os.environ.get(self.SCHED_ENVIRON_NODE_INFO)
         if filename is None:
-            self.log.raiseException("set_nodes: failed to get %s from environment"  % nodevar)
+            self.log.raiseException("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
 
         try:
             self.nodes = [x.strip() for x in open(filename).read().split("\n") if len(x.strip()) > 0]
-            self.log.debug("set_nodes: from %s: %s", filename, self.nodes)
+            self.log.debug("set_nodes: from %s: %s", filename, nodes)
         except IOError:
             self.log.raiseException("set_nodes: failed to get nodes from nodefile %s" % filename)
 
-        self.log.debug("set_nodes: %s", self.nodes)
+        self.nodes_uniq = nub(self.nodes)
+        self.nodes_tot_cnt = len(self.nodes)
+
+        self.log.debug("set_nodes: %s (cnt: %d; uniq: %s)", self.nodes, self.nodes_tot_cnt, self.nodes_uniq)

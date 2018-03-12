@@ -232,7 +232,7 @@ class IntelHydraMPI(IntelMPI):
         if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.multiplier * len(self.nodes)) > SCALABLE_PROGRESS_LOWER_THRESHOLD
+        scalable_progress = (self.multiplier * self.nodes_tot_cnt) > SCALABLE_PROGRESS_LOWER_THRESHOLD
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = _one_zero(scalable_progress)
 
         if self.options.impi_daplud:

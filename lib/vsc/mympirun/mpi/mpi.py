@@ -561,7 +561,7 @@ class MPI(object):
             for dev in self.DEVICE_ORDER:
                 if dev in ('shm',):
                     # only use shm if a single node is used
-                    if len(nub(self.nodes)) > 1:
+                    if len(self.nodes_uniq) > 1:
                         continue
 
                 path = self.DEVICE_LOCATION_MAP[dev]
@@ -649,10 +649,10 @@ class MPI(object):
 
     def get_universe_ncpus(self):
         """Construct dictionary with number of processes to start per node, based on --universe"""
-        if self.options.universe > len(self.nodes):
+        if self.options.universe > self.nodes_tot_cnt:
             ex = "Universe asks for more processes (%s) than available processors (%s)"
-            self.log.raiseException(ex % (self.options.universe, len(self.nodes)))
-        nodes = nub(self.nodes)
+            self.log.raiseException(ex % (self.options.universe, self.nodes_tot_cnt))
+        nodes = self.nodes_uniq[:]
         universe_ppn = dict((node, 0) for node in nodes)
         proc_cnt = 0
         node = nodes.pop(0)
@@ -760,7 +760,7 @@ class MPI(object):
 
     def get_localhosts(self):
         """
-        Get the localhost interfaces, based on the hostnames from the nodes in nub(self.nodes).
+        Get the localhost interfaces, based on the hostnames from the nodes in self.nodes_uniq.
 
         Raises Exception if no localhost interface was found.
 
@@ -772,7 +772,7 @@ class MPI(object):
         # iterate over unique nodes and get their interfaces
         # add the found interface to res if it matches reg_iface
         res = []
-        for idx, nodename in enumerate(nub(self.nodes)):
+        for idx, nodename in enumerate(self.nodes_uniq):
             ip = socket.gethostbyname(nodename)
             cmd = "/sbin/ip -4 -o addr show to %s/32" % ip
             exitcode, out = run_simple(cmd)
@@ -791,7 +791,7 @@ class MPI(object):
                 self.log.error("get_localhost idx %s: cmd %s failed with output %s", idx, cmd, out)
 
         if not res:
-            self.log.raiseException("get_localhost: can't find localhost from nodes %s" % nub(self.nodes))
+            self.log.raiseException("get_localhost: can't find localhost from nodes %s" % self.nodes_uniq)
         return res
 
     def make_mpdboot_options(self):
@@ -880,9 +880,9 @@ class MPI(object):
         if self.options.universe is not None and self.options.universe > 0:
             self.mpiexec_options.append("-np %s" % self.options.universe)
         elif self.options.hybrid:
-            self.mpiexec_options.append("-np %s" % (len(nub(self.nodes))*self.options.hybrid*self.multiplier))
+            self.mpiexec_options.append("-np %s" % (len(self.nodes_uniq) * self.options.hybrid * self.multiplier))
         else:
-            self.mpiexec_options.append("-np %s" % (len(self.nodes)*self.multiplier))
+            self.mpiexec_options.append("-np %s" % (self.nodes_tot_cnt * self.multiplier))
 
         # pass local env variables to mpiexec
         self.mpiexec_options += self.get_mpiexec_opts_from_env()

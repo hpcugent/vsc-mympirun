@@ -96,7 +96,7 @@ class OpenMPI(MPI):
 
         ranktxt = ""
         sockets_per_node = self.determine_sockets_per_node()
-        universe = self.options.universe or len(self.nodes)
+        universe = self.options.universe or self.nodes_tot_cnt
 
         try:
             rankfn = os.path.join(self.mympirundir, 'rankfile')
@@ -112,7 +112,7 @@ class OpenMPI(MPI):
             elif override_type in ('spread', 'scatter'):
                 #spread ranks evenly across nodes, but also spread them across sockets
                 for rank in range(universe):
-                    node = rank % len(self.nodes)
+                    node = rank % self.nodes_tot_cnt
                     socket = (rank % self.ppn) % sockets_per_node
                     slot = (rank % self.ppn) / sockets_per_node
                     ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)

@@ -88,7 +88,7 @@ class MVAPICH2(MVAPICH2Hydra):
     def make_mpdboot_options(self):
         """Small fix"""
 
-        self.mpdboot_options.append("--totalnum=%s" % len(nub(self.nodes)))
+        self.mpdboot_options.append("--totalnum=%s" % len(self.nodes_uniq))
 
         super(MVAPICH2, self).make_mpdboot_options()
 
