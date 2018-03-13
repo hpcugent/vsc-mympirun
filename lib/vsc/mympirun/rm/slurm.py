@@ -93,15 +93,15 @@ class SLURM(Sched):
         """Set list of nodes available in current environment."""
 
         self.nodes_uniq = self._get_uniq_nodes()
-        tasks_per_node = self._get_tasks_per_node()
+        tpn = self._get_tasks_per_node()
 
-        if len(self.nodes_uniq) != len(tasks_per_node):
-            self.log.raiseException("nodes_uniq vs tasks_per_node mismatch: %s vs %s" % (self.nodes_uniq, tasks_per_node))
+        if len(self.nodes_uniq) != len(tpn):
+            self.log.raiseException("nodes_uniq vs tpn (tasks per node) mismatch: %s vs %s" % (self.nodes_uniq, tpn))
 
-        self.nodes_tot_cnt = sum(tasks_per_node)
+        self.nodes_tot_cnt = sum(tpn)
 
         self.nodes = []
-        for (node, task_cnt) in zip(self.nodes_uniq, tasks_per_node):
+        for (node, task_cnt) in zip(self.nodes_uniq, tpn):
             self.nodes.extend([node] * task_cnt)
 
         self.log.debug("set_nodes: %s (cnt: %d; uniq: %s)", self.nodes, self.nodes_tot_cnt, self.nodes_uniq)

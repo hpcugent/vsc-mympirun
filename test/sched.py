@@ -75,7 +75,7 @@ def set_PBS_env(nodes=None):
 def cleanup_PBS_env():
     """Clean up $PBS_NODEFILE in mocked PBS environment."""
     pbs_nodefile = os.environ.get('PBS_NODEFILE')
-    if pbs_nodefile:
+    if pbs_nodefile and os.path.exists(pbs_nodefile):
         os.chmod(pbs_nodefile, stat.S_IWUSR)
         os.chmod(os.path.dirname(pbs_nodefile), stat.S_IWUSR|stat.S_IRUSR|stat.S_IXUSR)
         shutil.rmtree(os.path.dirname(pbs_nodefile))
