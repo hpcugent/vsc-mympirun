@@ -32,6 +32,7 @@ Tests for the vsc.mympirun.mpi.sched module.
 import os
 import shutil
 import stat
+import shutil
 import tempfile
 import unittest
 
@@ -53,18 +54,19 @@ SCHEDDICT = {
 }
 
 
-def set_PBS_env(nodes=None):
+def set_PBS_env(tmpdir, nodes=None):
     """Set up the PBS environment to recreate being in a hpc job."""
-    tmpdir = tempfile.mkdtemp()
-    pbsnodefile = tempfile.NamedTemporaryFile(dir=tmpdir, delete=False)
+
+    pbsnodefile = os.path.join(tmpdir, 'pbsnodefile')
+    fh = open(pbsnodefile, 'w')
     if nodes:
-        pbsnodefile.write('\n'.join(nodes))
+        fh.write('\n'.join(nodes))
     else:
-        pbsnodefile.write("localhost\nlocalhost\n")
-    pbsnodefile.close()
-    os.environ['PBS_NODEFILE'] = pbsnodefile.name
+        fh.write("localhost\nlocalhost\n")
+    fh.close()
+    os.environ['PBS_NODEFILE'] = pbsnodefile
     # make $PBS_NODEFILE and directory it is in read-only, just like in the real world
-    os.chmod(pbsnodefile.name, stat.S_IRUSR)
+    os.chmod(pbsnodefile, stat.S_IRUSR)
     # make location directory where $PBS_NODEFILE resides read-only
     os.chmod(tmpdir, stat.S_IRUSR|stat.S_IXUSR)
 
@@ -77,22 +79,32 @@ def cleanup_PBS_env():
     pbs_nodefile = os.environ.get('PBS_NODEFILE')
     if pbs_nodefile and os.path.exists(pbs_nodefile):
         os.chmod(pbs_nodefile, stat.S_IWUSR)
-        os.chmod(os.path.dirname(pbs_nodefile), stat.S_IWUSR|stat.S_IRUSR|stat.S_IXUSR)
-        shutil.rmtree(os.path.dirname(pbs_nodefile))
+        os.chmod(os.path.dirname(pbs_nodefile), stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
+        os.remove(pbs_nodefile)
 
 
-def set_SLURM_env():
+def set_SLURM_env(tmpdir):
     """Set up the PBS environment to recreate being in a hpc job."""
     os.environ['SLURM_JOBID'] = '12345'
     os.environ['SLURM_NODELIST'] = 'node[1-3]'
     os.environ['SLURM_TASKS_PER_NODE'] = '2,1(x2)'
+
+    scontrol = os.path.join(tmpdir, 'scontrol')
+    fh = open(scontrol, 'w')
+    fh.write("!#/bin/bash\necho node1\necho node2\necho node3\n")
+    fh.close()
+
+    os.chmod(scontrol, stat.S_IRUSR|stat.S_IXUSR)
+    os.environ['PATH'] = '%s:%s' % (tmpdir, os.environ.get('PATH', ''))
 
 
 class TestSched(unittest.TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""
 
     def setUp(self):
+        """Set up test"""
         self.orig_environ = os.environ
+        self.tmpdir = tempfile.mkdtemp()
 
     def tearDown(self):
         """Clean up after running test."""
@@ -104,6 +116,8 @@ class TestSched(unittest.TestCase):
                 del os.environ[key]
 
         os.environ = self.orig_environ
+
+        shutil.rmtree(self.tmpdir)
 
     def test_what_sched(self):
         """
@@ -121,9 +135,9 @@ class TestSched(unittest.TestCase):
         """
         for key, val in SCHEDDICT.iteritems():
             if key == 'pbs':
-                set_PBS_env()
+                set_PBS_env(self.tmpdir)
             elif key == 'slurm':
-                set_SLURM_env()
+                set_SLURM_env(self.tmpdir)
 
             inst = getinstance(mpim.MPI, val, MympirunOption())
             self.assertTrue(inst.sched_id == os.environ.get(inst.SCHED_ENVIRON_ID, None) or
@@ -137,9 +151,9 @@ class TestSched(unittest.TestCase):
         """
         for key, val in SCHEDDICT.iteritems():
             if key == 'pbs':
-                set_PBS_env()
+                set_PBS_env(self.tmpdir)
             elif key == 'slurm':
-                set_SLURM_env()
+                set_SLURM_env(self.tmpdir)
 
             inst = getinstance(mpim.MPI, val, MympirunOption())
             self.assertTrue(isinstance(inst.cores_per_node, int))
@@ -152,9 +166,9 @@ class TestSched(unittest.TestCase):
         """
         for key, val in SCHEDDICT.iteritems():
             if key == 'pbs':
-                set_PBS_env()
+                set_PBS_env(self.tmpdir)
             elif key == 'slurm':
-                set_SLURM_env()
+                set_SLURM_env(self.tmpdir)
 
             inst = getinstance(mpim.MPI, val, MympirunOption())
             self.assertTrue(all(isinstance(item, int) for item in inst.cpus) and len(inst.cpus) == len(set(inst.cpus)))
@@ -177,9 +191,9 @@ class TestSched(unittest.TestCase):
 
         for key in ['pbs', 'slurm']:
             if key == 'pbs':
-                set_PBS_env(nodes)
+                set_PBS_env(self.tmpdir, nodes=nodes)
             elif key == 'slurm':
-                set_SLURM_env()
+                set_SLURM_env(self.tmpdir)
 
             pbs_class = SCHEDDICT[key]
 
