@@ -57,7 +57,7 @@ class SLURM(Sched):
         cmd = "scontrol show hostname %s" % nodelist
         ec, out = run_simple(cmd)
         if ec:
-            self.raiseException("set_nodes: failed to get full list of unique hostnames using '%s': %s" % (cmd, out))
+            self.log.raiseException("set_nodes: failed to get list of unique hostnames using '%s': %s" % (cmd, out))
         else:
             res = out.strip().split('\n')
 
@@ -96,7 +96,7 @@ class SLURM(Sched):
         tasks_per_node = self._get_tasks_per_node()
 
         if len(self.nodes_uniq) != len(tasks_per_node):
-            self.raiseException("nodes_uniq vs tasks_per_node mismatch: %s vs %s" % (self.nodes_uniq, tasks_per_node))
+            self.log.raiseException("nodes_uniq vs tasks_per_node mismatch: %s vs %s" % (self.nodes_uniq, tasks_per_node))
 
         self.nodes_tot_cnt = sum(tasks_per_node)
 

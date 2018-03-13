@@ -53,7 +53,7 @@ SCHEDDICT = {
 }
 
 
-def set_PBS_env(nodes):
+def set_PBS_env(nodes=None):
     """Set up the PBS environment to recreate being in a hpc job."""
     tmpdir = tempfile.mkdtemp()
     pbsnodefile = tempfile.NamedTemporaryFile(dir=tmpdir, delete=False)
@@ -72,6 +72,15 @@ def set_PBS_env(nodes):
     os.environ['PBS_NUM_PPN'] = '12345'
 
 
+def cleanup_PBS_env():
+    """Clean up $PBS_NODEFILE in mocked PBS environment."""
+    pbs_nodefile = os.environ.get('PBS_NODEFILE')
+    if pbs_nodefile:
+        os.chmod(pbs_nodefile, stat.S_IWUSR)
+        os.chmod(os.path.dirname(pbs_nodefile), stat.S_IWUSR|stat.S_IRUSR|stat.S_IXUSR)
+        shutil.rmtree(os.path.dirname(pbs_nodefile))
+
+
 def set_SLURM_env():
     """Set up the PBS environment to recreate being in a hpc job."""
     os.environ['SLURM_JOBID'] = '12345'
@@ -87,18 +96,14 @@ class TestSched(unittest.TestCase):
 
     def tearDown(self):
         """Clean up after running test."""
-        pbs_nodefile = os.environ.get('PBS_NODEFILE')
-        if pbs_nodefile:
-            os.chmod(pbs_nodefile, stat.S_IWUSR)
-            os.chmod(os.path.dirname(pbs_nodefile), stat.S_IWUSR|stat.S_IRUSR|stat.S_IXUSR)
-            shutil.rmtree(os.path.dirname(pbs_nodefile))
+        cleanup_PBS_env()
 
         # make sure that previously undefined variables are undefined
         for key in os.environ.keys():
-            if key not in orig_env:
+            if key not in self.orig_environ:
                 del os.environ[key]
 
-        os.environ = orig_env
+        os.environ = self.orig_environ
 
     def test_what_sched(self):
         """
