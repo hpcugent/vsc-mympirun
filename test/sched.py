@@ -42,16 +42,19 @@ import vsc.mympirun.rm.sched as schedm
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
 from vsc.mympirun.rm.scoop import Scoop
+from vsc.mympirun.rm.slurm import SLURM
 from vsc.utils import fancylogger
 
 SCHEDDICT = {
-    "local": Local,
-    "pbs": PBS, #doesn't work locally
-    "scoop": Scoop,
-    }
+    'local': Local,
+    'pbs': PBS,
+    'scoop': Scoop,
+    'slurm': SLURM,
+}
 
-os.environ['PBS_JOBID'] = "1"
-os.environ['PBS_NUM_PPN'] = "1"
+os.environ['PBS_JOBID'] = '1'
+os.environ['SLURM_JOBID'] = '1'
+os.environ['PBS_NUM_PPN'] = '1'
 
 def set_PBS_env():
     """ Set up the environment to recreate being in a hpc job """
@@ -85,7 +88,6 @@ class TestSched(unittest.TestCase):
 
     def setUp(self):
         self.orig_environ = os.environ
-        set_PBS_env()
 
     def tearDown(self):
         """Clean up after running test."""
@@ -140,7 +142,7 @@ class TestSched(unittest.TestCase):
         self.assertEqual(set(inst.nodes), set(['localhost']))
         self.assertEqual(len(inst.cpus), len(inst.nodes))
 
-    def test_set_node_list(self):
+    def test_set_node_list_pbs(self):
         """
         test different scenarios for setting node list
         """
@@ -150,6 +152,8 @@ class TestSched(unittest.TestCase):
             'node2',
             'node3',
         ]
+
+        set_PBS_env()
         pbs_class = SCHEDDICT['pbs']
         text = '\n'.join(nodes)
         os.chmod(os.environ['PBS_NODEFILE'], stat.S_IRUSR | stat.S_IWUSR)
