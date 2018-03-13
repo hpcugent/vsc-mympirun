@@ -351,6 +351,8 @@ class TestMPI(TestCase):
             'node2',
             'node2',
         ]
+        inst.nodes_tot_cnt = len(inst.nodes)
+        inst.nodes_uniq = nub(inst.nodes)
         options = {
             2: {'node1': 1, 'node2': 1},
             3: {'node1': 2, 'node2': 1},
@@ -367,6 +369,8 @@ class TestMPI(TestCase):
         """ Test mpinode scheduling for --hybrid option """
         inst = getinstance(mpim.MPI, Local, MympirunOption())
         inst.nodes = ['node1']*4 + ['node2']*4
+        inst.nodes_tot_cnt = len(inst.nodes)
+        inst.nodes_uniq = nub(inst.nodes)
         options = range(1,9)
         for opt in options:
             inst.options.hybrid = opt
