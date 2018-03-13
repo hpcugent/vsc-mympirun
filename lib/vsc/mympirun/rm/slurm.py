@@ -68,7 +68,7 @@ class SLURM(Sched):
         """Get $SLURM_TASKS_PER_NODE from environment and parse it into a list with task count per node."""
 
         # based on https://github.com/SchedMD/slurm/blob/master/contribs/torque/generate_pbs_nodefile.pl
-        res = None
+        tpn = None
 
         tpn_key = 'SLURM_TASKS_PER_NODE'
         tpn_spec = os.environ.get(tpn_key)
@@ -78,16 +78,16 @@ class SLURM(Sched):
             self.log.debug("set_nodes: obtained $%s value: %s", tpn_key, tpn_spec)
             # duplicate counts are compacted into something like '2(x3)', so we unroll those
             compact_regex = re.compile(r'^(?P<task_cnt>\d+)\(x(?P<repeat_cnt>\d+)\)$')
-            res = []
+            tpn = []
             for entry in tpn_spec.split(','):
                 res = compact_regex.match(entry)
                 if res:
-                    res.extend([int(res.group('task_cnt'))] * int(res.group('repeat_cnt')))
+                    tpn.extend([int(res.group('task_cnt'))] * int(res.group('repeat_cnt')))
                 else:
-                    res.append(int(entry))
+                    tpn.append(int(entry))
 
-        self.log.debug("_get_tasks_per_node: %s" % res)
-        return res
+        self.log.debug("_get_tasks_per_node: %s" % tpn)
+        return tpn
 
     def set_nodes(self):
         """Set list of nodes available in current environment."""

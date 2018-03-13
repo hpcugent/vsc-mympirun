@@ -114,7 +114,9 @@ class TestEnd2End(unittest.TestCase):
 
         # set variables that exist within jobs, but not locally, for testing
         self.tmpdir = tempfile.mkdtemp()
-        set_PBS_env(self.tmpdir)
+        pbs_tmpdir = os.path.join(self.tmpdir, 'pbs')
+        os.makedirs(pbs_tmpdir)
+        set_PBS_env(pbs_tmpdir)
 
     def tearDown(self):
         """Clean up after running test."""

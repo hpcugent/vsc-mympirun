@@ -91,7 +91,7 @@ def set_SLURM_env(tmpdir):
 
     scontrol = os.path.join(tmpdir, 'scontrol')
     fh = open(scontrol, 'w')
-    fh.write("!#/bin/bash\necho node1\necho node2\necho node3\n")
+    fh.write("#!/bin/bash\necho node1\necho node2\necho node3\n")
     fh.close()
 
     os.chmod(scontrol, stat.S_IRUSR|stat.S_IXUSR)
@@ -190,10 +190,12 @@ class TestSched(unittest.TestCase):
         nodes = ['node1', 'node1', 'node2', 'node3']
 
         for key in ['pbs', 'slurm']:
+            tmpdir = os.path.join(self.tmpdir, key)
+            os.makedirs(tmpdir)
             if key == 'pbs':
-                set_PBS_env(self.tmpdir, nodes=nodes)
+                set_PBS_env(tmpdir, nodes=nodes)
             elif key == 'slurm':
-                set_SLURM_env(self.tmpdir)
+                set_SLURM_env(tmpdir)
 
             pbs_class = SCHEDDICT[key]
 
