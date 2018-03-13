@@ -52,15 +52,15 @@ SCHEDDICT = {
     'slurm': SLURM,
 }
 
-os.environ['PBS_JOBID'] = '1'
-os.environ['SLURM_JOBID'] = '1'
-os.environ['PBS_NUM_PPN'] = '1'
 
-def set_PBS_env():
-    """ Set up the environment to recreate being in a hpc job """
+def set_PBS_env(nodes):
+    """Set up the PBS environment to recreate being in a hpc job."""
     tmpdir = tempfile.mkdtemp()
     pbsnodefile = tempfile.NamedTemporaryFile(dir=tmpdir, delete=False)
-    pbsnodefile.write("localhost\nlocalhost\n")
+    if nodes:
+        pbsnodefile.write('\n'.join(nodes))
+    else:
+        pbsnodefile.write("localhost\nlocalhost\n")
     pbsnodefile.close()
     os.environ['PBS_NODEFILE'] = pbsnodefile.name
     # make $PBS_NODEFILE and directory it is in read-only, just like in the real world
@@ -68,20 +68,16 @@ def set_PBS_env():
     # make location directory where $PBS_NODEFILE resides read-only
     os.chmod(tmpdir, stat.S_IRUSR|stat.S_IXUSR)
 
+    os.environ['PBS_JOBID'] = '12345'
+    os.environ['PBS_NUM_PPN'] = '12345'
 
-def cleanup_PBS_env(orig_env):
-    """ cleanup the mock job environment """
-    # make $PBS_NODEFILE and the dir it is in writeable again after making it read-only in set_PBS_env
-    os.chmod(os.environ['PBS_NODEFILE'], stat.S_IWUSR)
-    os.chmod(os.path.dirname(os.environ['PBS_NODEFILE']), stat.S_IWUSR|stat.S_IRUSR|stat.S_IXUSR)
-    shutil.rmtree(os.path.dirname(os.environ['PBS_NODEFILE']))
 
-    # make sure that previously undefined variables are undefined
-    for key in os.environ.keys():
-        if key not in orig_env:
-            del os.environ[key]
+def set_SLURM_env():
+    """Set up the PBS environment to recreate being in a hpc job."""
+    os.environ['SLURM_JOBID'] = '12345'
+    os.environ['SLURM_NODELIST'] = 'node[1-3]'
+    os.environ['SLURM_TASKS_PER_NODE'] = '2,1(x2)'
 
-    os.environ = orig_env
 
 class TestSched(unittest.TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""
@@ -91,7 +87,18 @@ class TestSched(unittest.TestCase):
 
     def tearDown(self):
         """Clean up after running test."""
-        cleanup_PBS_env(self.orig_environ)
+        pbs_nodefile = os.environ.get('PBS_NODEFILE')
+        if pbs_nodefile:
+            os.chmod(pbs_nodefile, stat.S_IWUSR)
+            os.chmod(os.path.dirname(pbs_nodefile), stat.S_IWUSR|stat.S_IRUSR|stat.S_IXUSR)
+            shutil.rmtree(os.path.dirname(pbs_nodefile))
+
+        # make sure that previously undefined variables are undefined
+        for key in os.environ.keys():
+            if key not in orig_env:
+                del os.environ[key]
+
+        os.environ = orig_env
 
     def test_what_sched(self):
         """
@@ -107,7 +114,12 @@ class TestSched(unittest.TestCase):
 
         get_id gets called by the __init__ of getinstance()
         """
-        for _, val in SCHEDDICT.iteritems():
+        for key, val in SCHEDDICT.iteritems():
+            if key == 'pbs':
+                set_PBS_env()
+            elif key == 'slurm':
+                set_SLURM_env()
+
             inst = getinstance(mpim.MPI, val, MympirunOption())
             self.assertTrue(inst.sched_id == os.environ.get(inst.SCHED_ENVIRON_ID, None) or
                             inst.sched_id.startswith("SCHED_%s" % inst.__class__.__name__))
@@ -118,7 +130,12 @@ class TestSched(unittest.TestCase):
 
         core_on_this_node() gets called by the __init__ of getinstance()
         """
-        for _, val in SCHEDDICT.iteritems():
+        for key, val in SCHEDDICT.iteritems():
+            if key == 'pbs':
+                set_PBS_env()
+            elif key == 'slurm':
+                set_SLURM_env()
+
             inst = getinstance(mpim.MPI, val, MympirunOption())
             self.assertTrue(isinstance(inst.cores_per_node, int))
 
@@ -128,7 +145,12 @@ class TestSched(unittest.TestCase):
 
         which_cpus() gets called by the __init__ of getinstance()
         """
-        for _, val in SCHEDDICT.iteritems():
+        for key, val in SCHEDDICT.iteritems():
+            if key == 'pbs':
+                set_PBS_env()
+            elif key == 'slurm':
+                set_SLURM_env()
+
             inst = getinstance(mpim.MPI, val, MympirunOption())
             self.assertTrue(all(isinstance(item, int) for item in inst.cpus) and len(inst.cpus) == len(set(inst.cpus)))
 
@@ -146,51 +168,43 @@ class TestSched(unittest.TestCase):
         """
         test different scenarios for setting node list
         """
-        nodes = [
-            'node1',
-            'node1',
-            'node2',
-            'node3',
-        ]
+        nodes = ['node1', 'node1', 'node2', 'node3']
 
-        set_PBS_env()
-        pbs_class = SCHEDDICT['pbs']
-        text = '\n'.join(nodes)
-        os.chmod(os.environ['PBS_NODEFILE'], stat.S_IRUSR | stat.S_IWUSR)
-        nodefile = open(os.environ['PBS_NODEFILE'], 'w')
-        nodefile.seek(0)
-        nodefile.write(text)
-        nodefile.close()
-        os.chmod(os.environ['PBS_NODEFILE'], stat.S_IRUSR)
+        for key in ['pbs', 'slurm']:
+            if key == 'pbs':
+                set_PBS_env(nodes)
+            elif key == 'slurm':
+                set_SLURM_env()
 
-        # normal run
-        inst = getinstance(mpim.MPI, pbs_class, MympirunOption())
-        inst.set_mpinodes()
-        self.assertEqual(inst.mpinodes, nodes)
+            pbs_class = SCHEDDICT[key]
 
-        # --double: start 2 processes for every entry in the nodefile
-        inst.options.double = True
-        inst.set_multiplier()
-        inst.set_mpinodes()
-        self.assertEqual(inst.mpinodes, nodes + nodes)
+            # normal run
+            inst = getinstance(mpim.MPI, pbs_class, MympirunOption())
+            inst.set_mpinodes()
+            self.assertEqual(inst.mpinodes, nodes)
 
-        # --multi: start n processes for every entry in the nodefile
-        inst.options.double = False
-        inst.options.multi = 3
-        inst.set_multiplier()
-        inst.set_mpinodes()
-        self.assertEqual(inst.mpinodes, nodes + nodes + nodes)
+            # --double: start 2 processes for every entry in the nodefile
+            inst.options.double = True
+            inst.set_multiplier()
+            inst.set_mpinodes()
+            self.assertEqual(inst.mpinodes, nodes + nodes)
 
-        # --hybrid: start just n processes on every physical node
-        inst.options.double = False
-        inst.options.multi = None
-        inst.options.hybrid = 1
-        inst.set_multiplier()
-        inst.set_mpinodes()
-        self.assertEqual(inst.mpinodes, ['node1', 'node2', 'node3'])
+            # --multi: start n processes for every entry in the nodefile
+            inst.options.double = False
+            inst.options.multi = 3
+            inst.set_multiplier()
+            inst.set_mpinodes()
+            self.assertEqual(inst.mpinodes, nodes + nodes + nodes)
+
+            # --hybrid: start just n processes on every physical node
+            inst.options.double = False
+            inst.options.multi = None
+            inst.options.hybrid = 1
+            inst.set_multiplier()
+            inst.set_mpinodes()
+            self.assertEqual(inst.mpinodes, ['node1', 'node2', 'node3'])
 
     def test_get_local_sched(self):
         """ Test get_local_sched function """
         self.assertEqual(schedm.get_local_sched(SCHEDDICT.values()), Local)
         self.assertEqual(schedm.get_local_sched([]), None)
-
