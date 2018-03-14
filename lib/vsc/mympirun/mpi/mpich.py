@@ -31,7 +31,7 @@ import os
 
 from vsc.mympirun.mpi.mpi import MPI, version_in_range
 from vsc.utils.run import run_simple
-from vsc.utils.missing import nub
+
 
 class MVAPICH2Hydra(MPI):
 
@@ -88,7 +88,7 @@ class MVAPICH2(MVAPICH2Hydra):
     def make_mpdboot_options(self):
         """Small fix"""
 
-        self.mpdboot_options.append("--totalnum=%s" % len(nub(self.nodes)))
+        self.mpdboot_options.append("--totalnum=%s" % len(self.nodes_uniq))
 
         super(MVAPICH2, self).make_mpdboot_options()
 

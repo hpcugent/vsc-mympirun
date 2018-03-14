@@ -32,9 +32,11 @@ import re
 
 from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.fancylogger import getLogger
-from vsc.utils.missing import get_subclasses, nub
+from vsc.utils.missing import get_subclasses
+
 
 LOGGER = getLogger()
+
 
 def what_sched(requested):
     """Return the scheduler class """
@@ -54,7 +56,7 @@ def what_sched(requested):
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
-        if sched.SCHED_ENVIRON_NODEFILE in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
+        if sched.SCHED_ENVIRON_NODE_INFO in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
             return sched, found_sched
 
     # If that fails, try to force the local scheduler
@@ -78,7 +80,7 @@ class Sched(object):
     _sched_for = []  # classname is default added
     _sched_environ_test = []
     SCHED_ENVIRON_ID = None
-    SCHED_ENVIRON_NODEFILE = None
+    SCHED_ENVIRON_NODE_INFO = None
 
     # if the SCHED_ENVIRON_ID is not found, create one yourself
     AUTOGENERATE_JOBID = False
@@ -95,6 +97,7 @@ class Sched(object):
     HYDRA_RMK = []
     HYDRA_LAUNCHER = 'ssh'
     HYDRA_LAUNCHER_EXEC = None
+    RM_HYDRA_LAUNCHER = None
 
     def __init__(self, options=None, **kwargs):
         if not hasattr(self, 'log'):
@@ -111,7 +114,7 @@ class Sched(object):
         self.cpus = []
         self.set_cpus()
 
-        self.nodes = None
+        self.nodes, self.nodes_uniq, self.nodes_tot_cnt = None, None, None
         self.set_nodes()
 
         self.multiplier = None
@@ -235,7 +238,7 @@ class Sched(object):
     def is_large(self):
         """Determine if this is a large job or not"""
 
-        res = ((len(self.nodes) > self.RSH_LARGE_LIMIT) and
+        res = ((self.nodes_tot_cnt > self.RSH_LARGE_LIMIT) and
                (any(c == self.cores_per_node for c in self.ppn_dict.values())))
         self.log.debug("is_large returns %s", res)
         return res
@@ -261,7 +264,7 @@ class Sched(object):
         if self.options.hybrid is None:
             res = self.nodes * self.multiplier
         else:
-            for uniquenode in nub(self.nodes):
+            for uniquenode in self.nodes_uniq:
                 res.extend([uniquenode] * self.options.hybrid * self.multiplier)
 
         # reorder

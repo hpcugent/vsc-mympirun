@@ -36,7 +36,7 @@ class Local(Sched):
     """
     _sched_for = ['local']
     SCHED_ENVIRON_ID = None
-    SCHED_ENVIRON_NODEFILE = None
+    SCHED_ENVIRON_NODE_INFO = None
     AUTOGENERATE_JOBID = True
 
     HYDRA_LAUNCHER = 'local'
@@ -48,9 +48,11 @@ class Local(Sched):
         """
 
         localhostname = getattr(self, 'MPIRUN_LOCALHOSTNAME', 'localhost')
-        self.nodes = [localhostname] * len(self.cpus)
+        self.nodes_tot_cnt = len(self.cpus)
+        self.nodes_uniq = [localhostname]
+        self.nodes = self.nodes_uniq * self.nodes_tot_cnt
 
-        self.log.debug("set_nodes: %s", self.nodes)
+        self.log.debug("set_nodes: cnt: %d; uniq: %s", self.nodes_tot_cnt, self.nodes_uniq)
 
     def is_local(self):
         """

@@ -111,12 +111,19 @@ class TestEnd2End(unittest.TestCase):
         ec, out = run_simple("%s -c 'import vsc.mympirun; print vsc.mympirun.__file__'" % sys.executable)
         expected_path = os.path.join(self.topdir, 'lib', 'vsc', 'mympirun')
         self.assertTrue(os.path.samefile(os.path.dirname(out.strip()), expected_path))
+
         # set variables that exist within jobs, but not locally, for testing
-        set_PBS_env()
+        self.tmpdir = tempfile.mkdtemp()
+        pbs_tmpdir = os.path.join(self.tmpdir, 'pbs')
+        os.makedirs(pbs_tmpdir)
+        set_PBS_env(pbs_tmpdir)
 
     def tearDown(self):
         """Clean up after running test."""
-        cleanup_PBS_env(self.orig_environ)
+        cleanup_PBS_env()
+        os.chmod(self.tmpdir, stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
+        shutil.rmtree(self.tmpdir)
+        os.environ = self.orig_environ
 
     def test_serial(self):
         """Test running of a serial command via mympirun."""
@@ -302,9 +309,6 @@ class TestEnd2End(unittest.TestCase):
         ncpus_regex = re.compile('--ncpus=1')
         self.assertTrue(np_regex.search(out), "Pattern %s found in %s" % (np_regex, out))
         self.assertFalse(ncpus_regex.search(out), "Pattern %s found in %s" % (ncpus_regex, out))
-
-        # re-set pbs environment
-        set_PBS_env()
 
     def test_env_variables(self):
         """ Test the passing of (extra) variables """

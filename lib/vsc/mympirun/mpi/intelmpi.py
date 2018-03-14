@@ -33,7 +33,7 @@ import socket
 import tempfile
 from vsc.utils.missing import nub
 
-from vsc.mympirun.mpi.mpi import MPI, version_in_range, which
+from vsc.mympirun.mpi.mpi import MPI, RM_HYDRA_LAUNCHER, version_in_range, which
 
 SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
 
@@ -232,7 +232,7 @@ class IntelHydraMPI(IntelMPI):
         if 'I_MPI_FABRICS' not in self.mpiexec_global_options:
             self.mpiexec_global_options['I_MPI_FABRICS'] = self.device
 
-        scalable_progress = (self.multiplier * len(self.nodes)) > SCALABLE_PROGRESS_LOWER_THRESHOLD
+        scalable_progress = (self.multiplier * self.nodes_tot_cnt) > SCALABLE_PROGRESS_LOWER_THRESHOLD
         self.mpiexec_global_options['I_MPI_DAPL_SCALABLE_PROGRESS'] = _one_zero(scalable_progress)
 
         if self.options.impi_daplud:
@@ -253,4 +253,4 @@ class IntelHydraMPIPbsdsh(IntelHydraMPI):
     # https://software.intel.com/sites/default/files/managed/b7/99/intelmpi-5.0-update3-releasenotes-linux.pdf
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5.0.3', None))
 
-    HYDRA_LAUNCHER = 'pbsdsh'
+    HYDRA_LAUNCHER = RM_HYDRA_LAUNCHER
