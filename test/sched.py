@@ -121,11 +121,13 @@ class TestSched(unittest.TestCase):
     def test_what_sched(self):
         """Test what_sched function."""
 
+        expected_found_sched = [SLURM, Local, PBS, Scoop]
+
         # if scheduler is specified, then just return corresponding class
         for key, val in SCHEDDICT.iteritems():
             sched, found_sched = schedm.what_sched(key)
-            print("key: %s, sched: %s, found_sched_: %s" % (key, sched, found_sched))
             self.assertEqual(sched, val)
+            self.assertEqual(found_sched, expected_found_sched)
 
         # ensure 'clean' environment
         for key in ['PBS_JOBID', 'PBS_NODEFILE', 'SLURM_JOBID', 'SLURM_NODELIST']:
@@ -135,22 +137,30 @@ class TestSched(unittest.TestCase):
         # if scheduler is not specified, environment determines which scheduler is selected
 
         # if not in PBS/SLURM environment, local scheduler is used
-        self.assertEqual(schedm.what_sched(None), Local)
+        sched, found_sched = schedm.what_sched(None)
+        self.assertEqual(sched, Local)
+        self.assertEqual(found_sched, expected_found_sched)
 
         # if PBS environment variables are set, use PBS scheduler
         os.environ['PBS_JOBID'] = '12345'
         os.environ['PBS_NODEFILE'] = '/tmp/12345.pbs_nodefile'
-        self.assertEqual(schedm.what_sched(None), PBS)
+        sched, found_sched = schedm.what_sched(None)
+        self.assertEqual(sched, PBS)
+        self.assertEqual(found_sched, expected_found_sched)
 
         # if SLURM environment variables are set, use SLURM scheduler
         # (even when PBS environment variables are also set)
         os.environ['SLURM_JOBID'] = '98765'
         os.environ['SLURM_NODELIST'] = 'node[100-102]'
-        self.assertEqual(schedm.what_sched(None), SLURM)
+        sched, found_sched = schedm.what_sched(None)
+        self.assertEqual(sched, SLURM)
+        self.assertEqual(found_sched, expected_found_sched)
 
         del os.environ['SLURM_JOBID']
         del os.environ['SLURM_NODELIST']
-        self.assertEqual(schedm.what_sched(None), SLURM)
+        sched, found_sched = schedm.what_sched(None)
+        self.assertEqual(sched, SLURM)
+        self.assertEqual(found_sched, expected_found_sched)
 
     def test_get_id(self):
         """
