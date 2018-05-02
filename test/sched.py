@@ -32,7 +32,6 @@ Tests for the vsc.mympirun.mpi.sched module.
 import os
 import shutil
 import stat
-import shutil
 import tempfile
 import unittest
 
@@ -44,7 +43,7 @@ from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
 from vsc.mympirun.rm.scoop import Scoop
 from vsc.mympirun.rm.slurm import SLURM
-from vsc.utils import fancylogger
+
 
 SCHEDDICT = {
     'local': Local,
@@ -68,7 +67,7 @@ def set_PBS_env(tmpdir, nodes=None):
     # make $PBS_NODEFILE and directory it is in read-only, just like in the real world
     os.chmod(pbsnodefile, stat.S_IRUSR)
     # make location directory where $PBS_NODEFILE resides read-only
-    os.chmod(tmpdir, stat.S_IRUSR|stat.S_IXUSR)
+    os.chmod(tmpdir, stat.S_IRUSR | stat.S_IXUSR)
 
     os.environ['PBS_JOBID'] = '12345'
     os.environ['PBS_NUM_PPN'] = '12345'
@@ -79,7 +78,7 @@ def cleanup_PBS_env():
     pbs_nodefile = os.environ.get('PBS_NODEFILE')
     if pbs_nodefile and os.path.exists(pbs_nodefile):
         os.chmod(pbs_nodefile, stat.S_IWUSR)
-        os.chmod(os.path.dirname(pbs_nodefile), stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
+        os.chmod(os.path.dirname(pbs_nodefile), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         os.remove(pbs_nodefile)
 
 
@@ -94,7 +93,7 @@ def set_SLURM_env(tmpdir):
     fh.write("#!/bin/bash\necho node1\necho node2\necho node3\n")
     fh.close()
 
-    os.chmod(scontrol, stat.S_IRUSR|stat.S_IXUSR)
+    os.chmod(scontrol, stat.S_IRUSR | stat.S_IXUSR)
     os.environ['PATH'] = '%s:%s' % (tmpdir, os.environ.get('PATH', ''))
 
 
@@ -120,12 +119,48 @@ class TestSched(unittest.TestCase):
         shutil.rmtree(self.tmpdir)
 
     def test_what_sched(self):
-        """
-        test if what_sched returns a corresponding scheduler"""
+        """Test what_sched function."""
+
+        expected_found_sched = [SLURM, Local, PBS, Scoop]
+
+        # if scheduler is specified, then just return corresponding class
         for key, val in SCHEDDICT.iteritems():
             sched, found_sched = schedm.what_sched(key)
-            print("key: %s, sched: %s, found_sched_: %s" % (key, sched, found_sched))
             self.assertEqual(sched, val)
+            self.assertEqual(found_sched, expected_found_sched)
+
+        # ensure 'clean' environment
+        for key in ['PBS_JOBID', 'PBS_NODEFILE', 'SLURM_JOBID', 'SLURM_NODELIST']:
+            if key in os.environ:
+                del os.environ[key]
+
+        # if scheduler is not specified, environment determines which scheduler is selected
+
+        # if not in PBS/SLURM environment, local scheduler is used
+        sched, found_sched = schedm.what_sched(None)
+        self.assertEqual(sched, Local)
+        self.assertEqual(found_sched, expected_found_sched)
+
+        # if PBS environment variables are set, use PBS scheduler
+        os.environ['PBS_JOBID'] = '12345'
+        os.environ['PBS_NODEFILE'] = '/tmp/12345.pbs_nodefile'
+        sched, found_sched = schedm.what_sched(None)
+        self.assertEqual(sched, PBS)
+        self.assertEqual(found_sched, expected_found_sched)
+
+        # if SLURM environment variables are set, use SLURM scheduler
+        # (even when PBS environment variables are also set)
+        os.environ['SLURM_JOBID'] = '98765'
+        os.environ['SLURM_NODELIST'] = 'node[100-102]'
+        sched, found_sched = schedm.what_sched(None)
+        self.assertEqual(sched, SLURM)
+        self.assertEqual(found_sched, expected_found_sched)
+
+        del os.environ['PBS_JOBID']
+        del os.environ['PBS_NODEFILE']
+        sched, found_sched = schedm.what_sched(None)
+        self.assertEqual(sched, SLURM)
+        self.assertEqual(found_sched, expected_found_sched)
 
     def test_get_id(self):
         """

@@ -30,7 +30,6 @@
 Setup for mympirun
 """
 import os
-import pkgutil
 import sys
 import vsc.install.shared_setup as shared_setup
 from vsc.install.shared_setup import vsc_setup, log, sdw, kh
@@ -44,10 +43,10 @@ MYMPIRUN_ALIASES = ['ihmpirun', 'impirun', 'm2hmpirun', 'm2mpirun', 'mhmpirun', 
 PACKAGE = {
     'install_requires': [
         'vsc-base >= 2.5.8',
-        'vsc-install >= 0.10.25', # for modified subclassing
+        'vsc-install >= 0.10.25',  # for modified subclassing
         'IPy',
     ],
-    'version': '4.1.0',
+    'version': '4.1.1',
     'author': [sdw, kh],
     'maintainer': [sdw, kh],
     'zip_safe': False,
@@ -55,7 +54,6 @@ PACKAGE = {
 
 
 class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
-
 
     def run(self):
         """
@@ -116,8 +114,10 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
 
                 os.chdir(previous_pwd)
 
+
 class mympirun_vsc_setup(vsc_setup):
     vsc_install_scripts = mympirun_vsc_install_scripts
+
 
 # Monkeypatch setuptools.easy_install.install_egg_scripts.metadata_listdir
 # because easy_install ignores the easy_install cmdclass
@@ -127,12 +127,12 @@ class mympirun_vsc_setup(vsc_setup):
 # mympirun directory, appends '/mpirun' to it and returns the final result.
 # The function is used through a whole bunch of Egg classes, no way we can easily intercept this
 try:
-    from setuptools.command.easy_install import easy_install
-
+    from setuptools.command.easy_install import easy_install  # NOQA
     _orig_install_egg_scripts = sys.modules['setuptools.command.easy_install'].easy_install.install_egg_scripts
 
     def _new_install_egg_scripts(self, dist):
         orig_func = dist.metadata_listdir
+
         def new_func(txt):
             res = orig_func(txt)
             if txt == 'scripts':
