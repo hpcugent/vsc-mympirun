@@ -156,8 +156,8 @@ class TestSched(unittest.TestCase):
         self.assertEqual(sched, SLURM)
         self.assertEqual(found_sched, expected_found_sched)
 
-        del os.environ['SLURM_JOBID']
-        del os.environ['SLURM_NODELIST']
+        del os.environ['PBS_JOBID']
+        del os.environ['PBS_NODEFILE']
         sched, found_sched = schedm.what_sched(None)
         self.assertEqual(sched, SLURM)
         self.assertEqual(found_sched, expected_found_sched)
