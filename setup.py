@@ -42,11 +42,11 @@ MYMPIRUN_ALIASES = ['ihmpirun', 'impirun', 'm2hmpirun', 'm2mpirun', 'mhmpirun', 
 
 PACKAGE = {
     'install_requires': [
-        'vsc-base >= 2.5.8',
+        'vsc-base >= 2.7.4',
         'vsc-install >= 0.10.25',  # for modified subclassing
         'IPy',
     ],
-    'version': '4.1.1',
+    'version': '4.1.2',
     'author': [sdw, kh],
     'maintainer': [sdw, kh],
     'zip_safe': False,

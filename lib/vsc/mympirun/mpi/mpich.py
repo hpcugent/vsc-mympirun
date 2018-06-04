@@ -30,7 +30,7 @@ Documentation can be found at https://www.mpich.org/documentation/guides/
 import os
 
 from vsc.mympirun.mpi.mpi import MPI, version_in_range
-from vsc.utils.run import run_simple
+from vsc.utils.run import run
 
 
 class MVAPICH2Hydra(MPI):
@@ -98,14 +98,14 @@ class MVAPICH2(MVAPICH2Hydra):
         res = []
 
         cmd = "%s %s" % ('mpdboot', ' '.join(self.mpdboot_options))
-        res.append((run_simple, cmd))
+        res.append((run, cmd))
 
         if self.options.debug:
-            res.append((run_simple, 'mpdtrace -l'))
+            res.append((run, 'mpdtrace -l'))
 
         res += super(MVAPICH2, self).mpirun_prepare_execution
 
-        res.append((run_simple, 'mpdallexit'))
+        res.append((run, 'mpdallexit'))
 
 
 class MPICH2Hydra(MVAPICH2Hydra):
