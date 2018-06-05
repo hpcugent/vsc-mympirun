@@ -87,6 +87,7 @@ def set_SLURM_env(tmpdir):
     os.environ['SLURM_JOBID'] = '12345'
     os.environ['SLURM_NODELIST'] = 'node[1-3]'
     os.environ['SLURM_TASKS_PER_NODE'] = '2,1(x2)'
+    os.environ['SLURM_EXPORT_ENV'] = 'NONE'
 
     scontrol = os.path.join(tmpdir, 'scontrol')
     fh = open(scontrol, 'w')
