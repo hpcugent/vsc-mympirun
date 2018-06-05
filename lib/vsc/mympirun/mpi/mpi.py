@@ -46,7 +46,7 @@ from distutils.version import LooseVersion
 from IPy import IP
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import Run, RunAsyncLoopStdout, RunFile, RunLoop, run_simple
+from vsc.utils.run import RunNoShell, RunAsyncLoopStdout, RunFile, RunLoop, run
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -178,10 +178,11 @@ def version_in_range(version, lower_limit, upper_limit):
     return in_range
 
 
-class RunMPI(Run):
+class RunMPI(RunNoShell):
     """
     Parent class for Run classes for MPI
     """
+
     def loop_process_output_common(self):
         """
         Common code for _loop_process_output in RunFileLoopMPI and RunAsyncMPI
@@ -520,9 +521,9 @@ class MPI(object):
                                     (self.netmasktype, device_ip_reg_map))
 
         cmd = "/sbin/ip addr show"
-        exitcode, out = run_simple(cmd)
+        exitcode, out = run(cmd)
         if exitcode > 0:
-            self.log.raiseException("set_netmask: failed to run cmd %s, ec: %s" % (cmd, exitcode))
+            self.log.raiseException("set_netmask: failed to run cmd '%s', ec: %s, out: %s" % (cmd, exitcode, out))
 
         reg = re.compile(device_ip_reg_map[self.netmasktype])
         if not reg.search(out):
@@ -777,7 +778,7 @@ class MPI(object):
         for idx, nodename in enumerate(self.nodes_uniq):
             ip = socket.gethostbyname(nodename)
             cmd = "/sbin/ip -4 -o addr show to %s/32" % ip
-            exitcode, out = run_simple(cmd)
+            exitcode, out = run(cmd)
             if exitcode == 0:
                 regex = reg_iface.search(out)
                 if regex:
@@ -947,7 +948,7 @@ class MPI(object):
         """Get a dict with hydra info."""
         reg_hydra_info = re.compile(r"^\s+(?P<key>\S[^:\n]*)\s*:(?P<value>.*?)\s*$", re.M)
         cmd = "mpirun -info"
-        exitcode, out = run_simple(cmd)
+        exitcode, out = run(cmd)
         if exitcode > 0:
             self.log.raiseException("get_hydra_info: failed to run cmd %s: %s" % (cmd, out))
 

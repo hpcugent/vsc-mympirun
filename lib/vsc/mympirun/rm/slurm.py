@@ -29,7 +29,7 @@ import os
 import re
 
 from vsc.mympirun.rm.sched import Sched
-from vsc.utils.run import run_simple
+from vsc.utils.run import run
 
 
 class SLURM(Sched):
@@ -55,7 +55,7 @@ class SLURM(Sched):
             self.log.debug("set_nodes: obtained $%s value: %s", self.SCHED_ENVIRON_NODE_INFO, nodelist)
 
         cmd = "scontrol show hostname %s" % nodelist
-        ec, out = run_simple(cmd)
+        ec, out = run(cmd)
         if ec:
             self.log.raiseException("set_nodes: failed to get list of unique hostnames using '%s': %s" % (cmd, out))
         else:

@@ -38,7 +38,7 @@ import string
 import tempfile
 import unittest
 from vsc.install.testing import TestCase
-from vsc.utils.run import run_simple
+from vsc.utils.run import run
 from vsc.utils.missing import get_subclasses, nub
 
 from vsc.mympirun.factory import getinstance
@@ -104,7 +104,7 @@ class TestMPI(TestCase):
 
         for scriptname in testnames:
             mpiwhich = mpim.which(scriptname)
-            exitcode, unixwhich = run_simple("which " + scriptname)
+            exitcode, unixwhich = run("which " + scriptname)
             if exitcode > 0:
                 raise Exception("Something went wrong while trying to run `which`: %s" % unixwhich)
 
@@ -256,7 +256,7 @@ class TestMPI(TestCase):
         """test if localhost returns a list containing that are sourced correctly"""
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         res = mpi_instance.get_localhosts()
-        _, out = run_simple("/sbin/ip -4 -o addr show")
+        _, out = run("/sbin/ip -4 -o addr show")
 
         print("localhosts: %s" % res)
 
