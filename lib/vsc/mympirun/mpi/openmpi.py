@@ -34,6 +34,9 @@ from vsc.mympirun.mpi.mpi import MPI, version_in_range
 from vsc.utils.missing import nub
 
 
+SLURM_EXPORT_ENV = 'SLURM_EXPORT_ENV'
+
+
 class OpenMPI(MPI):
 
     """An implementation of the MPI class for OpenMPI"""
@@ -51,6 +54,10 @@ class OpenMPI(MPI):
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
         self.mpiexec_global_options['btl'] = self.device
+
+        # make sure Open Run-Time Environment (ORTE) uses FQDN hostnames
+        # using short hostnames may cause problems (e.g. if SLURM is configured to use FQDN hostnames)
+        self.mpiexec_global_options['orte_keep_fqdn_hostnames'] = '1'
 
         super(OpenMPI, self).set_mpiexec_global_options()
 
@@ -154,6 +161,20 @@ class OpenMPI(MPI):
                 nodetxt = '\n'.join(self.mpinodes)
 
         super(OpenMPI, self).make_machine_file(nodetxt=nodetxt, universe=universe)
+
+    def prepare(self):
+        """Prepare environment"""
+        # undefine $SLURM_EXPORT_ENV if it is set;
+        # $SLURM_EXPORT_ENV is defined as 'NONE' by qsub wrappers for SLURM,
+        # and then gets passed down to srun via mpirun, which may cause problems with 'orted' being found
+        # because $PATH and $LD_LIBRARY_PATH are no longer set
+        # (unless OpenMPI installation was configured with --enable-orterun-prefix-by-default)
+        # cfr. https://www.mail-archive.com/devel@lists.open-mpi.org/msg17305.html
+        if SLURM_EXPORT_ENV in os.environ:
+            self.log.info("Undefining $SLURM_EXPORT_ENV (was '%s')", SLURM_EXPORT_ENV, os.getenv(SLURM_EXPORT_ENV))
+            del os.environ[SLURM_EXPORT_ENV]
+
+        super(OpenMPI, self).prepare()
 
 
 
