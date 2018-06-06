@@ -45,7 +45,7 @@ from vsc.utils.run import run
 from vsc.mympirun.mpi.mpi import MPI, which
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
-from sched import cleanup_PBS_env, set_PBS_env
+from sched import cleanup_PBS_env, reset_env, set_PBS_env, set_SLURM_env
 
 
 FAKE_MPIRUN = """#!/bin/bash
@@ -123,7 +123,7 @@ class TestEnd2End(unittest.TestCase):
         cleanup_PBS_env()
         os.chmod(self.tmpdir, stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
         shutil.rmtree(self.tmpdir)
-        os.environ = self.orig_environ
+        reset_env(self.orig_environ)
 
     def test_serial(self):
         """Test running of a serial command via mympirun."""
@@ -423,3 +423,31 @@ class TestEnd2End(unittest.TestCase):
 
             regex = re.compile('^mpirun .* -np 9 .* hostname$')
             self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+    def test_openmpi_slurm(self):
+        """Test running mympirun with OpenMPI in a SLURM environment."""
+        set_SLURM_env(self.tmpdir)
+
+        os.environ['SLURM_TASKS_PER_NODE'] = '2'
+        # patch scontrol to spit out "localhost" hostnames
+        scontrol = os.path.join(self.tmpdir, 'scontrol')
+        os.chmod(scontrol, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        fh = open(scontrol, 'w')
+        fh.write("#!/bin/bash\necho localhost")
+        fh.close()
+
+        install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '2.1', txt=FAKE_MPIRUN + "\nenv | sort")
+        ec, out = run([sys.executable, self.mympiscript, 'hostname'])
+
+        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+
+        # make sure output includes defined environment variables
+        # and "--mca orte_keep_fqdn_hostnames '1'"
+        mca_keep_fqdn = "^fake mpirun called with args:.*--mca orte_keep_fqdn_hostnames '1'.*hostname$"
+        for pattern in ['^HOME=', '^USER=', '^SLURM_JOBID=', mca_keep_fqdn]:
+            regex = re.compile(pattern, re.M)
+            self.assertTrue(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
+
+        # $SLURM_EXPORT_ENV should no longer be defined in environment
+        regex = re.compile('SLURM_EXPORT_ENV', re.M)
+        self.assertFalse(regex.search(out), "Pattern '%s' *not* found in: %s" % (regex.pattern, out))
