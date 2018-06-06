@@ -48,6 +48,8 @@ from vsc.mympirun.mpi.intelmpi import IntelMPI, IntelHydraMPIPbsdsh
 from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.rm.local import Local
 
+from sched import reset_env
+
 # we wish to use the mpirun we ship
 os.environ["PATH"] = os.path.dirname(os.path.realpath(__file__)) + os.pathsep + os.environ["PATH"]
 
@@ -63,7 +65,7 @@ class TestMPI(TestCase):
 
     def tearDown(self):
         """Clean up after running test."""
-        os.environ = self.orig_environ
+        reset_env(self.orig_environ)
         shutil.rmtree(self.tmpdir)
 
     #######################

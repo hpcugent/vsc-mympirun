@@ -27,13 +27,15 @@ Tests for the vsc.mympirun.mpi.sched module.
 
 @author: Jeroen De Clerck
 @author: Caroline De Brouwer
+@author: Kenneth Hoste
 """
-
+import copy
 import os
 import shutil
 import stat
 import tempfile
 import unittest
+from vsc.utils.missing import nub
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
@@ -98,25 +100,29 @@ def set_SLURM_env(tmpdir):
     os.environ['PATH'] = '%s:%s' % (tmpdir, os.environ.get('PATH', ''))
 
 
+def reset_env(orig_env):
+    """Reset environment to provided original environment."""
+    for key in nub(os.environ.keys() + orig_env.keys()):
+        orig_val = orig_env.get(key)
+        if orig_val is None:
+            if key in os.environ:
+                del os.environ[key]
+        else:
+            os.environ[key] = orig_env[key]
+
+
 class TestSched(unittest.TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""
 
     def setUp(self):
         """Set up test"""
-        self.orig_environ = os.environ
+        self.orig_environ = copy.deepcopy(os.environ)
         self.tmpdir = tempfile.mkdtemp()
 
     def tearDown(self):
         """Clean up after running test."""
         cleanup_PBS_env()
-
-        # make sure that previously undefined variables are undefined
-        for key in os.environ.keys():
-            if key not in self.orig_environ:
-                del os.environ[key]
-
-        os.environ = self.orig_environ
-
+        reset_env(self.orig_environ)
         shutil.rmtree(self.tmpdir)
 
     def test_what_sched(self):

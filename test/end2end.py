@@ -45,7 +45,7 @@ from vsc.utils.run import run
 from vsc.mympirun.mpi.mpi import MPI, which
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
-from sched import cleanup_PBS_env, set_PBS_env, set_SLURM_env
+from sched import cleanup_PBS_env, reset_env, set_PBS_env, set_SLURM_env
 
 
 FAKE_MPIRUN = """#!/bin/bash
@@ -123,7 +123,7 @@ class TestEnd2End(unittest.TestCase):
         cleanup_PBS_env()
         os.chmod(self.tmpdir, stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
         shutil.rmtree(self.tmpdir)
-        os.environ = self.orig_environ
+        reset_env(self.orig_environ)
 
     def test_serial(self):
         """Test running of a serial command via mympirun."""
