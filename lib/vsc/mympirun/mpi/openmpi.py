@@ -29,9 +29,10 @@ Documentation can be found at https://www.open-mpi.org/doc/
 import os
 import re
 import sys
+from vsc.utils.missing import nub
+from vsc.utils.run import CmdList
 
 from vsc.mympirun.mpi.mpi import MPI, version_in_range
-from vsc.utils.missing import nub
 
 
 SLURM_EXPORT_ENV = 'SLURM_EXPORT_ENV'
@@ -47,9 +48,9 @@ class OpenMPI(MPI):
 
     DEVICE_MPIDEVICE_MAP = {'ib': 'sm,openib,self', 'det': 'sm,tcp,self', 'shm': 'sm,self', 'socket': 'sm,tcp,self'}
 
-    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "--mca %(name)s '%(value)s'"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = ['--mca', '%(name)s', "'%(value)s'"]
 
-    REMOTE_OPTION_TEMPLATE = "--mca pls_rsh_agent %(rsh)s"
+    REMOTE_OPTION_TEMPLATE = ['--mca', 'pls_rsh_agent', '%(rsh)s']
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
@@ -66,7 +67,7 @@ class OpenMPI(MPI):
         Create the acual mpirun command
         OpenMPI doesn't need mpdboot options
         """
-        self.mpirun_cmd += self.mpiexec_options
+        self.mpirun_cmd.add(self.mpiexec_options)
 
     def determine_sockets_per_node(self):
         """
@@ -130,7 +131,7 @@ class OpenMPI(MPI):
 
             open(rankfn, 'w').write(ranktxt)
             self.log.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
-            cmd = "-rf %s" % rankfn
+            cmd = CmdList('-rf', rankfn)
 
         except IOError:
             self.log.raiseException('pinning_override: failed to write rankfile %s' % rankfn)
@@ -193,4 +194,4 @@ class OpenMpiOversubscribe(OpenMPI):
         super(OpenMPI, self).set_mpiexec_options()
 
         if self.multiplier > 1 or len(self.mpinodes) > self.ppn:
-            self.mpiexec_options.append("--oversubscribe")
+            self.mpiexec_options.add("--oversubscribe")
