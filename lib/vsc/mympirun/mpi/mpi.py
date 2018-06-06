@@ -38,7 +38,6 @@ import shutil
 import socket
 import stat
 import string
-import subprocess
 import sys
 import time
 
@@ -46,7 +45,7 @@ from distutils.version import LooseVersion
 from IPy import IP
 from vsc.utils.fancylogger import getLogger
 from vsc.utils.missing import get_subclasses, nub
-from vsc.utils.run import RunNoShell, RunAsyncLoopStdout, RunFile, RunLoop, run
+from vsc.utils.run import CmdList, RunNoShell, RunAsyncLoopStdout, RunFile, RunLoop, run
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -282,12 +281,12 @@ class MPI(object):
 
     PINNING_OVERRIDE_METHOD = 'numactl'
 
-    REMOTE_OPTION_TEMPLATE = "--rsh=%(rsh)s"
+    REMOTE_OPTION_TEMPLATE = ['--rsh=%(rsh)s']
     MPDBOOT_OPTIONS = []
     MPDBOOT_SET_INTERFACE = True
 
-    MPIEXEC_TEMPLATE_GLOBAL_OPTION = "-genv %(name)s '%(value)s'"
-    OPTS_FROM_ENV_TEMPLATE = "-x '%(name)s'"
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = ['-genv', '%(name)s', "'%(value)s'"]
+    OPTS_FROM_ENV_TEMPLATE = ['-x', '%(name)s']
     MPIEXEC_OPTIONS = []
 
     MODULE_ENVIRONMENT_VARIABLES = ['MODULEPATH', 'LOADEDMODULES', 'MODULESHOME']
@@ -800,36 +799,36 @@ class MPI(object):
     def make_mpdboot_options(self):
         """Add various options to mpdboot_options"""
 
-        self.mpdboot_options = self.MPDBOOT_OPTIONS[:]
+        self.mpdboot_options = CmdList(*self.MPDBOOT_OPTIONS)
 
         # add the mpd nodefile to mpdboot options
-        self.mpdboot_options.append("--file=%s" % self.mpdboot_node_filename)
+        self.mpdboot_options.add("--file=%s" % self.mpdboot_node_filename)
 
         # add the interface to mpdboot options
         if self.MPDBOOT_SET_INTERFACE:
             if self.has_hydra:
                 localmachine = self.mpdboot_localhost_interface[1]
-                iface = "-iface %s" % localmachine
+                iface = ['-iface', localmachine]
             else:
                 localmachine = self.mpdboot_localhost_interface[0]
-                iface = "--ifhn=%s" % localmachine
+                iface = ['--ifhn=%s' % localmachine]
             self.log.debug('Set mpdboot interface option "%s"', iface)
-            self.mpdboot_options.append(iface)
+            self.mpdboot_options.add(iface)
         else:
             self.log.debug('No mpdboot interface option')
 
         # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0 and not self.has_hydra:
             local_nodename = self.mpdboot_localhost_interface[0]
-            self.mpdboot_options.append("--ncpus=%s" % self.get_universe_ncpus()[local_nodename])
+            self.mpdboot_options.add("--ncpus=%s" % self.get_universe_ncpus()[local_nodename])
 
         # set verbosity
         if self.options.mpdbootverbose:
-            self.mpdboot_options.append("--verbose")
+            self.mpdboot_options.add("--verbose")
 
         # mpdboot rsh command
         if not self.has_hydra:
-            self.mpdboot_options.append(self.REMOTE_OPTION_TEMPLATE % {'rsh': self.get_rsh()})
+            self.mpdboot_options.add(self.REMOTE_OPTION_TEMPLATE, tmpl_vals={'rsh': self.get_rsh()})
 
     ### BEGIN mpiexec ###
     def set_mpiexec_global_options(self):
@@ -869,41 +868,42 @@ class MPI(object):
 
     def set_mpiexec_options(self):
         """Add various options to mpiexec_options."""
-        self.mpiexec_options = self.MPIEXEC_OPTIONS[:]
+        self.mpiexec_options = CmdList(*self.MPIEXEC_OPTIONS)
 
         if self.has_hydra:
             self.make_mpiexec_hydra_options()
         else:
-            self.mpiexec_options.append("-machinefile %s" % self.mpiexec_node_filename)
+            self.mpiexec_options.add(['-machinefile', self.mpiexec_node_filename])
 
         # mpdboot global variables
-        self.mpiexec_options += self.get_mpiexec_global_options()
+        self.mpiexec_options.add(self.get_mpiexec_global_options())
 
         # number of procs to start
         if self.options.universe is not None and self.options.universe > 0:
-            self.mpiexec_options.append("-np %s" % self.options.universe)
+            self.mpiexec_options.add(['-np', str(self.options.universe)])
         elif self.options.hybrid:
-            self.mpiexec_options.append("-np %s" % (len(self.nodes_uniq) * self.options.hybrid * self.multiplier))
+            num_proc = len(self.nodes_uniq) * self.options.hybrid * self.multiplier
+            self.mpiexec_options.add(['-np', str(num_proc)])
         else:
-            self.mpiexec_options.append("-np %s" % (self.nodes_tot_cnt * self.multiplier))
+            self.mpiexec_options.add(['-np', str(self.nodes_tot_cnt * self.multiplier)])
 
         # pass local env variables to mpiexec
-        self.mpiexec_options += self.get_mpiexec_opts_from_env()
+        self.mpiexec_options.add(self.get_mpiexec_opts_from_env())
 
     def make_mpiexec_hydra_options(self):
         """Hydra specific mpiexec options."""
         self.get_hydra_info()
         # see https://software.intel.com/en-us/articles/controlling-process-placement-with-the-intel-mpi-library
         # --machinefile keeps the imbalance if there is one; --hostfile doesn't
-        self.mpiexec_options.append("--machinefile %s" % self.mpiexec_node_filename)
+        self.mpiexec_options.add(['--machinefile', self.mpiexec_node_filename])
         if self.options.branchcount is not None:
-            self.mpiexec_options.append("--branch-count %d" % self.options.branchcount)
+            self.mpiexec_options.add(['--branch-count', str(self.options.branchcount)])
 
         if getattr(self, 'HYDRA_RMK', None) is not None:
             rmk = [x for x in self.HYDRA_RMK if x in self.hydra_info.get('rmk', [])]
             if len(rmk) > 0:
                 self.log.debug("make_mpiexec_hydra_options: HYDRA: rmk %s, using first", rmk)
-                self.mpiexec_options.append("-rmk %s" % rmk[0])
+                self.mpiexec_options.add(['-rmk', rmk[0]])
             else:
                 self.log.debug("make_mpiexec_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s",
                                self.HYDRA_RMK, self.hydra_info)
@@ -929,7 +929,7 @@ class MPI(object):
             launcher = self.RM_HYDRA_LAUNCHER
 
         if not self.is_local():
-            self.mpiexec_options.append("-%s %s" % (self.HYDRA_LAUNCHER_NAME, launcher))
+            self.mpiexec_options.add(['-%s' % self.HYDRA_LAUNCHER_NAME, launcher])
 
         # when using ssh launcher, use custom pbsssh wrapper as exec
         if launcher == 'ssh':
@@ -940,7 +940,7 @@ class MPI(object):
 
             if launcher_exec:
                 self.log.debug("make_mpiexec_hydra_options: HYDRA using launcher exec %s", launcher_exec)
-                self.mpiexec_options.append("-%s-exec %s" % (self.HYDRA_LAUNCHER_NAME, launcher_exec))
+                self.mpiexec_options.add(['-%s-exec' % self.HYDRA_LAUNCHER_NAME, launcher_exec])
             else:
                 self.log.debug("make_mpiexec_hydra_options: no launcher exec")
 
@@ -997,7 +997,7 @@ class MPI(object):
 
         @return: the final list of options, including the correct command line argument for the mpi flavor
         """
-        global_options = []
+        opts = CmdList()
 
         for key, val in self.mpiexec_global_options.items():
             if key in self.mpiexec_opts_from_env:
@@ -1006,11 +1006,11 @@ class MPI(object):
             else:
                 # insert the keyvalue pair into the correct command line argument
                 # the command for setting the environment variable depends on the mpi flavor
-                global_options.append(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION % {'name': key, "value": val})
+                opts.add(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, tmpl_vals={'name': key, "value": val})
 
         self.log.debug("get_mpiexec_global_options: template %s return options %s",
-                       self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, global_options)
-        return global_options
+                       self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, opts)
+        return opts
 
     def get_mpiexec_opts_from_env(self):
         """
@@ -1020,41 +1020,37 @@ class MPI(object):
         command line argument.
         """
 
+        opts = CmdList()
         self.log.debug("get_mpiexec_opts_from_env: variables (and current value) to pass: %s",
                        [[x, os.environ[x]] for x in self.mpiexec_opts_from_env])
 
         if '%(commaseparated)s' in self.OPTS_FROM_ENV_TEMPLATE:
             self.log.debug("get_mpiexec_opts_from_env: found commaseparated in template.")
-            environment_options = [self.OPTS_FROM_ENV_TEMPLATE %
-                                   {'commaseparated': ','.join(self.mpiexec_opts_from_env)}]
+            tmpl_vals = {'commaseparated': ','.join(self.mpiexec_opts_from_env)}
+            opts.add(self.OPTS_FROM_ENV_TEMPLATE, tmpl_vals=tmpl_vals)
         else:
-            environment_options = [self.OPTS_FROM_ENV_TEMPLATE %
-                                   {'name': x, 'value': os.environ[x]} for x in self.mpiexec_opts_from_env]
+            for key in self.mpiexec_opts_from_env:
+                opts.add(self.OPTS_FROM_ENV_TEMPLATE, tmpl_vals= {'name': key, 'value': os.environ[key]})
 
-        self.log.debug("get_mpiexec_opts_from_env: template %s return options %s",
-                       self.OPTS_FROM_ENV_TEMPLATE, environment_options)
-        return environment_options
+        self.log.debug("get_mpiexec_opts_from_env: template %s return options %s", self.OPTS_FROM_ENV_TEMPLATE, opts)
+        return opts 
 
     ### BEGIN mpirun ###
     def make_mpirun(self):
         """Make the mpirun command (or whatever). It typically consists of a mpdboot and a mpiexec part."""
 
-        self.mpirun_cmd = ['mpirun']
+        self.mpirun_cmd = CmdList('mpirun')
 
         self._make_final_mpirun_cmd()
         if self.options.mpirunoptions is not None:
-            self.mpirun_cmd.append(self.options.mpirunoptions)
+            self.mpirun_cmd.add(self.options.mpirunoptions.split(' '))
             self.log.debug("make_mpirun: added user provided options %s", self.options.mpirunoptions)
 
         if self.pinning_override_type is not None:
-            self.mpirun_cmd.append(self.pinning_override())
+            self.mpirun_cmd.add(self.pinning_override())
 
-        # the executable
-        # use undocumented subprocess API call to quote whitespace (executed with Popen(shell=True))
-        # (see http://stackoverflow.com/questions/4748344/whats-the-reverse-of-shlex-split for alternatives if needed)
-        quoted_args_string = subprocess.list2cmdline(self.cmdargs)
-        self.log.debug("make_mpirun: adding cmdargs %s (quoted %s)", self.cmdargs, quoted_args_string)
-        self.mpirun_cmd.append(quoted_args_string)
+        self.log.debug("make_mpirun: adding cmdargs %s", self.cmdargs)
+        self.mpirun_cmd.add(self.cmdargs)
 
     def _make_final_mpirun_cmd(self):
         """
@@ -1062,8 +1058,8 @@ class MPI(object):
 
         Append the mpdboot and mpiexec options to the command.
         """
-        self.mpirun_cmd += self.mpdboot_options
-        self.mpirun_cmd += self.mpiexec_options
+        self.mpirun_cmd.add(self.mpdboot_options)
+        self.mpirun_cmd.add(self.mpiexec_options)
 
     def pinning_override(self):
         """overriding the pinning method has to be handled by the flavor"""
