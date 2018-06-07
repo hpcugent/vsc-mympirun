@@ -285,7 +285,7 @@ class MPI(object):
     MPDBOOT_OPTIONS = []
     MPDBOOT_SET_INTERFACE = True
 
-    MPIEXEC_TEMPLATE_GLOBAL_OPTION = ['-genv', '%(name)s', "'%(value)s'"]
+    MPIEXEC_TEMPLATE_GLOBAL_OPTION = ['-genv', '%(name)s', "%(value)s"]
     OPTS_FROM_ENV_TEMPLATE = ['-x', '%(name)s']
     MPIEXEC_OPTIONS = []
 
