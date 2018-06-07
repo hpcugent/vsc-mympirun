@@ -140,8 +140,8 @@ class TestEnd2End(unittest.TestCase):
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
         regex_tmpl = "^fake mpirun called with args: .*%s.* hostname$"
         testcases = {
-            'impirun': "-genv I_MPI_DEVICE 'shm'",
-            'ompirun': "--mca btl 'sm,.*self'",
+            'impirun': "-genv I_MPI_DEVICE shm",
+            'ompirun': "--mca btl sm,.*self",
         }
         for key in testcases:
             ec, out = run([sys.executable, self.mympiscript, '--setmpi', key, '--sched', 'local', 'hostname'])
@@ -442,8 +442,8 @@ class TestEnd2End(unittest.TestCase):
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
         # make sure output includes defined environment variables
-        # and "--mca orte_keep_fqdn_hostnames '1'"
-        mca_keep_fqdn = "^fake mpirun called with args:.*--mca orte_keep_fqdn_hostnames '1'.*hostname$"
+        # and "--mca orte_keep_fqdn_hostnames 1"
+        mca_keep_fqdn = "^fake mpirun called with args:.*--mca orte_keep_fqdn_hostnames 1 .*hostname$"
         for pattern in ['^HOME=', '^USER=', '^SLURM_JOBID=', mca_keep_fqdn]:
             regex = re.compile(pattern, re.M)
             self.assertTrue(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
