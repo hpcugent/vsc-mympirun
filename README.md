@@ -172,7 +172,7 @@ For example:
 
   $ module load intel/2018a
   $ mympirun --dry-run ./mpi_hello
-  mpirun ... -genv I_MPI_FABRICS shm:dapl ... -np 16 ... hostname
+  mpirun ... -genv I_MPI_FABRICS shm:dapl ... -np 16 ... mpi_hello
 
 # Debugging
 
