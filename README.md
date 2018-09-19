@@ -164,6 +164,16 @@ If your MPI program doesn't have any output for a long time, mympirun will assum
 
 You can change the amount of time mympirun waits for output by using the option `output-check-timeout` with a number of seconds, or you can make the warning non-fatal by using the option `--disable-output-check-fatal`. In this case a warning will be printed, but the program will not be interrupted.
 
+# Dry run
+
+To let `mympirun` only print the command it would be running (without actually running it), you can use `mympirun --dry-run` or `mympirun -D`.
+
+For example:
+
+  $ module load intel/2018a
+  $ mympirun --dry-run ./mpi_hello
+  mpirun ... -genv I_MPI_FABRICS shm:dapl ... -np 16 ... mpi_hello
+
 # Debugging
 
 To get all debugging info from mympirun itself, use the option `--debug` or simply `-d`. This will print to stdout by default. 
