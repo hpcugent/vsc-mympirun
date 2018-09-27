@@ -142,7 +142,8 @@ class TestEnd2End(unittest.TestCase):
 
         def run_test(mpi_name, mpi_ver, mpirun, pattern):
             """Utilitiy function to run test for a specific case."""
-            install_fake_mpirun('mpirun', self.tmpdir, mpi_name, mpi_ver)
+            tmpdir = os.path.join(self.tmpdir, '%s-%s' % (mpi_name, mpi_ver))
+            install_fake_mpirun('mpirun', tmpdir, mpi_name, mpi_ver)
 
             ec, out = run([sys.executable, self.mympiscript, '--setmpi', mpirun, '--sched', 'local', 'hostname'])
             self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
