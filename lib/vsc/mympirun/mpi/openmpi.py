@@ -46,7 +46,12 @@ class OpenMPI(MPI):
     _mpirun_for = 'OpenMPI'
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, None, '1.7.0'))
 
-    DEVICE_MPIDEVICE_MAP = {'ib': 'sm,openib,self', 'det': 'sm,tcp,self', 'shm': 'sm,self', 'socket': 'sm,tcp,self'}
+    DEVICE_MPIDEVICE_MAP = {
+        'det': 'sm,tcp,self',
+        'ib': 'sm,openib,self',
+        'shm': 'sm,self',
+        'socket': 'sm,tcp,self',
+    }
 
     MPIEXEC_TEMPLATE_GLOBAL_OPTION = ['--mca', '%(name)s', "%(value)s"]
 
@@ -186,7 +191,7 @@ class OpenMpiOversubscribe(OpenMPI):
     when requesting more processes than available processors.
     """
 
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '1.7.0', None))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '1.7.0', '3.0.0'))
 
 
     def set_mpiexec_options(self):
@@ -195,3 +200,21 @@ class OpenMpiOversubscribe(OpenMPI):
 
         if self.multiplier > 1 or len(self.mpinodes) > self.ppn:
             self.mpiexec_options.add("--oversubscribe")
+
+
+class OpenMpi3(OpenMpiOversubscribe):
+
+    """
+    An implementation of the MPI class for OpenMPI 3.x & more recent.
+    """
+
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '3.0.0', None))
+
+    # 'sm' BTL (Byte Transfer Layer) was replaced by the 'vader' BTL
+    # cfr. https://www.open-mpi.org/faq/?category=sm
+    DEVICE_MPIDEVICE_MAP = {
+        'det': 'vader,tcp,self',
+        'ib': 'vader,openib,self',
+        'shm': 'vader,self',
+        'socket': 'vader,tcp,self',
+    }
