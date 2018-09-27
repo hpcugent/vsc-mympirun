@@ -191,7 +191,7 @@ class OpenMpiOversubscribe(OpenMPI):
     when requesting more processes than available processors.
     """
 
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '1.7.0', '3.0.0'))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '1.7.0', '3'))
 
 
     def set_mpiexec_options(self):
@@ -208,7 +208,7 @@ class OpenMpi3(OpenMpiOversubscribe):
     An implementation of the MPI class for OpenMPI 3.x & more recent.
     """
 
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '3.0.0', None))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '3', None))
 
     # 'sm' BTL (Byte Transfer Layer) was replaced by the 'vader' BTL
     # cfr. https://www.open-mpi.org/faq/?category=sm
