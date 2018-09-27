@@ -155,7 +155,7 @@ class TestEnd2End(unittest.TestCase):
         run_test('impi', '4.0.0', 'impirun', "-genv I_MPI_DEVICE shm")
         run_test('impi', '5.1.2', 'impirun', "-genv I_MPI_FABRICS shm")
         run_test('openmpi', '1.5', 'ompirun', "--mca btl sm,.*self")
-        run_test('openmpi', '2.0', 'ompirun', "--mca btl sm,.*self")
+        run_test('openmpi', '2.5', 'ompirun', "--mca btl sm,.*self")
         run_test('openmpi', '3.1', 'ompirun', "--mca btl vader,.*self")
 
     def test_output(self):
