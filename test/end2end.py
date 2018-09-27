@@ -71,6 +71,8 @@ fi
 
 def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
     """Install fake mpirun command with given name in specified location"""
+    if not os.path.exists(path):
+        os.makedirs(path)
     fake_mpirun = os.path.join(path, cmdname)
     if not txt:
         txt = FAKE_MPIRUN
