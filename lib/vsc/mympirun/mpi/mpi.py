@@ -101,7 +101,7 @@ def what_mpi(name):
     # check if mympirun was called by a known mpirun alias (like
     # ompirun for OpenMPI or mhmpirun for mpich)
     for mpi in supp_mpi_impl:
-        if mpi._is_mpiscriptname_for(scriptname):
+        if mpi._is_mpiscriptname_for(scriptname) and mpi._is_mpirun_for(mpirun_path):
             LOGGER.debug("%s was used to call mympirun", scriptname)
             return scriptname, mpi, supp_mpi_impl
 
