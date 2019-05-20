@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2018 Ghent University
+# Copyright 2011-2019 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -29,6 +29,7 @@ Base MPI class, all actual classes should inherit from this one
 @author: Jeroen De Clerck
 @author: Caroline De Brouwer
 """
+from __future__ import print_function
 
 import os
 import random
@@ -142,7 +143,6 @@ def stripfake():
     os.environ['PATH'] = os.pathsep.join([x for x in oldpath if not reg_fakepath.match(x)])
 
     LOGGER.debug("PATH after stripfake(): %s", os.environ['PATH'])
-    return
 
 
 def which(cmd):
@@ -513,7 +513,7 @@ class MPI(object):
         device_ip_reg_map = {
             'eth': r"ether.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
             'ib': r"infiniband.*?\n.*?inet\s+(\d+\.\d+.\d+.\d+/\d+)",
-            }
+        }
 
         if self.netmasktype not in device_ip_reg_map:
             self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" %
@@ -695,7 +695,6 @@ class MPI(object):
             self.log.raiseException(size_err)
         elif total_size >= TEMPDIR_WARN_SIZE:
             self.log.warn("the size of %s is currently %s ", self.mympirunbasedir, total_size)
-
 
         destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
         if not os.path.exists(destdir):
@@ -1030,10 +1029,10 @@ class MPI(object):
             opts.add(self.OPTS_FROM_ENV_TEMPLATE, tmpl_vals=tmpl_vals)
         else:
             for key in self.mpiexec_opts_from_env:
-                opts.add(self.OPTS_FROM_ENV_TEMPLATE, tmpl_vals= {'name': key, 'value': os.environ[key]})
+                opts.add(self.OPTS_FROM_ENV_TEMPLATE, tmpl_vals={'name': key, 'value': os.environ[key]})
 
         self.log.debug("get_mpiexec_opts_from_env: template %s return options %s", self.OPTS_FROM_ENV_TEMPLATE, opts)
-        return opts 
+        return opts
 
     ### BEGIN mpirun ###
     def make_mpirun(self):

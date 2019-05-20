@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2018 Ghent University
+# Copyright 2011-2019 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -128,7 +128,10 @@ class IntelMPI(MPI):
         if self.options.hybrid is not None and self.options.hybrid > 1:
             self.mpiexec_global_options["I_MPI_CPUINFO"] = "auto"
 
-            self.mpiexec_global_options["I_MPI_PIN_DOMAIN"] = "auto:compact"
+            if self.pinning_override_type in ('spread', 'scatter'):
+                self.mpiexec_global_options["I_MPI_PIN_DOMAIN"] = "auto:scatter"
+            else:
+                self.mpiexec_global_options["I_MPI_PIN_DOMAIN"] = "auto:compact"
 
             # this only affects libiomp5 usage (ie intel compilers!)
             self.mpiexec_global_options["KMP_AFFINITY"] = "compact"
@@ -173,7 +176,7 @@ class IntelMPI(MPI):
         if self.pinning_override_type in ('packed', 'compact', 'bunch'):
             cmd.add(['-env', 'I_MPI_PIN_PROCESSOR_LIST=allcores:map=bunch'])
         elif self.pinning_override_type in ('spread', 'scatter'):
-            cmd.add(['-env', 'I_MPI_PIN_PROCESSOR_LIST=allcores'])
+            cmd.add(['-env', 'I_MPI_PIN_PROCESSOR_LIST=allcores:map=%s' % self.pinning_override_type])
         else:
             self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
                                     self.pinning_override_type)

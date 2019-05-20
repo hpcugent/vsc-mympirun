@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2009-2018 Ghent University
+# Copyright 2009-2019 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -55,7 +55,8 @@ def get_mpi_and_sched_and_options():
     """
 
     # import all modules in this dir: http://stackoverflow.com/a/16853487
-    for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(schedm.__file__), os.path.dirname(mpim.__file__)]):
+    for loader, modulename, _ in pkgutil.walk_packages([os.path.dirname(schedm.__file__),
+                                                        os.path.dirname(mpim.__file__)]):
         loader.find_module(modulename).load_module(modulename)
 
     scriptname = os.path.basename(os.path.abspath(sys.argv[0]))
@@ -81,7 +82,7 @@ def get_mpi_and_sched_and_options():
     if optionparser.options.showmpi:
         fancylogger.setLogLevelInfo()
         optionparser.log.info("Found MPI classes %s", ", ".join(found_mpi_names))
-        return
+        return None
 
     # Select a Scheduler from the available schedulers
     sched, found_sched = schedm.what_sched(getattr(optionparser.options, 'schedtype', None))
@@ -91,7 +92,7 @@ def get_mpi_and_sched_and_options():
     if optionparser.options.showsched:
         fancylogger.setLogLevelInfo()
         optionparser.log.info("Found Sched classes %s", ", ".join(found_sched_names))
-        return
+        return None
 
     if mpi is None:
         optionparser.log.raiseException(("No MPI class found that supports scriptname %s; isfake %s). Please use "
@@ -110,7 +111,7 @@ def get_mpi_and_sched_and_options():
 
     if not optionparser.args:
         optionparser.log.warn("no mpi script provided")
-        return
+        return None
 
     return mpi, sched, optionparser
 
