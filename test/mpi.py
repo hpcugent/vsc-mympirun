@@ -170,6 +170,29 @@ class TestMPI(TestCase):
         self.assertEqual(os.environ["OMP_NUM_THREADS"], getattr(mpi_instance.options, 'ompthreads', None),
                          msg="ompthreads has not been set in the environment variable OMP_NUM_THREADS")
 
+    def test_pinning_override_intel(self):
+        """Test if pinning is set correctly when asked"""
+        impi_instance = getinstance(IntelMPI, Local, MympirunOption())
+        impi_instance.pinning_override_type = 'scatter'
+        cmd = impi_instance.pinning_override()
+        self.assertEqual(cmd, ['-env', 'I_MPI_PIN_PROCESSOR_LIST=allcores:map=scatter'])
+
+        impi_instance.pinning_override_type = 'compact'
+        cmd = impi_instance.pinning_override()
+        self.assertEqual(cmd, ['-env', 'I_MPI_PIN_PROCESSOR_LIST=allcores:map=bunch'])
+
+    def test_pinning_hybrid_intel(self):
+        """Test if pinning is set correctly when doing hybrid"""
+        impi_instance = getinstance(IntelMPI, Local, MympirunOption())
+        impi_instance.options.hybrid = 2
+        impi_instance.pinning_override_type = None
+        impi_instance.set_mpiexec_global_options()
+        self.assertEqual(impi_instance.mpiexec_global_options['I_MPI_PIN_DOMAIN'], 'auto:compact')
+
+        impi_instance.pinning_override_type = 'spread'
+        impi_instance.set_mpiexec_global_options()
+        self.assertEqual(impi_instance.mpiexec_global_options['I_MPI_PIN_DOMAIN'], 'auto:scatter')
+
     def test_set_netmask(self):
         """test if netmask matches the layout of an ip adress"""
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
