@@ -177,7 +177,7 @@ class OpenMPI(MPI):
         # (unless OpenMPI installation was configured with --enable-orterun-prefix-by-default)
         # cfr. https://www.mail-archive.com/devel@lists.open-mpi.org/msg17305.html
         if SLURM_EXPORT_ENV in os.environ:
-            self.log.info("Undefining $SLURM_EXPORT_ENV (was '%s')", SLURM_EXPORT_ENV, os.getenv(SLURM_EXPORT_ENV))
+            self.log.info("Undefining $%s (was '%s')", SLURM_EXPORT_ENV, os.getenv(SLURM_EXPORT_ENV))
             del os.environ[SLURM_EXPORT_ENV]
 
         super(OpenMPI, self).prepare()
