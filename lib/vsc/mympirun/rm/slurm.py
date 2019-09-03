@@ -105,3 +105,25 @@ class SLURM(Sched):
             self.nodes.extend([node] * task_cnt)
 
         self.log.debug("set_nodes: %s (cnt: %d; uniq: %s)", self.nodes, self.nodes_tot_cnt, self.nodes_uniq)
+
+    def _has_plugin(self, typ, name):
+        # TODO detect the slurm plugin path somehow relative to current eg srun
+        #     you can run ldd on srun, there should be a libslurmfull.so
+        plugins = "/usr/lib64/slurm"
+        plugin_module = "%s/%s_%s.so" % (plugins, typ, name)
+        res = os.path.isfile(plugin_module)
+        self.log.debug("Looking for %s plugin %s (module %s): %s", typ, name, plugin_module, res)
+        return res
+
+    def get_pmi(self):
+        """
+        slurm ships its own pmi2
+        """
+        if self._has_plugin('mpi', 'pmix'):
+            res = 'pmix'
+        elif self._has_plugin('mpi', 'pmi2'):
+            res = 'pmi'
+        else:
+            res = None
+        self.log.debug("Found PMI %s", res)
+        return res

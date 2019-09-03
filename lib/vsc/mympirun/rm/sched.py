@@ -110,6 +110,9 @@ class Sched(object):
     HYDRA_LAUNCHER_EXEC = None
     RM_HYDRA_LAUNCHER = None
 
+    # PMIx
+    PMIX_LAUNCHER = None
+
     def __init__(self, options=None, **kwargs):
         if not hasattr(self, 'log'):
             self.log = getLogger(self.__class__.__name__)
@@ -307,3 +310,9 @@ class Sched(object):
         Return whether this is a local scheduler or not.
         """
         return False
+
+    def get_pmi(self):
+        """
+        Return RM PMI(x) support: None is not supported, pmix if PMIx is supproted and pmi otherwise.
+        """
+        return None
