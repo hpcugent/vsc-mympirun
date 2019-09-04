@@ -32,12 +32,10 @@ import re
 
 from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.fancylogger import getLogger
+from vsc.mympirun.common import SchedKlass
 
 
-LOGGER = getLogger()
-
-
-class Sched(object):
+class Sched(SchedKlass):
 
     """General class for scheduler/resource manager related functions."""
     _sched_for = []  # classname is default added
@@ -99,29 +97,6 @@ class Sched(object):
         self.set_mpinodes()
 
         super(Sched, self).__init__(**kwargs)
-
-    # factory methods for Sched. To add a new Sched class just create a new class that extends the cluster class
-    # see http://stackoverflow.com/questions/456672/class-factory-in-python
-    @classmethod
-    def _is_sched_for(cls, name=None):
-        """see if this class can provide support for sched class"""
-        if name is not None:
-            # add class name as default
-            return name in cls._sched_for + [cls.__name__]
-
-        # guess it from environment
-        totest = cls._sched_environ_test
-        if cls.SCHED_ENVIRON_ID is not None:
-            totest.append(cls.SCHED_ENVIRON_ID)
-
-        for envvar in totest:
-            envval = os.environ.get(envvar, None)
-            if not envval:
-                continue
-            else:
-                return True
-
-        return False
 
     # other methods
     def set_sched_id(self):

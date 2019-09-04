@@ -29,7 +29,8 @@ Documentation can be found at https://www.mpich.org/documentation/guides/
 """
 import os
 
-from vsc.mympirun.mpi.mpi import MPI, version_in_range
+from vsc.mympirun.common import version_in_range
+from vsc.mympirun.mpi.mpi import MPI
 from vsc.utils.run import run
 
 

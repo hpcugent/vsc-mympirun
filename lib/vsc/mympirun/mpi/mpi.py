@@ -43,8 +43,8 @@ import sys
 import time
 
 from IPy import IP
-from vsc.mympirun.common import version_in_range
 from vsc.utils.fancylogger import getLogger
+from vsc.mympirun.common import MpiKlass
 from vsc.utils.missing import nub
 from vsc.utils.run import CmdList, RunNoShell, RunAsyncLoopStdout, RunFile, RunLoop, run
 
@@ -53,8 +53,6 @@ RM_HYDRA_LAUNCHER = 'RM_HYDRA_LAUNCHER'
 # size of dir in bytes
 TEMPDIR_WARN_SIZE = 100000
 TEMPDIR_ERROR_SIZE = 1000000
-
-LOGGER = getLogger()
 
 TIMEOUT_CODE = 124
 TIMEOUT_WARNING = """mympirun has been running for %s seconds without seeing any output.
@@ -144,7 +142,7 @@ class RunAsyncMPI(RunAsyncLoopStdout, RunMPI):
         super(RunAsyncMPI, self)._loop_process_output(output)
 
 
-class MPI(object):
+class MPI(MpiKlass):
     """
     Base MPI class to generate the mpirun command line.
 
@@ -223,77 +221,6 @@ class MPI(object):
         if not self.cmdargs:
             self.log.raiseException("__init__: no executable or command provided")
 
-    # factory methods for MPI
-    @classmethod
-    def _is_mpirun_for(cls, mpirun_path):
-        """
-        Check if this class provides support for active mpirun command.
-
-        @param cls: the class that calls this function
-        @return: True if mpirun is located in $EBROOT*, and if $EBVERSION* value matches version requirement
-        """
-        res = False
-
-        mpiname = cls._mpirun_for
-        if mpiname:
-            LOGGER.debug("Checking whether %s (MPI name: %s) matches with %s..." % (cls, mpiname, mpirun_path))
-
-            # first, check whether specified mpirun location is in $EBROOT<NAME>
-            root_var_name = 'EBROOT' + mpiname.upper()
-            mpiroot = os.getenv(root_var_name)
-            if mpiroot:
-                LOGGER.debug("found $%s: %s" % (root_var_name, mpiroot))
-                # try to determine resolved path for both, this may file if we hit a non-existing paths
-                try:
-                    mpirun_path = os.path.realpath(mpirun_path)
-                    mpiroot = os.path.realpath(mpiroot)
-                except (IOError, OSError) as err:
-                    LOGGER.debug("Failed to resolve paths %s and %s, ignoring it: %s" % (mpirun_path, mpiroot, err))
-
-                # only if mpirun location is in $EBROOT* location, we should check the version too
-                if mpirun_path.startswith(mpiroot):
-                    LOGGER.debug("%s is in subdirectory of %s" % (mpirun_path, mpiroot))
-
-                    # next, check wheter version meets requirements (checked via _mpirun_version function)
-                    version_var_name = 'EBVERSION' + mpiname.upper()
-                    version = os.getenv(version_var_name)
-
-                    # mympirun is not compatible with OpenMPI version 2.0: this version contains a bug
-                    # see https://github.com/hpcugent/vsc-mympirun/issues/113
-                    if mpiname == "OpenMPI" and version_in_range(version, "2.0", "2.1"):
-                        LOGGER.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
-                                      "compatible with mympirun. This issue is not present in OpenMPI 1.x and it has "
-                                      "been fixed in OpenMPI 2.1 and further."))
-                        sys.exit(1)
-
-                    mpirun_version_check = getattr(cls, '_mpirun_version', None)
-                    if mpirun_version_check and version:
-                        res = mpirun_version_check(version)
-                        LOGGER.debug("found $%s: %s => match for %s: %s" % (version_var_name, version, cls, res))
-                    elif mpirun_version_check is None:
-                        LOGGER.debug("no mpirun version provided, skipping version check, match for %s" % cls)
-                        res = True
-                    else:
-                        LOGGER.debug("environment variable $%s not found, skipping version check" % version_var_name)
-                else:
-                    LOGGER.debug("%s is NOT in subdirectory of %s, no match for %s" % (mpirun_path, mpiroot, cls))
-            else:
-                LOGGER.debug("$%s not defined, no match for %s" % (root_var_name, cls))
-
-        return res
-
-    @classmethod
-    def _is_mpiscriptname_for(cls, scriptname):
-        """
-        Check if this class provides support for scriptname.
-
-        @param cls: the class that calls this function
-        @param scriptname: the executable that called mympirun
-
-        @return: true if $scriptname is defined as an mpiscriptname of $cls
-        """
-
-        return scriptname in cls._mpiscriptname_for
 
     # other general functionality
     def _has_hydra(self):

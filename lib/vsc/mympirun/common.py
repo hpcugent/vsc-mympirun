@@ -27,6 +27,7 @@ Common between mpi and pmi
 """
 import os
 import re
+import sys
 
 from vsc.utils.fancylogger import getLogger
 from distutils.version import LooseVersion
@@ -193,3 +194,102 @@ def version_in_range(version, lower_limit, upper_limit):
     return in_range
 
 
+class SchedKlass(object):
+
+    # factory methods for Sched. To add a new Sched class just create a new class that extends the cluster class
+    # see http://stackoverflow.com/questions/456672/class-factory-in-python
+    @classmethod
+    def _is_sched_for(cls, name=None):
+        """see if this class can provide support for sched class"""
+        if name is not None:
+            # add class name as default
+            return name in cls._sched_for + [cls.__name__]
+
+        # guess it from environment
+        totest = cls._sched_environ_test
+        if cls.SCHED_ENVIRON_ID is not None:
+            totest.append(cls.SCHED_ENVIRON_ID)
+
+        for envvar in totest:
+            envval = os.environ.get(envvar, None)
+            if not envval:
+                continue
+            else:
+                return True
+
+        return False
+
+
+class MpiKlass(object):
+
+    # factory methods for MPI
+    @classmethod
+    def _is_mpirun_for(cls, mpirun_path):
+        """
+        Check if this class provides support for active mpirun command.
+
+        @param cls: the class that calls this function
+        @return: True if mpirun is located in $EBROOT*, and if $EBVERSION* value matches version requirement
+        """
+        res = False
+
+        mpiname = cls._mpirun_for
+        if mpiname:
+            LOGGER.debug("Checking whether %s (MPI name: %s) matches with %s..." % (cls, mpiname, mpirun_path))
+
+            # first, check whether specified mpirun location is in $EBROOT<NAME>
+            root_var_name = 'EBROOT' + mpiname.upper()
+            mpiroot = os.getenv(root_var_name)
+            if mpiroot:
+                LOGGER.debug("found $%s: %s" % (root_var_name, mpiroot))
+                # try to determine resolved path for both, this may file if we hit a non-existing paths
+                try:
+                    mpirun_path = os.path.realpath(mpirun_path)
+                    mpiroot = os.path.realpath(mpiroot)
+                except (IOError, OSError) as err:
+                    LOGGER.debug("Failed to resolve paths %s and %s, ignoring it: %s" % (mpirun_path, mpiroot, err))
+
+                # only if mpirun location is in $EBROOT* location, we should check the version too
+                if mpirun_path.startswith(mpiroot):
+                    LOGGER.debug("%s is in subdirectory of %s" % (mpirun_path, mpiroot))
+
+                    # next, check wheter version meets requirements (checked via _mpirun_version function)
+                    version_var_name = 'EBVERSION' + mpiname.upper()
+                    version = os.getenv(version_var_name)
+
+                    # mympirun is not compatible with OpenMPI version 2.0: this version contains a bug
+                    # see https://github.com/hpcugent/vsc-mympirun/issues/113
+                    if mpiname == "OpenMPI" and version_in_range(version, "2.0", "2.1"):
+                        LOGGER.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
+                                      "compatible with mympirun. This issue is not present in OpenMPI 1.x and it has "
+                                      "been fixed in OpenMPI 2.1 and further."))
+                        sys.exit(1)
+
+                    mpirun_version_check = getattr(cls, '_mpirun_version', None)
+                    if mpirun_version_check and version:
+                        res = mpirun_version_check(version)
+                        LOGGER.debug("found $%s: %s => match for %s: %s" % (version_var_name, version, cls, res))
+                    elif mpirun_version_check is None:
+                        LOGGER.debug("no mpirun version provided, skipping version check, match for %s" % cls)
+                        res = True
+                    else:
+                        LOGGER.debug("environment variable $%s not found, skipping version check" % version_var_name)
+                else:
+                    LOGGER.debug("%s is NOT in subdirectory of %s, no match for %s" % (mpirun_path, mpiroot, cls))
+            else:
+                LOGGER.debug("$%s not defined, no match for %s" % (root_var_name, cls))
+
+        return res
+
+    @classmethod
+    def _is_mpiscriptname_for(cls, scriptname):
+        """
+        Check if this class provides support for scriptname.
+
+        @param cls: the class that calls this function
+        @param scriptname: the executable that called mympirun
+
+        @return: true if $scriptname is defined as an mpiscriptname of $cls
+        """
+
+        return scriptname in cls._mpiscriptname_for
