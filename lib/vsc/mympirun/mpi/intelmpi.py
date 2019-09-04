@@ -34,7 +34,8 @@ import tempfile
 from vsc.utils.missing import nub
 from vsc.utils.run import CmdList
 
-from vsc.mympirun.mpi.mpi import MPI, RM_HYDRA_LAUNCHER, version_in_range, which
+from vsc.mympirun.common import version_in_range, which
+from vsc.mympirun.mpi.mpi import MPI, RM_HYDRA_LAUNCHER
 
 SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
 

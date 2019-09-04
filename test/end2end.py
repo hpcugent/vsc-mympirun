@@ -45,7 +45,8 @@ import vsc.mympirun.rm.sched as schedm
 from vsc.utils.missing import nub
 from vsc.utils.run import run
 
-from vsc.mympirun.mpi.mpi import MPI, which
+from vsc.mympirun.common import which
+from vsc.mympirun.mpi.mpi import MPI
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
 from sched import cleanup_PBS_env, reset_env, set_PBS_env, set_SLURM_env

@@ -32,7 +32,8 @@ import sys
 from vsc.utils.missing import nub
 from vsc.utils.run import CmdList
 
-from vsc.mympirun.mpi.mpi import MPI, version_in_range
+from vsc.mympirun.common import version_in_range
+from vsc.mympirun.mpi.mpi import MPI
 
 
 SLURM_EXPORT_ENV = 'SLURM_EXPORT_ENV'

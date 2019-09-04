@@ -31,6 +31,7 @@ import pkgutil
 import sys
 
 from vsc.mympirun.factory import getinstance
+from vsc.mympirun.common import what_mpi
 import vsc.mympirun.rm.sched as schedm
 from vsc.utils import fancylogger
 
@@ -63,7 +64,7 @@ def get_mpi_and_sched_and_options(mpim, mpiopt):
         setmpi = sys.argv[0]
         optionparser.log.debug("mympirun will be executed by %s", setmpi)
 
-    scriptname, mpi, found_mpi = mpim.what_mpi(setmpi)
+    scriptname, mpi, found_mpi = what_mpi(setmpi, mpim.MPI)
     optionparser.log.debug("Found MPI classes %s", found_mpi)
     found_mpi_names = [x.__name__ for x in found_mpi]
 

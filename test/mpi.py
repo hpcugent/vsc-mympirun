@@ -37,9 +37,11 @@ import stat
 import string
 import tempfile
 import unittest
+
 from vsc.install.testing import TestCase
 from vsc.utils.run import run
 from vsc.utils.missing import get_subclasses, nub
+from vsc.mympirun.common import which, what_mpi, stripfake, version_in_range, FAKE_SUBDIRECTORY_NAME
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
@@ -77,8 +79,8 @@ class TestMPI(TestCase):
         scriptnames = ["ompirun", "mpirun", "impirun", "mympirun"]
         for scriptname in scriptnames:
             # if the scriptname is an executable located on this machine
-            if mpim.which(scriptname):
-                (returned_scriptname, mpi, found) = mpim.what_mpi(scriptname)
+            if which(scriptname):
+                (returned_scriptname, mpi, found) = what_mpi(scriptname, mpim.MPI)
                 print("what mpi returns: %s, %s, %s" % (returned_scriptname, mpi, found))
                 # if an mpi implementation was found
                 if mpi:
@@ -95,9 +97,9 @@ class TestMPI(TestCase):
     def test_stripfake(self):
         """Test if stripfake actually removes the /bin/fake path in $PATH"""
         print("old path: %s" % os.environ["PATH"])
-        mpim.stripfake()
+        stripfake()
         newpath = os.environ["PATH"]
-        self.assertFalse(("bin/%s/mpirun" % mpim.FAKE_SUBDIRECTORY_NAME) in newpath, msg="the faked dir is still in $PATH")
+        self.assertFalse(("bin/%s/mpirun" % FAKE_SUBDIRECTORY_NAME) in newpath, msg="the faked dir is still in $PATH")
 
     def test_which(self):
         """test if which returns a path that corresponds to unix which"""
@@ -105,7 +107,7 @@ class TestMPI(TestCase):
         testnames = ["python", "head", "tail", "cat"]
 
         for scriptname in testnames:
-            mpiwhich = mpim.which(scriptname)
+            mpiwhich = which(scriptname)
             exitcode, unixwhich = run("which " + scriptname)
             if exitcode > 0:
                 raise Exception("Something went wrong while trying to run `which`: %s" % unixwhich)
@@ -361,8 +363,8 @@ class TestMPI(TestCase):
 
     def test_fake_dirname(self):
         """Make sure dirname for 'fake' subdir is the same in both setup.py and vsc.mympirun.mpi.mpi"""
-        from setup import FAKE_SUBDIRECTORY_NAME
-        self.assertEqual(mpim.FAKE_SUBDIRECTORY_NAME, FAKE_SUBDIRECTORY_NAME)
+        from setup import FAKE_SUBDIRECTORY_NAME as FSN_setup
+        self.assertEqual(FAKE_SUBDIRECTORY_NAME, FSN_setup)
 
     def test_get_universe_ncpus(self):
         """ Test mpinode scheduling for --universe option """
@@ -417,14 +419,14 @@ class TestMPI(TestCase):
 
     def test_version_in_range(self):
         """Test version_in_range function"""
-        self.assertTrue(mpim.version_in_range('1.4.0', '1.2.0', '2.0'))
-        self.assertTrue(mpim.version_in_range('1.4.0', '1.2.0', None))
-        self.assertTrue(mpim.version_in_range('1.4.0', None, '2.0'))
-        self.assertTrue(mpim.version_in_range('1.4.0', None, None)) # always true
+        self.assertTrue(version_in_range('1.4.0', '1.2.0', '2.0'))
+        self.assertTrue(version_in_range('1.4.0', '1.2.0', None))
+        self.assertTrue(version_in_range('1.4.0', None, '2.0'))
+        self.assertTrue(version_in_range('1.4.0', None, None)) # always true
 
-        self.assertFalse(mpim.version_in_range('1.4.0', '1.6.0', '2.0'))
-        self.assertFalse(mpim.version_in_range('1.4.0', '1.6.0', None))
-        self.assertFalse(mpim.version_in_range('2.4.0', None, '2.0'))
+        self.assertFalse(version_in_range('1.4.0', '1.6.0', '2.0'))
+        self.assertFalse(version_in_range('1.4.0', '1.6.0', None))
+        self.assertFalse(version_in_range('2.4.0', None, '2.0'))
 
     def test_sockets_per_node(self):
         """Test if sockets_per_node returns an integer"""
