@@ -29,6 +29,9 @@ End-to-end tests for mympirun (with mocking of real 'mpirun' command).
 @author: Kenneth Hoste (HPC-UGent)
 @author: Caroline De Brouwer (HPC-UGent)
 """
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 import copy
 import glob
 import os
