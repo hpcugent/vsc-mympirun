@@ -36,7 +36,9 @@ v4 cleanup 5/11/2013
 @author: Jeroen De Clerck
 """
 
+import vsc.mympirun.mpi.mpi as mpim
+from vsc.mympirun.mpi.option import MympirunOption
 from vsc.mympirun.main import main
 
 if __name__ == '__main__':
-    main()
+    main(mpim, MympirunOption)

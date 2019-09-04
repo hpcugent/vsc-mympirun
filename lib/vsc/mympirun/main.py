@@ -30,14 +30,12 @@ import os
 import pkgutil
 import sys
 
-import vsc.mympirun.mpi.mpi as mpim
-from vsc.mympirun.option import MympirunOption
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.rm.sched as schedm
 from vsc.utils import fancylogger
 
 
-def get_mpi_and_sched_and_options():
+def get_mpi_and_sched_and_options(mpim, mpiopt):
     """
     Selects mpi flavor and scheduler based on environment and arguments.
 
@@ -54,7 +52,7 @@ def get_mpi_and_sched_and_options():
     isfake = scriptname == 'mpirun'
 
     # init generaloption with the various mpirun cli options
-    optionparser = MympirunOption(ismpirun=isfake)
+    optionparser = mpiopt(ismpirun=isfake)
 
     # see if an mpi flavor was explicitly chosen as a command line argument. If not, just use the mpirun that was called
     # We are using sys.argv because generaloption depends on the the returned scriptname
@@ -106,10 +104,12 @@ def get_mpi_and_sched_and_options():
     return mpi, sched, optionparser
 
 
-def main():
-    """Main function"""
+def main(mpim, mpiopt):
+    """
+    Main function: mpim is the base mpi module (with the MPI class), mpiopt is the option parser class
+    """
     try:
-        instance_options = get_mpi_and_sched_and_options()
+        instance_options = get_mpi_and_sched_and_options(mpim, mpiopt)
         if instance_options:
             instance = getinstance(*instance_options)
             instance.main()

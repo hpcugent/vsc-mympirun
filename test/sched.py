@@ -39,7 +39,7 @@ from vsc.utils.missing import nub
 
 from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
-from vsc.mympirun.option import MympirunOption
+from vsc.mympirun.mpi.option import MympirunOption
 import vsc.mympirun.rm.sched as schedm
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS

@@ -45,7 +45,7 @@ from vsc.mympirun.factory import getinstance
 import vsc.mympirun.mpi.mpi as mpim
 from vsc.mympirun.mpi.openmpi import OpenMPI, OpenMpiOversubscribe
 from vsc.mympirun.mpi.intelmpi import IntelMPI, IntelHydraMPIPbsdsh
-from vsc.mympirun.option import MympirunOption
+from vsc.mympirun.mpi.option import MympirunOption
 from vsc.mympirun.rm.local import Local
 
 from sched import reset_env
