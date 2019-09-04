@@ -31,12 +31,11 @@ import pkgutil
 import sys
 
 from vsc.mympirun.factory import getinstance
-from vsc.mympirun.common import what_mpi
-import vsc.mympirun.rm.sched as schedm
+from vsc.mympirun.common import what_mpi, what_sched
 from vsc.utils import fancylogger
 
 
-def get_mpi_and_sched_and_options(mpim, mpiopt):
+def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
     """
     Selects mpi flavor and scheduler based on environment and arguments.
 
@@ -74,7 +73,7 @@ def get_mpi_and_sched_and_options(mpim, mpiopt):
         return None
 
     # Select a Scheduler from the available schedulers
-    sched, found_sched = schedm.what_sched(getattr(optionparser.options, 'schedtype', None))
+    sched, found_sched = what_sched(getattr(optionparser.options, 'schedtype', None), schedm)
     optionparser.log.debug("Found Sched classes %s", found_sched)
     found_sched_names = [x.__name__ for x in found_sched]
 
@@ -105,12 +104,12 @@ def get_mpi_and_sched_and_options(mpim, mpiopt):
     return mpi, sched, optionparser
 
 
-def main(mpim, mpiopt):
+def main(mpim, mpiopt, schedm):
     """
     Main function: mpim is the base mpi module (with the MPI class), mpiopt is the option parser class
     """
     try:
-        instance_options = get_mpi_and_sched_and_options(mpim, mpiopt)
+        instance_options = get_mpi_and_sched_and_options(mpim, mpiopt, schedm)
         if instance_options:
             instance = getinstance(*instance_options)
             instance.main()

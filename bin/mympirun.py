@@ -37,8 +37,9 @@ v4 cleanup 5/11/2013
 """
 
 import vsc.mympirun.mpi.mpi as mpim
+import vsc.mympirun.rm.sched as schedm
 from vsc.mympirun.mpi.option import MympirunOption
 from vsc.mympirun.main import main
 
 if __name__ == '__main__':
-    main(mpim, MympirunOption)
+    main(mpim, MympirunOption, schedm)

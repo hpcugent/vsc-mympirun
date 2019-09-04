@@ -32,57 +32,9 @@ import re
 
 from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.fancylogger import getLogger
-from vsc.utils.missing import get_subclasses
 
 
 LOGGER = getLogger()
-
-
-def what_sched(requested):
-    """Return the scheduler class """
-
-    def sched_to_key(klass):
-        """Return key for specified scheduler class which can be used for sorting."""
-        # use lowercase class name for sorting
-        key = klass.__name__.lower()
-        # prefix key for SLURM scheduler class with '_'
-        # this is done to consider SLURM before PBS, since $PBS* environment variables may be defined in SLURM job env
-        if key == 'slurm':
-            key = '_' + key
-
-        return key
-
-    # exclude Coupler class which also is a subclass of Sched, since it's not an actual scheduler
-    found_sched = sorted([c for c in get_subclasses(Sched) if c.__name__ != 'Coupler'], key=sched_to_key)
-
-    # Get local scheduler
-    local_sched = get_local_sched(found_sched)
-
-    # first, try to use the scheduler that was requested
-    if requested:
-        for sched in found_sched:
-            if sched._is_sched_for(requested):
-                return sched, found_sched
-        LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
-
-    # next, try to use the scheduler defined by environment variables
-    for sched in found_sched:
-        if sched.SCHED_ENVIRON_NODE_INFO in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
-            return sched, found_sched
-
-    # If that fails, try to force the local scheduler
-    LOGGER.debug("No scheduler found in environment, trying local")
-    return local_sched, found_sched
-
-
-def get_local_sched(found_sched):
-    """Helper function to get local scheduler (or None, if there is no local scheduler)"""
-    res = None
-    for sched in found_sched:
-        if sched._is_sched_for("local"):
-            res = sched
-            break
-    return res
 
 
 class Sched(object):
