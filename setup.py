@@ -46,7 +46,7 @@ PACKAGE = {
         'vsc-install >= 0.10.25',  # for modified subclassing
         'IPy',
     ],
-    'version': '4.1.9',
+    'version': '5.0.0',
     'author': [sdw, kh],
     'maintainer': [sdw, kh],
     'zip_safe': False,
