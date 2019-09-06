@@ -42,6 +42,8 @@ class Sched(SchedKlass):
     # if the SCHED_ENVIRON_ID is not found, create one yourself
     AUTOGENERATE_JOBID = False
 
+    SCHED_ENVIRON_NODE_INFO = None
+
     SAFE_RSH_CMD = 'ssh'
     SAFE_RSH_LARGE_CMD = 'sshsleep'
     RSH_CMD = None

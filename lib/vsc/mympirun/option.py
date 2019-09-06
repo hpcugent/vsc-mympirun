@@ -91,9 +91,6 @@ class CommonOption(GeneralOption):
 
             "stats": ("Set MPI statistics level", "int", "store", 0),  # TODO PMI
 
-            "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
-                                 "(<prefix>_ should match) to pass through."), "string", "extend", [], 'V'),  # TODO PMI
-
         }
 
         opts.update(self.OPTIONS)

@@ -56,9 +56,10 @@ class MPI(MpiKlass):
 
     def main(self):
         """Magic now!"""
-        envs = self.tune_env()
+        for name in ['tune', 'pmi', 'debug']:
+            getattr(self, 'mpi_' + name)()
 
-        pmicmd, run_function = self.pmicmd(envs)
+        pmicmd, run_function = self.pmicmd()
 
         cmd = pmicmd + self.cmdargs
 
@@ -99,19 +100,35 @@ class MPI(MpiKlass):
             self.log.debug("Has pmi %s (forced)", self.PMI)
             return self.PMI
 
-    def tune_env(self):
+    def mpi_tune(self):
         """
-        Tune MPI via environment variables. Return list of tuned variables names
+        Tune MPI via environment variables.
         """
-        envs = []
         if self.has_ucx():
             self.log.debug("UCX found, no tuning")
         else:
             # TODO: what is needed here?
             self.log.error("No tuning applied/supported")
 
-        self.log.debug("Tuned environment variables %s", envs)
-        return envs
+    def mpi_pmi(self):
+        """
+        Set PMI via environment variables.
+        """
+        # e.g. for intel mpi, set IMPI variable pointing to pmi2 lib
+
+    def mpi_debug(self):
+        """
+        Set MPI debug/stats via environment variables.
+        """
+        # e.g. for intel mpi, set IMPI variable pointing to pmi2 lib
+
+    def _mpi_size(self, job_info):
+        """
+        Edit / adapt the current job_info to the requested mpi sizing
+        """
+        mpi_info = job_info.copy()
+        self.log.warn("Nothing done with job_info, returning as is %s", mpi_info)
+        return mpi_info
 
 
 class OpenMPI4(MPI):
@@ -125,3 +142,10 @@ class OpenMPI4(MPI):
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '4.0.0', None))
 
     PMI = [PMIxv3]
+
+
+class Wurker(MPI):
+    """
+    Not an MPI class at all, to create the Slurm/srun wurker command
+    """
+    HIDDEN = True

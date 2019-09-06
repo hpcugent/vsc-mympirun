@@ -82,4 +82,7 @@ class MympirunOption(CommonOption):
         "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
                       "universe is all requested processes.)"), "int", "store", None),
 
+        "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
+                             "(<prefix>_ should match) to pass through."), "string", "extend", [], 'V'),
+
     }

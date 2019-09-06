@@ -33,6 +33,8 @@ class PMI(object):
     FLAVOUR = None
     VERSION = None
 
+    def __str__(self):
+        return "PMI %s version %s" % (self.FLAVOUR, self.VERSION)
 
 class PMIv2(object):
     FLAVOUR = PMI

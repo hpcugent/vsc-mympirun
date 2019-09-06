@@ -51,13 +51,17 @@ import vsc.mympirun.pmi.sched as schedm
 from vsc.mympirun.pmi.option import MympirunOption as mpiopt
 
 
-SLURM_REGULAR = {
-    'SLURM_JOBID': '12345',
-    'SLURM_NODELIST': 'node[1-3]',
-    'SLURM_TASKS_PER_NODE': '2,1(x2)',
-    'SLURM_EXPORT_ENV': 'NONE',
-}
-
+SLURM_2NODES = """
+SLURM_CPUS_ON_NODE=32
+SLURM_JOB_CPUS_PER_NODE=32(x2)
+SLURM_JOB_ID=123456
+SLURM_JOB_NODELIST=node[3302-3303]
+SLURM_JOB_NUM_NODES=2
+SLURM_MEM_PER_CPU=7600
+SLURM_NNODES=2
+SLURM_NPROCS=64
+SLURM_NTASKS=64
+"""
 
 class PMITest(TestCase):
     def setUp(self):
@@ -107,8 +111,16 @@ class PMITest(TestCase):
         self.mock_which.return_value = mpirun
         return mpirun
 
-    def set_slurm_ompi4_ucx(self, slurmenv):
-        os.environ.update(slurmenv)
+    def set_env(self, env):
+        if isinstance(env, basestring):
+            for line in env.split("\n"):
+                if '=' in line:
+                    os.environ.update(dict([line.strip().split("=", 1)]))
+        else:
+            os.environ.update(env)
+
+    def set_slurm_ompi4_ucx(self, env):
+        self.set_env(env)
         self.set_mpi('OpenMPI', '4.0.1')
         self.eb('ucx', '1.2.3')
 
@@ -122,7 +134,7 @@ class PMITest(TestCase):
 class PMISimple(PMITest):
     def test_pmitest(self):
         """Test the PMITest class"""
-        self.set_slurm_ompi4_ucx(SLURM_REGULAR)
+        self.set_slurm_ompi4_ucx(SLURM_2NODES)
         mpr = self.get_instance()
 
         self.assertEqual(mpr.LAUNCHER, 'srun', 'srun launcher')
@@ -155,8 +167,15 @@ class PMIEnd2End(PMITest):
             self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
 
     def test_simple(self):
-        self.set_slurm_ompi4_ucx(SLURM_REGULAR)
+        self.set_slurm_ompi4_ucx(SLURM_2NODES)
 
         self.pmirun(['--showmpi', '--debug'], pattern='Found MPI classes OpenMPI4$')
         self.pmirun(['--showsched', '--debug'], pattern='Found Sched classes Slurm$')
-        self.pmirun(['--debug', 'arg1', 'arg2'], pattern='arg1 arg2$')
+
+    def test_ompi4_slurm(self):
+        self.set_slurm_ompi4_ucx(SLURM_2NODES)
+
+        pattern = '--chdir=' + os.getcwd()
+        pattern += ' --export=ALL --mpi=pmix_v3 --output=xyz --abc=123 --def=456'
+        self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
+                    pattern=pattern+' arg1 arg2$')
