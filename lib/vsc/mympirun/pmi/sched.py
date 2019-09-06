@@ -28,9 +28,76 @@ Base PMI Sched class, all actual classes should inherit from this one
 The role of the Sched class is mainly to construct the correct sched-specific PMI call
 """
 
-from vsc.mympirun.common import SchedKlass
+import os
 from vsc.utils.fancylogger import getLogger
+from vsc.mympirun.common import SchedKlass
+from vsc.utils.run import run_file, async_to_stdout
+
 
 class Sched(SchedKlass):
-    pass
+    LAUNCHER = None
 
+    def __init__(self, options=None, **kwargs):
+        if not hasattr(self, 'log'):
+            self.log = getLogger(self.__class__.__name__)
+        if not hasattr(self, 'options'):
+            self.options = options
+
+        self.sched_id = None
+        self.set_sched_id()
+
+        super(Sched, self).__init__(**kwargs)
+
+    def set_sched_id(self):
+        """get a unique id for this scheduler"""
+        self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
+
+    def pmicmd(self, envs):
+        """
+        Return generated pmi command (as list) and the run function
+        envs is list of variable names that is modified
+        """
+        pmicmd = [self.LAUNCHER]
+
+        for name in ['sizing', 'environment', 'mpi']:
+            mthd = 'pmicmd_' + name
+            margs = []
+            if name == 'environment':
+                margs.append(envs)
+
+            args = getattr(self, mthd)(*margs)
+            self.log.debug("Generated pmicmd %s arguments %s", name, args)
+            pmicmd += args
+
+        run_function, run_function_args = self.run_function()
+        pmicmd += run_function_args
+
+        pmicmd += ['--' + x for x in getattr(self.options, 'pass', [])]  # .pass gives syntax error?
+
+        self.log.debug("Generated pmicmd %s", pmicmd)
+        return pmicmd, run_function
+
+    def run_function(self):
+        """
+        Return required run function and run function related args as list
+        """
+        if self.options.output:
+            def run_output(cmd, **kwargs):
+                kwargs['filename'] = self.options.output
+                return run_file(cmd, **kwargs)
+            return run_output, []
+        else:
+            return async_to_stdout, []
+
+    def pmicmd_sizing(self):
+        """Generate the sizing arguments to the launcher as a list"""
+        return []
+
+    def pmicmd_environment(self, envs):  # pylint:disable=unused-argument
+        """Generate the environment related arguments to the launcher as a list"""
+        # ignore the envs for now
+        return []
+
+    def pmicmd_mpi(self):
+        """Generate the mpi related arguments to the launcher as a list"""
+        return []
