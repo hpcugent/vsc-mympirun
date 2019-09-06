@@ -29,13 +29,19 @@ mpi and scheduler class
 @author: Stijn De Weirdt, Jens Timmerman
 """
 
-from vsc.utils import fancylogger
+from vsc.utils.fancylogger import getLogger
 
 
 _coupler_class_cache = {}
 
 
-_log = fancylogger.getLogger('mympirun.factory', fname=False)
+_log = getLogger('mympirun.factory', fname=False)
+
+
+class CouplerMetaClass(type):
+    def __init__(cls, **kwargs):
+        cls.log = getLogger(cls.__class__.__name__)
+        super(CouplerMetaClass, cls).__init__(**kwargs)
 
 
 def getinstance(mpi, sched, options):
@@ -51,16 +57,16 @@ def getinstance(mpi, sched, options):
     cache_key = (mpi, sched)
 
     if cache_key not in _coupler_class_cache:
-        class Coupler(mpi, sched):
-            """Temporary class to couple MPI and local sched"""
-            def __init__(self, **kwargs):
-                self.log = fancylogger.getLogger("%s_%s" % (mpi.__name__, sched.__name__))
-                super(Coupler, self).__init__(**kwargs)
+        coupler_class = type(
+            "Coupler_%s_%s" % (mpi.__name__, sched.__name__),
+            cache_key,
+            {'__metaclass__': CouplerMetaClass}
+        )
+        _coupler_class_cache[cache_key] = coupler_class
+        tmpl = "Created new Coupler %s class for %s: %s"
+    else:
+        tmpl = "Fetched Coupler class %s from cache %s: %s"
+        coupler_class = _coupler_class_cache[cache_key]
 
-        _coupler_class_cache[cache_key] = Coupler
-        _log.debug("Created new 'Coupler' class for %s: %s", cache_key, id(Coupler))
-
-    coupler_class = _coupler_class_cache[cache_key]
-    _log.debug("Fetched Coupler class from cache %s: %s", cache_key, id(coupler_class))
-
+    _log.debug(tmpl, cache_key, coupler_class.__name__, id(coupler_class))
     return coupler_class(options=options.options, cmdargs=options.args)

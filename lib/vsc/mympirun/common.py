@@ -61,6 +61,11 @@ def eb_root_version(name):
     return tuple(res)
 
 
+def filtered_subclasses(klass):
+    # exclude Coupler classes which also is a subclass of mpi/sched, since it's not an actual mpi/scheduler
+    return [c for c in get_subclasses(klass) if not c.__name__.startswith('Coupler')]
+
+
 def what_sched(requested, schedm):
     """Return the scheduler class """
 
@@ -69,14 +74,15 @@ def what_sched(requested, schedm):
         # use lowercase class name for sorting
         key = klass.__name__.lower()
         # prefix key for SLURM scheduler class with '_'
-        # this is done to consider SLURM before PBS, since $PBS* environment variables may be defined in SLURM job env
+        #   this is done to consider SLURM before PBS,
+        #   since $PBS* environment variables may be defined in SLURM job env
         if key == 'slurm':
             key = '_' + key
 
         return key
 
-    # exclude Coupler class which also is a subclass of Sched, since it's not an actual scheduler
-    found_sched = sorted([c for c in get_subclasses(schedm.Sched) if c.__name__ != 'Coupler'], key=sched_to_key)
+    # exclude Coupler classes which also is a subclass of Sched, since it's not an actual scheduler
+    found_sched = sorted(filtered_subclasses(schedm.Sched), key=sched_to_key)
 
     # Get local scheduler
     local_sched = get_local_sched(found_sched)
@@ -120,8 +126,9 @@ def what_mpi(name, mpi_klass):
       - The python classes of the supported MPI flavors (from the various .py files in mympirun/mpi)
     """
 
-    # The coupler is also a subclass of MPI, but it isn't and MPI implementation
-    supp_mpi_impl = [x for x in get_subclasses(mpi_klass) if x.__name__ != 'Coupler']  # supported MPI implementations
+    # supported MPI implementations
+    #   The coupler is also a subclass of MPI, but it isn't and MPI implementation
+    supp_mpi_impl = filtered_subclasses(mpi_klass)
 
     # remove fake mpirun from $PATH
     stripfake()
