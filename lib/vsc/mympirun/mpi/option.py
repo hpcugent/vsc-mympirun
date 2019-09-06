@@ -25,8 +25,6 @@
 """
 Optionparser for mympirun
 """
-from __future__ import print_function
-
 from vsc.mympirun.option import CommonOption
 from vsc.mympirun.mpi.mpi import MPI, TIMEOUT_CODE
 

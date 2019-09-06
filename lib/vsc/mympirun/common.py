@@ -42,6 +42,25 @@ INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
 FAKE_SUBDIRECTORY_NAME = 'fake'
 
 
+def eb_root_version(name):
+    """
+    Return EBROOT and EBVERSION for name
+
+    Returns (None, None) on failure, (EBROOT, EBVERSION) otherwise
+    """
+
+    res = []
+    for var in ['root', 'version']:
+        var_name = 'EB%s%s' % (var.upper(), name.upper())
+        if var_name in os.environ:
+            res.append(os.environ.get(var_name))
+        else:
+            LOGGER.debug("$%s not defined for %s", var_name, name)
+            return (None, None)
+
+    return tuple(res)
+
+
 def what_sched(requested, schedm):
     """Return the scheduler class """
 
@@ -196,6 +215,11 @@ def version_in_range(version, lower_limit, upper_limit):
 
 class SchedKlass(object):
 
+    _sched_for = []  # classname is default added
+    _sched_environ_test = []
+    SCHED_ENVIRON_ID = None
+    SCHED_ENVIRON_NODE_INFO = None
+
     # factory methods for Sched. To add a new Sched class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
     @classmethod
@@ -222,6 +246,12 @@ class SchedKlass(object):
 
 class MpiKlass(object):
 
+    _mpirun_for = None
+    _mpiscriptname_for = []
+    _mpirun_version = None
+
+    RUNTIMEOPTION = None
+
     # factory methods for MPI
     @classmethod
     def _is_mpirun_for(cls, mpirun_path):
@@ -235,49 +265,47 @@ class MpiKlass(object):
 
         mpiname = cls._mpirun_for
         if mpiname:
-            LOGGER.debug("Checking whether %s (MPI name: %s) matches with %s..." % (cls, mpiname, mpirun_path))
+            LOGGER.debug("Checking whether %s (MPI name: %s) matches %s", cls, mpiname, mpirun_path)
 
             # first, check whether specified mpirun location is in $EBROOT<NAME>
-            root_var_name = 'EBROOT' + mpiname.upper()
-            mpiroot = os.getenv(root_var_name)
+            mpiroot, mpiversion = eb_root_version(mpiname)
             if mpiroot:
-                LOGGER.debug("found $%s: %s" % (root_var_name, mpiroot))
+                LOGGER.debug("found mpi root: %s", mpiroot)
                 # try to determine resolved path for both, this may file if we hit a non-existing paths
                 try:
-                    mpirun_path = os.path.realpath(mpirun_path)
+                    mpirun_path_real = os.path.realpath(mpirun_path)
                     mpiroot = os.path.realpath(mpiroot)
                 except (IOError, OSError) as err:
-                    LOGGER.debug("Failed to resolve paths %s and %s, ignoring it: %s" % (mpirun_path, mpiroot, err))
+                    LOGGER.debug("Failed to resolve paths %s and %s, ignoring it: %s", mpirun_path, mpiroot, err)
 
                 # only if mpirun location is in $EBROOT* location, we should check the version too
-                if mpirun_path.startswith(mpiroot):
-                    LOGGER.debug("%s is in subdirectory of %s" % (mpirun_path, mpiroot))
+                if mpirun_path.startswith(mpiroot) or mpirun_path_real.startswith(mpiroot):
+                    LOGGER.debug("%s (real %s) is in subdirectory of %s", mpirun_path, mpirun_path_real, mpiroot)
 
-                    # next, check wheter version meets requirements (checked via _mpirun_version function)
-                    version_var_name = 'EBVERSION' + mpiname.upper()
-                    version = os.getenv(version_var_name)
+                    # next, check if version meets requirements (checked via _mpirun_version function)
 
                     # mympirun is not compatible with OpenMPI version 2.0: this version contains a bug
                     # see https://github.com/hpcugent/vsc-mympirun/issues/113
-                    if mpiname == "OpenMPI" and version_in_range(version, "2.0", "2.1"):
+                    if mpiname == "OpenMPI" and version_in_range(mpiversion, "2.0", "2.1"):
                         LOGGER.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
                                       "compatible with mympirun. This issue is not present in OpenMPI 1.x and it has "
                                       "been fixed in OpenMPI 2.1 and further."))
                         sys.exit(1)
 
                     mpirun_version_check = getattr(cls, '_mpirun_version', None)
-                    if mpirun_version_check and version:
-                        res = mpirun_version_check(version)
-                        LOGGER.debug("found $%s: %s => match for %s: %s" % (version_var_name, version, cls, res))
+                    if mpirun_version_check and mpiversion:
+                        res = mpirun_version_check(mpiversion)
+                        LOGGER.debug("found mpirun version %s match for %s: %s", mpiversion, cls, res)
                     elif mpirun_version_check is None:
                         LOGGER.debug("no mpirun version provided, skipping version check, match for %s" % cls)
                         res = True
                     else:
-                        LOGGER.debug("environment variable $%s not found, skipping version check" % version_var_name)
+                        LOGGER.debug("mpi version not found, not match for %s", cls)
                 else:
-                    LOGGER.debug("%s is NOT in subdirectory of %s, no match for %s" % (mpirun_path, mpiroot, cls))
+                    LOGGER.debug("%s (real %s) is not in subdirectory of %s, no match for %s",
+                                 mpirun_path, mpirun_path_real, mpiroot, cls)
             else:
-                LOGGER.debug("$%s not defined, no match for %s" % (root_var_name, cls))
+                LOGGER.debug("mpi root not defined, no match for %s", cls)
 
         return res
 

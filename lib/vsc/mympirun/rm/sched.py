@@ -38,10 +38,6 @@ from vsc.mympirun.common import SchedKlass
 class Sched(SchedKlass):
 
     """General class for scheduler/resource manager related functions."""
-    _sched_for = []  # classname is default added
-    _sched_environ_test = []
-    SCHED_ENVIRON_ID = None
-    SCHED_ENVIRON_NODE_INFO = None
 
     # if the SCHED_ENVIRON_ID is not found, create one yourself
     AUTOGENERATE_JOBID = False

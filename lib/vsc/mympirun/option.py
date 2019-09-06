@@ -62,18 +62,19 @@ class CommonOption(GeneralOption):
         opts = {
             # long option: (description, type, action, default, short option)
 
-            "debuglvl": ("Specify debug level", "int", "store", 0),
+            "debuglvl": ("Specify debug level", "int", "store", 0),  # TODO PMI
 
-            "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
+            "debugmpi": ("Enable MPI level debugging", None, "store_true", False),  # TODO PMI
 
             "dry-run": ("Dry run mode, just print command that will be executed", None, 'store_true', False, 'D'),
 
             "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
+            # TODO PMI
 
-            "logtofile": ("redirect the logging of mympirun to a file (instead of stdout/stderr)",
+            "logtofile": ("redirect the logging of mympirun to a file (instead of stdout/stderr)",  # TODO PMI
                           "str", "store", None),
 
-            "multi": ("Run the amount of processes multiplied by the given integer", "int", "store", None),
+            "multi": ("Run the amount of processes multiplied by the given integer", "int", "store", None),  # TODO PMI
 
             "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
                        "str", "store", None),
@@ -88,10 +89,10 @@ class CommonOption(GeneralOption):
 
             "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
 
-            "stats": ("Set MPI statistics level", "int", "store", 0),
+            "stats": ("Set MPI statistics level", "int", "store", 0),  # TODO PMI
 
             "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
-                                 "(<prefix>_ should match) to pass through."), "string", "extend", [], 'V'),
+                                 "(<prefix>_ should match) to pass through."), "string", "extend", [], 'V'),  # TODO PMI
 
         }
 

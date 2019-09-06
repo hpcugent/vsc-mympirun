@@ -149,12 +149,6 @@ class MPI(MpiKlass):
     To add a new MPI class just create a new class that extends the MPI class, see http://stackoverflow.com/q/456672
     """
 
-    RUNTIMEOPTION = None
-
-    _mpirun_for = None
-    _mpiscriptname_for = []
-    _mpirun_version = None
-
     MPIRUN_LOCALHOSTNAME = 'localhost'
 
     HYDRA = None
