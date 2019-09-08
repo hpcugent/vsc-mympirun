@@ -60,7 +60,10 @@ def getinstance(mpi, sched, options):
         coupler_class = type(
             "Coupler_%s_%s" % (mpi.__name__, sched.__name__),
             cache_key,
-            {'__metaclass__': CouplerMetaClass}
+            {
+                '__metaclass__': CouplerMetaClass,
+                'HIDDEN': True,
+            }
         )
         _coupler_class_cache[cache_key] = coupler_class
         tmpl = "Created new Coupler %s class for %s: %s"

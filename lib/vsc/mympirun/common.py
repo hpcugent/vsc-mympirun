@@ -63,7 +63,7 @@ def eb_root_version(name):
 
 def filtered_subclasses(klass):
     # exclude Coupler classes which also is a subclass of mpi/sched, since it's not an actual mpi/scheduler
-    return [c for c in get_subclasses(klass) if not c.__name__.startswith('Coupler')]
+    return [c for c in get_subclasses(klass) if not c.HIDDEN]
 
 
 def what_sched(requested, schedm):
@@ -96,7 +96,8 @@ def what_sched(requested, schedm):
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
-        if sched.SCHED_ENVIRON_NODE_INFO in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
+        nodeinfo = not hasattr(sched, 'SCHED_ENVIRON_NODE_INFO') or sched.SCHED_ENVIRON_NODE_INFO in os.environ
+        if nodeinfo and sched.SCHED_ENVIRON_ID in os.environ:
             return sched, found_sched
 
     # If that fails, try to force the local scheduler
@@ -225,7 +226,8 @@ class SchedKlass(object):
     _sched_for = []  # classname is default added
     _sched_environ_test = []
     SCHED_ENVIRON_ID = None
-    SCHED_ENVIRON_NODE_INFO = None
+
+    HIDDEN = False
 
     # factory methods for Sched. To add a new Sched class just create a new class that extends the cluster class
     # see http://stackoverflow.com/questions/456672/class-factory-in-python
@@ -257,6 +259,7 @@ class MpiKlass(object):
     _mpiscriptname_for = []
     _mpirun_version = None
 
+    HIDDEN = False
     RUNTIMEOPTION = None
 
     # factory methods for MPI
