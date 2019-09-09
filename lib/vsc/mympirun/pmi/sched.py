@@ -134,14 +134,17 @@ class Sched(SchedKlass):
         job_info = self._job_info(JOB_INFO.copy())
 
         self.sane_job_info(job_info, hdr='job_info')
+        self.log.debug("Got job info %s", job_info)
 
         # compute requested
         mpi_info = self._mpi_size(job_info)
 
         self.sane_job_info(mpi_info, hdr='mpi_info')
+        self.log.debug("Got mpi size info %s", mpi_info)
 
         # generate args
         args = self._pmicmd_size_args(mpi_info)
+        self.log.debug("Got pmi cmd args %s", args)
 
         return args
 

@@ -54,6 +54,13 @@ class MPI(MpiKlass):
         if not self.cmdargs:
             self.log.raiseException("__init__: no executable or command provided")
 
+    def _modify_base_options(self, base_opts):
+        """Hook to modify base options"""
+        hybrid_help = ("Run in hybrid mode, specify number of processes per node. "
+                       "When GPUs are present, the number of GPUs becomes the default.")
+        base_opts['hybrid'] = tuple([hybrid_help] + list(base_opts['hybrid'][1:]))
+        return base_opts
+
     def main(self):
         """Magic now!"""
         for name in ['tune', 'pmi', 'debug']:
@@ -127,7 +134,17 @@ class MPI(MpiKlass):
         Edit / adapt the current job_info to the requested mpi sizing
         """
         mpi_info = job_info.copy()
-        self.log.warn("Nothing done with job_info, returning as is %s", mpi_info)
+
+        hybrid = self.options.hybrid
+        if hybrid is None:
+            if mpi_info['ngpus'] is not None:
+                hybrid = mpi_info['ngpus']
+                self.log.debug("Setting number of GPUs %s as hybrid value", hybrid)
+
+        if hybrid is not None:
+            self.log.debug("Setting hybrid %s number of ranks", hybrid)
+            mpi_info['nranks'] = self.options.hybrid
+
         return mpi_info
 
 

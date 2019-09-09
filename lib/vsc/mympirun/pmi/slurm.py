@@ -158,7 +158,7 @@ class Slurm(Sched):
 
         # patterns to cleanup
         cleanup = ['MEM', 'CPU', 'GPU', 'TASK']
-        cleanupre = re.compile(r'^SLURM.*(' + '|'.join(cleanup) + ').*')
+        cleanupre = re.compile(r'^SLURM_.*(' + '|'.join(cleanup) + ').*')
 
         removed = []
         for k, v in os.environ.items():
@@ -171,12 +171,40 @@ class Slurm(Sched):
         else:
             self.log.debug("No environment variables unset")
 
-        # 1 task per core?
-        # specify --cpus-per-task and not --ntasks and  --ntasks-per-node=?
+        args = []
+
+        tn = mpi_info['tnodes']
+        # all available nodes
+        args.append("--nodes=%s" % tn)
+
+        # 1 rank per task
+        # tasks per node
+        tpn = mpi_info['nranks']
+        args.append("--ntasks=%s" % (tn * tpn))
+
+        # cores per task
+        cpt = mpi_info['ncores'] // tpn
+        # sanity check
+        if cpt * tpn != mpi_info['ncores']:
+            self.log.error("Imbalanced tasks per node %s vs cores per node %s; using %s cores per task",
+                           tpn, mpi_info['ncores'], cpt)
+
+        args.append("--cpus-per-task=%s" % cpt)
 
         # redistribute all the memory to the tasks/cores
+        args.append("--mem-per-cpu=%s" % (mpi_info['nmem'] // mpi_info['ncores']))
 
-        return []
+        if mpi_info['ngpus'] is not None:
+            # gpus per task
+            gpt = mpi_info['ngpus'] // tpn
+            # sanity check
+            if gpt * tpn != mpi_info['ngpus']:
+                self.log.error("Imbalanced tasks per node %s vs gpus per node %s; using %s gpus per task",
+                               tpn, mpi_info['ngpus'], gpt)
+            args.append("--gpus-per-task=%s", gpt)
+            args.append("--gpu-bind=closest")
+
+        return args
 
     def pmicmd_debug(self):
         """Debug related args/options"""
