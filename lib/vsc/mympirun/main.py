@@ -73,7 +73,12 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
         return None
 
     # Select a Scheduler from the available schedulers
-    sched, found_sched = what_sched(getattr(optionparser.options, 'schedtype', None), schedm)
+    sched_name = getattr(optionparser.options, 'setsched', None)
+    if sched_name is None:
+        # legacy naming
+        sched_name = getattr(optionparser.options, 'schedtype', None)
+
+    sched, found_sched = what_sched(sched_name, schedm)
     optionparser.log.debug("Found Sched classes %s", found_sched)
     found_sched_names = [x.__name__ for x in found_sched]
 
@@ -92,10 +97,10 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
 
     if sched is None:
         optionparser.log.raiseException("No sched class found (options.schedtype %s ; found Sched classes %s)",
-                                        optionparser.options.schedtype, ", ".join(found_sched_names))
+                                        sched_name, ", ".join(found_sched_names))
     else:
         optionparser.log.debug("Found sched class %s from options.schedtype %s (all Sched found %s)",
-                               sched.__name__, optionparser.options.schedtype, ", ".join(found_sched_names))
+                               sched.__name__, sched_name, ", ".join(found_sched_names))
 
     if not optionparser.args:
         optionparser.log.warn("no mpi script provided")

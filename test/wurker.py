@@ -23,7 +23,7 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-End-to-end tests for mypmirun
+wurker tests
 """
 
 import logging
@@ -34,19 +34,17 @@ import os
 from pmi_utils import SLURM_2NODES, PMITest
 
 
-
-class PMIEnd2End(PMITest):
-    def test_simple(self):
-        self.set_slurm_ompi4_ucx(SLURM_2NODES)
-
-        self.pmirun(['--showmpi', '--debug'], pattern='Found MPI classes OpenMPI4$')
-        self.pmirun(['--showsched', '--debug'], pattern='Found Sched classes Slurm$')
+class WurkerEnd2End(PMITest):
+    def setUp(self):
+        """Prepare to run test."""
+        super(WurkerEnd2End, self).setUp()
+        self.script = os.path.join(os.path.dirname(self.script), 'wurker.py')
 
     def test_ompi4_slurm(self):
-        self.set_slurm_ompi4_ucx(SLURM_2NODES)
+        self.set_env(SLURM_2NODES)
 
         pattern = '--chdir=' + os.getcwd()
         pattern += ' --nodes=2 --ntasks=64 --cpus-per-task=1 --mem-per-cpu=7600'
-        pattern += ' --export=ALL --mpi=pmix_v3 --output=xyz --abc=123 --def=456'
+        pattern += ' --export=ALL --mpi=none --output=xyz --abc=123 --def=456'
         self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
                     pattern=pattern+' arg1 arg2$')

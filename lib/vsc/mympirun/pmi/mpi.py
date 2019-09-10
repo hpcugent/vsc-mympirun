@@ -54,13 +54,6 @@ class MPI(MpiKlass):
         if not self.cmdargs:
             self.log.raiseException("__init__: no executable or command provided")
 
-    def _modify_base_options(self, base_opts):
-        """Hook to modify base options"""
-        hybrid_help = ("Run in hybrid mode, specify number of processes per node. "
-                       "When GPUs are present, the number of GPUs becomes the default.")
-        base_opts['hybrid'] = tuple([hybrid_help] + list(base_opts['hybrid'][1:]))
-        return base_opts
-
     def main(self):
         """Magic now!"""
         for name in ['tune', 'pmi', 'debug']:

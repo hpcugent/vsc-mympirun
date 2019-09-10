@@ -86,3 +86,9 @@ class MympirunOption(CommonOption):
                              "(<prefix>_ should match) to pass through."), "string", "extend", [], 'V'),
 
     }
+
+    def _modify_base_options(self, base_opts):
+        """Hook to modify base options"""
+        # legacy naming
+        base_opts['schedtype'] = base_opts.pop('setsched')
+        return base_opts

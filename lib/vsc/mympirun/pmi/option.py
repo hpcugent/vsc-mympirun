@@ -26,7 +26,7 @@
 PMI options.
 """
 from vsc.mympirun.option import CommonOption
-from vsc.mympirun.pmi.mpi import MPI
+from vsc.mympirun.pmi.mpi import MPI, Wurker
 
 DEFAULT_TIMEOUT = 3600
 
@@ -41,3 +41,23 @@ class MympirunOption(CommonOption):
                   "It does not support short options or values with a ',' in them."),
                  "strlist", "store", []),
     }
+
+    def _modify_base_options(self, base_opts):
+        """Hook to modify base options"""
+        hybrid_help = ("Run in hybrid mode, specify number of processes per node. "
+                       "When GPUs are present, the number of GPUs becomes the default.")
+        base_opts['hybrid'] = tuple([hybrid_help] + list(base_opts['hybrid'][1:]))
+        return base_opts
+
+
+class WurkerOption(MympirunOption):
+    DESCRIPTION = ["wurker options", "General advanced wurker options"]
+    MPI_CLASS = Wurker
+
+    def _modify_base_options(self, base_opts):
+        """Remove some mympirun specific options"""
+        base_opts = super(WurkerOption, self)._modify_base_options(base_opts)
+        for longopt in ['showsched', 'setsched', 'showmpi', 'setmpi']:
+            del base_opts[longopt]
+
+        return base_opts

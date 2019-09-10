@@ -70,7 +70,7 @@ class CommonOption(GeneralOption):
         "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
                    "str", "store", None),
 
-        "schedtype": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
+        "setsched": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
                       "str", "store", None, "S"),
 
         "setmpi": ("Specify MPI flavor (eg mpich2, openmpi...; will try to guess by default).",

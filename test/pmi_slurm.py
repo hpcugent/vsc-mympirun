@@ -23,30 +23,31 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-End-to-end tests for mypmirun
+PMI slurm tests
 """
 
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
-import os
-
 from pmi_utils import SLURM_2NODES, PMITest
 
 
-
-class PMIEnd2End(PMITest):
-    def test_simple(self):
+class PMISimple(PMITest):
+    def test_pmitest(self):
+        """Test the PMITest class"""
         self.set_slurm_ompi4_ucx(SLURM_2NODES)
+        notok = ['SLURM_CPUS_ON_NODE', 'SLURM_JOB_CPUS_PER_NODE', 'SLURM_MEM_PER_CPU',
+                 'SLURM_NNODES', 'SLURM_NPROCS', 'SLURM_NTASKS', 'SLURM_JOB_NUM_NODES']
+        ok = ['SLURM_JOB_ID', 'SLURM_JOB_NODELIST']
+        self._check_vars(ok+notok)
 
-        self.pmirun(['--showmpi', '--debug'], pattern='Found MPI classes OpenMPI4$')
-        self.pmirun(['--showsched', '--debug'], pattern='Found Sched classes Slurm$')
+        mpr = self.get_instance()
 
-    def test_ompi4_slurm(self):
-        self.set_slurm_ompi4_ucx(SLURM_2NODES)
+        self.assertEqual(mpr.LAUNCHER, 'srun', 'srun launcher')
+        self.assertEqual(mpr.PMI[0].FLAVOUR, 'pmix', 'pmix flavour')
 
-        pattern = '--chdir=' + os.getcwd()
-        pattern += ' --nodes=2 --ntasks=64 --cpus-per-task=1 --mem-per-cpu=7600'
-        pattern += ' --export=ALL --mpi=pmix_v3 --output=xyz --abc=123 --def=456'
-        self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
-                    pattern=pattern+' arg1 arg2$')
+        pmicmd, run_function = mpr.pmicmd()
+
+        # pmicmd unsets some of the slurm env
+        self._check_vars(ok)
+        self._check_vars(notok, missing=True)

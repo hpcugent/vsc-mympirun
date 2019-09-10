@@ -157,12 +157,17 @@ class Slurm(Sched):
         """
 
         # patterns to cleanup
-        cleanup = ['MEM', 'CPU', 'GPU', 'TASK']
+        cleanup = ['MEM', 'CPU', 'GPU', 'TASK', 'NODE', 'PROC']
         cleanupre = re.compile(r'^SLURM_.*(' + '|'.join(cleanup) + ').*')
+        # whitelist, precedes cleanup
+        keep = ['NODELIST']
+        keepre = re.compile(r'^SLURM_.*(' + '|'.join(keep) + ').*')
 
         removed = []
         for k, v in os.environ.items():
-            if cleanupre.search(k):
+            if keepre.search(k):
+                continue
+            elif cleanupre.search(k):
                 removed.append("%s=%s" % (k, v))
                 del os.environ[k]
 
@@ -212,5 +217,11 @@ class Slurm(Sched):
         return []
 
 
-class Wurker(Sched):
+class Wurker(Slurm):
+    """Non-mpi srun workload"""
     HIDDEN = True
+
+    def pmicmd_mpi(self):
+        """Disable mpi"""
+        self.log.debug("No mpi in wurker")
+        return ["--mpi=none"]
