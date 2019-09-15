@@ -25,7 +25,7 @@
 """
 PMI slurm tests
 """
-
+import os
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
@@ -51,3 +51,15 @@ class PMISimple(PMITest):
         # pmicmd unsets some of the slurm env
         self._check_vars(ok)
         self._check_vars(notok, missing=True)
+
+    def test_intel(self):
+        self.set_env(SLURM_2NODES)
+        self.set_mpi('impi', '1.2.3')
+
+        mpr = self.get_instance()
+
+        pmicmd, run_function = mpr.pmicmd()
+
+        # will probably generate an error, but it's not fatal
+        self.assertEqual(os.environ['I_MPI_PMI_LIBRARY'], '/usr/lib64/libpmi2.so', 'pmi2 lib set in environment')
+        self.assertTrue('--mpi=pmi2' in pmicmd, "launcher called with pmi2")

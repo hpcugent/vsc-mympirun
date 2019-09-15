@@ -30,7 +30,7 @@ import os
 import re
 
 from vsc.mympirun.pmi.sched import Sched
-from vsc.mympirun.pmi.pmi import PMIX
+from vsc.mympirun.pmi.pmi import PMI, PMIX
 from vsc.utils.run import async_to_stdout
 
 class Slurm(Sched):
@@ -72,7 +72,12 @@ class Slurm(Sched):
                 if pmi.VERSION == 3:
                     flavour += '_v3'
                 else:
-                    self.log.warn("Unsupported PMIx version %s" % pmi)
+                    self.log.warn("Unsupported PMIx version %s, trying with generic %s", pmi, flavour)
+            elif pmi.FLAVOUR == PMI:
+                if pmi.VERSION == 2:
+                    flavour = 'pmi2'
+                else:
+                    self.log.error("Unsupported PMI version %s", pmi)
             else:
                 self.log.error("Unsupported PMI %s" % pmi)
 
@@ -139,7 +144,7 @@ class Slurm(Sched):
         elif 'mem_per_cpu' in se:
             job_info['nmem'] = se['mem_per_cpu'] * se['cpus_on_node']
         else:
-            self.log.error
+            self.log.debug("No memory specification found")
 
         if 'job_gpus' in se:
             try:
@@ -197,7 +202,10 @@ class Slurm(Sched):
         args.append("--cpus-per-task=%s" % cpt)
 
         # redistribute all the memory to the tasks/cores
-        args.append("--mem-per-cpu=%s" % (mpi_info['nmem'] // mpi_info['ncores']))
+        if mpi_info['nmem'] is None:
+            self.log.debug("No nmem specified found (assuming slurm.conf defaults)")
+        else:
+            args.append("--mem-per-cpu=%s" % (mpi_info['nmem'] // mpi_info['ncores']))
 
         if mpi_info['ngpus'] is not None:
             # gpus per task
@@ -206,15 +214,26 @@ class Slurm(Sched):
             if gpt * tpn != mpi_info['ngpus']:
                 self.log.error("Imbalanced tasks per node %s vs gpus per node %s; using %s gpus per task",
                                tpn, mpi_info['ngpus'], gpt)
-            args.append("--gpus-per-task=%s", gpt)
-            args.append("--gpu-bind=closest")
+            args.append("--gpus-per-task=%s" % gpt)
 
         return args
 
     def pmicmd_debug(self):
-        """Debug related args/options"""
-        # TODO --cpu-bind=verbose --mem-bind=verbose
-        return []
+        """Debug related args/options for launcher"""
+        args = ['--verbose'] * self.options.debuglvl
+
+        if self.options.debuglvl > 0:
+            args.append('--cpu-bind=verbose')
+            args.append('--mem-bind=verbose')
+            args.append('--accel-bind=v')
+
+            if self.options.debuglvl > 3:
+                dbg = 'verbose'
+            else:
+                dbg = 'info'
+            args.append('--slurmd-debug=%s' % dbg)
+
+        return args
 
 
 class Wurker(Slurm):

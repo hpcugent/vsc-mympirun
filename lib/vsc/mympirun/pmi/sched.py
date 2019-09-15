@@ -62,12 +62,23 @@ class Sched(SchedKlass):
         """get a unique id for this scheduler"""
         self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
+    def set_env(self, key, value):
+        """Set os.environ and track variable"""
+        os.environ[key] = str(value)
+        self.envs.append(key)
+        self.log.debug("Set environment variable %s: %s", key, value)
+
     def pmicmd(self):
         """
         Return generated pmi command (as list) and the run function
         envs is list of variable names that is modified
         """
         pmicmd = [self.LAUNCHER]
+
+        # the mpi calls should only set environment variables
+        for name in ['tune', 'pmi', 'debug']:
+            getattr(self, 'mpi_' + name)()
+            self.log.debug("mpi %s", name)
 
         for name in ['sched', 'sizing', 'environment', 'mpi', 'debug']:
             args = getattr(self, 'pmicmd_' + name)()

@@ -39,7 +39,7 @@ class PMIEnd2End(PMITest):
     def test_simple(self):
         self.set_slurm_ompi4_ucx(SLURM_2NODES)
 
-        self.pmirun(['--showmpi', '--debug'], pattern='Found MPI classes OpenMPI4$')
+        self.pmirun(['--showmpi', '--debug'], pattern='Found MPI classes IntelMPI, OpenMPI4$')
         self.pmirun(['--showsched', '--debug'], pattern='Found Sched classes Slurm$')
 
     def test_ompi4_slurm(self):
