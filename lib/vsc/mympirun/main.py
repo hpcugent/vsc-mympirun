@@ -65,7 +65,7 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
 
     scriptname, mpi, found_mpi = what_mpi(setmpi, mpim.MPI)
     optionparser.log.debug("Found MPI classes %s", found_mpi)
-    found_mpi_names = [x.__name__ for x in found_mpi]
+    found_mpi_names = sorted([x.__name__ for x in found_mpi])
 
     if optionparser.options.showmpi:
         fancylogger.setLogLevelInfo()
@@ -80,7 +80,7 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
 
     sched, found_sched = what_sched(sched_name, schedm)
     optionparser.log.debug("Found Sched classes %s", found_sched)
-    found_sched_names = [x.__name__ for x in found_sched]
+    found_sched_names = sorted([x.__name__ for x in found_sched])
 
     if optionparser.options.showsched:
         fancylogger.setLogLevelInfo()
