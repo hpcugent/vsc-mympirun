@@ -1,6 +1,5 @@
-#!/usr/bin/env python
 #
-# Copyright 2009-2019 Ghent University
+# Copyright 2019-2019 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -24,27 +23,32 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-An srun based non-mpi multi process wrapper
+End-to-end tests for mypmirun
 """
 
-import sys
-from vsc.utils import fancylogger
+import os
 
-from vsc.mympirun.factory import getinstance
-from vsc.mympirun.pmi.mpi import Wurker as mpi
-from vsc.mympirun.pmi.slurm import Wurker as sched
-from vsc.mympirun.pmi.option import WurkerOption
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-
-def main():
-    try:
-        optionparser = WurkerOption(ismpirun=False)
-        instance = getinstance(mpi, sched, optionparser)
-        instance.main()
-    except Exception:
-        fancylogger.getLogger().exception("Main failed")
-        sys.exit(1)
+from pmi_utils import PMITest
+from vsc.utils.affinity import sched_getaffinity, sched_setaffinity
 
 
-if __name__ == '__main__':
-    main()
+class TaskPrologEnd2End(PMITest):
+    def setUp(self):
+        """Prepare to run test."""
+        super(TaskPrologEnd2End, self).setUp()
+        self.script = os.path.join(os.path.dirname(self.script), 'mytaskprolog.py')
+
+    def test_simple(self):
+        origaff = sched_getaffinity()
+
+        aff = sched_getaffinity()
+        aff.set_bits([1])  # only use first core (we can always assume there is one core
+
+        sched_setaffinity(aff)
+        self.pmirun([], pattern='export CUDA_VISIBLE_DEVICES=0')
+
+        # restore
+        sched_setaffinity(origaff)
