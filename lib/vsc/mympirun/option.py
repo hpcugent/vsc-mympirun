@@ -55,7 +55,7 @@ class CommonOption(GeneralOption):
     BASE_OPTIONS = {
         # long option: (description, type, action, default, short option)
 
-        "debuglvl": ("Specify debug level", "int", "store", 0),  # TODO PMI
+        "debuglvl": ("Specify debug level", "int", "store", 0),
 
         "debugmpi": ("Enable MPI level debugging", None, "store_true", False),  # TODO PMI
 
@@ -63,7 +63,7 @@ class CommonOption(GeneralOption):
 
         "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
 
-        "logtofile": ("redirect the logging to a file (instead of stdout/stderr)", "str", "store", None), # TODO PMI
+        "logtofile": ("redirect the logging to a file (instead of stdout/stderr)", "str", "store", None),
 
         "multi": ("Run the amount of processes multiplied by the given integer", "int", "store", None),  # TODO PMI
 

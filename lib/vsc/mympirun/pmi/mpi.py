@@ -29,9 +29,11 @@ The role of the MPI class is very limited, mainly to provide supported PMI flavo
 """
 from __future__ import print_function
 
+import os
+
 from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.common import MpiKlass, eb_root_version, version_in_range
-from vsc.mympirun.pmi.pmi import PMIxv3
+from vsc.mympirun.pmi.pmi import PMIv2, PMIxv3
 
 
 class MPI(MpiKlass):
@@ -47,6 +49,9 @@ class MPI(MpiKlass):
 
         super(MPI, self).__init__(**kwargs)
 
+        self.ucx = self.has_ucx()
+        self.hcoll = self.has_hcoll()
+
         # sanity checks
         if getattr(self, 'sched_id', None) is None:
             self.log.raiseException("__init__: sched_id is None (should be set by one of the Sched classes)")
@@ -56,9 +61,6 @@ class MPI(MpiKlass):
 
     def main(self):
         """Magic now!"""
-        for name in ['tune', 'pmi', 'debug']:
-            getattr(self, 'mpi_' + name)()
-
         pmicmd, run_function = self.pmicmd()
 
         cmd = pmicmd + self.cmdargs
@@ -85,6 +87,18 @@ class MPI(MpiKlass):
             self.log.debug("No UCX root / version found")
             return False
 
+    def has_hcoll(self):
+        """
+        Determine if there is hcoll / FCA support
+        """
+        root, version = eb_root_version('FCA')
+        if root:
+            self.log.debug("Found FCA/hcoll root %s version %s", root, version)
+            return True
+        else:
+            self.log.debug("No FCA/hcoll root / version found")
+            return False
+
     def has_pmi(self):
         """
         Determine if there is PMI support (and what versions/flavours)
@@ -100,27 +114,69 @@ class MPI(MpiKlass):
             self.log.debug("Has pmi %s (forced)", self.PMI)
             return self.PMI
 
+    def _mpi_tune_hcoll_mpi(self):
+        """MPI specific HCOLL tuning/enabling"""
+        pass
+
+    def _mpi_tune_mpi(self):
+        """MPI specific tuning/enabling"""
+        pass
+
+    def _mpi_tune_ucx_mpi(self):
+        """MPI specific UCX tuning/enabling"""
+        pass
+
     def mpi_tune(self):
         """
         Tune MPI via environment variables.
         """
-        if self.has_ucx():
+        self._mpi_tune_mpi()
+        if self.ucx:
             self.log.debug("UCX found, no tuning")
+            self._mpi_tune_ucx_mpi()
+
+        if self.hcoll:
+            # mpi hcoll settings
+            self._mpi_tune_hcoll_mpi()
+
+            # select device? autoselection?
+            #self.set_env('HCOLL_MAIN_IB', 'mlx5_0:1')
+
+            self.set_env('HCOLL_CUDA_SBGP', 'p2p')
+            self.set_env('HCOLL_CUDA_BCOL', 'nccl')
         else:
-            # TODO: what is needed here?
-            self.log.error("No tuning applied/supported")
+            self.log.debug("No hcoll specific tuning since no hcoll")
 
     def mpi_pmi(self):
         """
         Set PMI via environment variables.
         """
-        # e.g. for intel mpi, set IMPI variable pointing to pmi2 lib
+        pass
+
+    def _mpi_debug_mpi(self):
+        """MPI specific debugging"""
+        pass
+
+    def _mpi_debug_ucx_mpi(self):
+        """MPI specific UCX debugging"""
+        pass
 
     def mpi_debug(self):
         """
         Set MPI debug/stats via environment variables.
         """
         # e.g. for intel mpi, set IMPI variable pointing to pmi2 lib
+        self._mpi_debug_mpi()
+
+        if self.options.debuglvl > 3:
+            if self.ucx:
+                self.set_env('UCX_LOG_LEVEL', 'debug')
+                self._mpi_debug_ucx_mpi()
+
+        if self.options.stats:
+            if self.ucx:
+                self.set_env('UCX_STATS_TRIGGER', 'exit')
+                self.set_env('UCX_STATS_DEST', 'stdout')
 
     def _mpi_size(self, job_info):
         """
@@ -136,7 +192,8 @@ class MPI(MpiKlass):
 
         if hybrid is not None:
             self.log.debug("Setting hybrid %s number of ranks", hybrid)
-            mpi_info['nranks'] = self.options.hybrid
+            mpi_info['nranks'] = hybrid
+            self.set_env('OMP_NUM_THREADS', mpi_info['ncores'] // hybrid)
 
         return mpi_info
 
@@ -152,6 +209,54 @@ class OpenMPI4(MPI):
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '4.0.0', None))
 
     PMI = [PMIxv3]
+
+    def ompi_env(self, what, key, value):
+        """Set ompenmpi PMI variables"""
+        self.set_env('OMPI_%s_%s' % (what.upper(), key), value)
+
+    def _mpi_tune_hcoll_mpi(self):
+        """hcoll enabling/tuning"""
+        self.ompi_env('mca', 'coll_hcoll_enable', 1)
+        self.ompi_env('mca', 'coll_hcoll_np', 0)
+
+    def _mpi_tune_ucx_mpi(self):
+        self.ompi_env('mca', 'pml', 'ucx')  # enable it. is also default?
+
+    def _mpi_debug_mpi(self):
+        """MPI specific debugging"""
+        for mca in ['plm', 'pml', 'btl', 'mtl']:
+            self.ompi_env('mca', '%s_base_verbose' % mca, self.options.debuglvl)
+
+    def _mpi_debug_ucx_mpi(self):
+        """MPI specific UCX debugging"""
+        self.ompi_env('mca', 'pml_ucx_verbose', self.options.debuglvl)
+
+
+class IntelMPI(MPI):
+    """
+    An implementation of the MPI class for IntelMPI supporting PMIv2
+    """
+
+    _mpiscriptname_for = ['ipmirun']
+    _mpirun_for = 'impi'
+
+    PMI = [PMIv2]
+
+    def mpi_pmi(self):
+        """
+        Set PMI via environment variables.
+        """
+        pmi2lib = '/usr/lib64/libpmi2.so'  # from e.g. pmix3 or slurm-libpmi packages
+        if not os.path.isfile(pmi2lib):
+            self.log.error("Cannot find PMIv2 lib %s", pmi2lib)
+        self.set_env('I_MPI_PMI_LIBRARY', pmi2lib)
+
+    def _mpi_debug_mpi(self):
+        """MPI specific debugging"""
+        if self.options.debuglvl > 0:
+            self.set_env('I_MPI_DEBUG', "+%s" % self.options.debuglvl)
+        if self.options.stats > 0:
+            self.set_env('I_MPI_STATS', self.options.stats)
 
 
 class Wurker(MPI):
