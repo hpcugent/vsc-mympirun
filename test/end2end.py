@@ -119,7 +119,6 @@ class TestEnd2End(unittest.TestCase):
         self.assertTrue(os.path.samefile(os.path.dirname(out), expected_path), "%s not in %s" % (out, expected_path))
 
         # set variables that exist within jobs, but not locally, for testing
-        self.tmpdir = tempfile.mkdtemp()
         pbs_tmpdir = os.path.join(self.tmpdir, 'pbs')
         os.makedirs(pbs_tmpdir)
         set_PBS_env(pbs_tmpdir)
