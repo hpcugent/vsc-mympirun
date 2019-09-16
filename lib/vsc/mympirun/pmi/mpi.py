@@ -39,6 +39,11 @@ from vsc.mympirun.pmi.pmi import PMIv2, PMIxv3
 class MPI(MpiKlass):
 
     PMI = None
+    # TODO: should be made generic somehow
+    #   pmix3 pmi2 compat libraries might not work with all mpi apps
+    #   but one can package the slurm pmi2 libs on different location
+    #   ideally, one tests for pmix or not, and somehow tests that the pmi2 libs are not from pmix package
+    PMI2LIBS = ['/usr/lib64/slurmpmi/libpmi2.so', '/usr/lib64/libpmi2.so']
 
     def __init__(self, options, cmdargs, **kwargs):
         if not hasattr(self, 'log'):
@@ -147,6 +152,15 @@ class MPI(MpiKlass):
         else:
             self.log.debug("No hcoll specific tuning since no hcoll")
 
+    def _get_pmi2_lib(self):
+        """Locate the pmi2 libs"""
+        for lib in self.PMI2LIBS:
+            if os.path.isfile(lib):
+                return lib
+
+        self.log.error("Cannot find PMIv2 lib from %s", self.PMI2LIBS)
+        return None
+
     def mpi_pmi(self):
         """
         Set PMI via environment variables.
@@ -246,10 +260,9 @@ class IntelMPI(MPI):
         """
         Set PMI via environment variables.
         """
-        pmi2lib = '/usr/lib64/libpmi2.so'  # from e.g. pmix3 or slurm-libpmi packages
-        if not os.path.isfile(pmi2lib):
-            self.log.error("Cannot find PMIv2 lib %s", pmi2lib)
-        self.set_env('I_MPI_PMI_LIBRARY', pmi2lib)
+        pmi2lib = self._get_pmi2_lib()
+        if pmi2lib is not None:
+            self.set_env('I_MPI_PMI_LIBRARY', pmi2lib)
 
     def _mpi_debug_mpi(self):
         """MPI specific debugging"""

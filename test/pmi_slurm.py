@@ -53,13 +53,16 @@ class PMISimple(PMITest):
         self._check_vars(notok, missing=True)
 
     def test_intel(self):
+        """Test intel mpi suppport"""
+
         self.set_env(SLURM_2NODES)
         self.set_mpi('impi', '1.2.3')
 
         mpr = self.get_instance()
+        mpr.PMI2LIBS = [__file__]  # point it to an existing file
 
         pmicmd, run_function = mpr.pmicmd()
 
         # will probably generate an error, but it's not fatal
-        self.assertEqual(os.environ['I_MPI_PMI_LIBRARY'], '/usr/lib64/libpmi2.so', 'pmi2 lib set in environment')
+        self.assertEqual(os.environ['I_MPI_PMI_LIBRARY'], __file__, 'pmi2 lib set in environment')
         self.assertTrue('--mpi=pmi2' in pmicmd, "launcher called with pmi2")
