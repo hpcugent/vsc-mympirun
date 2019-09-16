@@ -35,15 +35,20 @@ from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.common import MpiKlass, eb_root_version, version_in_range
 from vsc.mympirun.pmi.pmi import PMIv2, PMIxv3
 
+# TODO: should be made generic somehow
+#   pmix3 pmi2 compat libraries might not work with all mpi apps
+#   but one can package the slurm pmi2 libs on different location
+#   ideally, one tests for pmix or not, and somehow tests that the pmi2 libs are not from pmix package
+PMI2LIBS = {
+    'SLURM': '/usr/lib64/slurmpmi/libpmi2.so',
+    'SYSTEM': '/usr/lib64/libpmi2.so',  # possibly/likely pmix
+    'AUTO': '/auto/via/does/not/exist',  # fake/non-exsiting file picks up some defaults and "stuff works"
+}
+
 
 class MPI(MpiKlass):
 
     PMI = None
-    # TODO: should be made generic somehow
-    #   pmix3 pmi2 compat libraries might not work with all mpi apps
-    #   but one can package the slurm pmi2 libs on different location
-    #   ideally, one tests for pmix or not, and somehow tests that the pmi2 libs are not from pmix package
-    PMI2LIBS = ['/usr/lib64/slurmpmi/libpmi2.so', '/usr/lib64/libpmi2.so']
 
     def __init__(self, options, cmdargs, **kwargs):
         if not hasattr(self, 'log'):
@@ -156,6 +161,7 @@ class MPI(MpiKlass):
         """Locate the pmi2 libs"""
         for lib in self.PMI2LIBS:
             if os.path.isfile(lib):
+                self.log.debug("Found PMIv2 lib %s from %s", lib, self.PMI2LIBS)
                 return lib
 
         self.log.error("Cannot find PMIv2 lib from %s", self.PMI2LIBS)
@@ -260,7 +266,12 @@ class IntelMPI(MPI):
         """
         Set PMI via environment variables.
         """
-        pmi2lib = self._get_pmi2_lib()
+        # TODO: investigate why the AUTO works
+        #    possibly add option to select the pmi2 backend module
+        #    - intel mpi guide form 2010 only speaks of pmi.so, not pmi2.so?
+        #    - intel mpi guide also mentions that dapl tuning is required
+        #pmi2lib = self._get_pmi2_lib()
+        pmi2lib = PMI2LIBS['AUTO']
         if pmi2lib is not None:
             self.set_env('I_MPI_PMI_LIBRARY', pmi2lib)
 
