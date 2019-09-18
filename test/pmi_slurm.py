@@ -66,5 +66,5 @@ class PMISimple(PMITest):
         pmicmd, run_function = mpr.pmicmd()
 
         # will probably generate an error, but it's not fatal
-        self.assertEqual(os.environ['I_MPI_PMI_LIBRARY'], '/usr/lib64/libpmi.so', 'pmi2 lib set in environment')
+        self.assertEqual(os.environ['I_MPI_PMI_LIBRARY'], '/usr/lib64/slurmpmi/libpmi.so', 'pmi2 lib set in environment')
         self.assertTrue('--mpi=pmi2' in pmicmd, "launcher called with pmi2")

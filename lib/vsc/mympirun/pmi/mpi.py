@@ -39,12 +39,13 @@ from vsc.mympirun.pmi.pmi import PMIv2, PMIxv3
 #   pmix3 pmi2 compat libraries might not work with all mpi apps
 #   but one can package the slurm pmi2 libs on different location
 #   ideally, one tests for pmix or not, and somehow tests that the pmi2 libs are not from pmix package
+AUTOMATIC = 'AUTOMATIC'
 PMI2LIBS = {
     'SLURM2': '/usr/lib64/slurmpmi/libpmi2.so',
     'SYSTEM2': '/usr/lib64/libpmi2.so',  # possibly/likely pmix
     'SLURM1': '/usr/lib64/slurmpmi/libpmi.so',
     'SYSTEM1': '/usr/lib64/libpmi.so',  # possibly/likely pmix
-    'AUTO': '/auto/via/does/not/exist',  # non-exisiting file picks up some defaults and "stuff works"
+    AUTOMATIC: '/automatic/via/does/not/exist',  # non-exisiting file picks up some defaults and "stuff works"
 }
 
 
@@ -163,9 +164,16 @@ class MPI(MpiKlass):
         """Locate the pmi2 libs"""
         if pref is None:
             pref = sorted(PMI2LIBS.keys())
+            # move auto last, it will always be "found"
+            pref.remove(AUTOMATIC)
+            pref.append(AUTOMATIC)
+
         for name in pref:
             lib = PMI2LIBS[name]
-            if os.path.isfile(lib):
+            if name == AUTOMATIC:
+                self.log.debug("Using AUTO nonexisting PMIv2 lib %s from %s (%s)", lib, pref, PMI2LIBS)
+                return lib
+            elif os.path.isfile(lib):
                 self.log.debug("Found PMIv2 lib %s from %s (%s)", lib, pref, PMI2LIBS)
                 return lib
 
@@ -273,7 +281,7 @@ class IntelMPI(MPI):
         """
         # possibly add option to select the pmi2 backend module
         #    - intel mpi guide also mentions that dapl tuning is required
-        pmi2lib = self._get_pmi2_lib(['SYSTEM1', 'SLURM1', 'AUTO'])
+        pmi2lib = self._get_pmi2_lib(['SLURM1', 'SYSTEM1', AUTOMATIC])
         if pmi2lib is not None:
             self.set_env('I_MPI_PMI_LIBRARY', pmi2lib)
 
