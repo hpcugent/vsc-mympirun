@@ -40,9 +40,11 @@ from vsc.mympirun.pmi.pmi import PMIv2, PMIxv3
 #   but one can package the slurm pmi2 libs on different location
 #   ideally, one tests for pmix or not, and somehow tests that the pmi2 libs are not from pmix package
 PMI2LIBS = {
-    'SLURM': '/usr/lib64/slurmpmi/libpmi2.so',
-    'SYSTEM': '/usr/lib64/libpmi2.so',  # possibly/likely pmix
-    'AUTO': '/auto/via/does/not/exist',  # fake/non-exsiting file picks up some defaults and "stuff works"
+    'SLURM2': '/usr/lib64/slurmpmi/libpmi2.so',
+    'SYSTEM2': '/usr/lib64/libpmi2.so',  # possibly/likely pmix
+    'SLURM1': '/usr/lib64/slurmpmi/libpmi.so',
+    'SYSTEM1': '/usr/lib64/libpmi.so',  # possibly/likely pmix
+    'AUTO': '/auto/via/does/not/exist',  # non-exisiting file picks up some defaults and "stuff works"
 }
 
 
@@ -157,14 +159,17 @@ class MPI(MpiKlass):
         else:
             self.log.debug("No hcoll specific tuning since no hcoll")
 
-    def _get_pmi2_lib(self):
+    def _get_pmi2_lib(self, pref=None):
         """Locate the pmi2 libs"""
-        for lib in self.PMI2LIBS:
+        if pref is None:
+            pref = sorted(PMI2LIBS.keys())
+        for name in pref:
+            lib = PMI2LIBS[name]
             if os.path.isfile(lib):
-                self.log.debug("Found PMIv2 lib %s from %s", lib, self.PMI2LIBS)
+                self.log.debug("Found PMIv2 lib %s from %s (%s)", lib, pref, PMI2LIBS)
                 return lib
 
-        self.log.error("Cannot find PMIv2 lib from %s", self.PMI2LIBS)
+        self.log.error("Cannot find PMIv2 lib from %s (%s)", pref, PMI2LIBS)
         return None
 
     def mpi_pmi(self):
@@ -266,12 +271,9 @@ class IntelMPI(MPI):
         """
         Set PMI via environment variables.
         """
-        # TODO: investigate why the AUTO works
-        #    possibly add option to select the pmi2 backend module
-        #    - intel mpi guide form 2010 only speaks of pmi.so, not pmi2.so?
+        # possibly add option to select the pmi2 backend module
         #    - intel mpi guide also mentions that dapl tuning is required
-        #pmi2lib = self._get_pmi2_lib()
-        pmi2lib = PMI2LIBS['AUTO']
+        pmi2lib = self._get_pmi2_lib(['SYSTEM1', 'SLURM1', 'AUTO'])
         if pmi2lib is not None:
             self.set_env('I_MPI_PMI_LIBRARY', pmi2lib)
 

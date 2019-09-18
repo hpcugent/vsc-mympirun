@@ -29,6 +29,7 @@ import os
 import logging
 logging.basicConfig(level=logging.DEBUG)
 
+from mock import MagicMock
 from pmi_utils import SLURM_2NODES, PMITest
 
 
@@ -59,8 +60,11 @@ class PMISimple(PMITest):
         self.set_mpi('impi', '1.2.3')
 
         mpr = self.get_instance()
+
+        mock_os = self.create_patch('vsc.mympirun.pmi.mpi.os')
+        mock_os.path.isfile.return_value = True
         pmicmd, run_function = mpr.pmicmd()
 
         # will probably generate an error, but it's not fatal
-        self.assertEqual(os.environ['I_MPI_PMI_LIBRARY'], '/auto/via/does/not/exist', 'pmi2 lib set in environment')
+        self.assertEqual(os.environ['I_MPI_PMI_LIBRARY'], '/usr/lib64/libpmi.so', 'pmi2 lib set in environment')
         self.assertTrue('--mpi=pmi2' in pmicmd, "launcher called with pmi2")
