@@ -103,8 +103,12 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
                                sched.__name__, sched_name, ", ".join(found_sched_names))
 
     if not optionparser.args:
-        optionparser.log.warn("no mpi script provided")
-        return None
+        if getattr(optionparser.options, 'print_launcher', False):
+            # inject them, this ignored anyway
+            optionparser.args = ['PRINT', 'LAUNCHER']
+        else:
+            optionparser.log.warn("no mpi script provided")
+            return None
 
     return mpi, sched, optionparser
 

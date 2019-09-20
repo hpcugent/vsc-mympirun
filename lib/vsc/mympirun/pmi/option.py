@@ -40,6 +40,7 @@ class MympirunOption(CommonOption):
                   "'--pass=abc=123,def=456' will add '--abc=123 --def=456'. "
                   "It does not support short options or values with a ',' in them."),
                  "strlist", "store", []),
+        'print-launcher': ("Generate and print the launcher command", None, "store_true", None),
     }
 
     def _modify_base_options(self, base_opts):

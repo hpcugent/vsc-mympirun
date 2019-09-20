@@ -50,3 +50,7 @@ class PMIEnd2End(PMITest):
         pattern += ' --export=ALL --mpi=pmix_v3 --output=xyz --abc=123 --def=456'
         self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
                     pattern=pattern+' arg1 arg2$')
+
+    def test_print_launcher(self):
+        self.set_slurm_ompi4_ucx(SLURM_2NODES)
+        self.pmirun(['--print-launcher'], pattern=r'^srun.*--mpi=pmix_v3$')

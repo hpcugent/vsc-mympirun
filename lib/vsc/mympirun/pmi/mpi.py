@@ -78,7 +78,10 @@ class MPI(MpiKlass):
 
         cmd = pmicmd + self.cmdargs
 
-        if self.options.dry_run:
+        if self.options.print_launcher:
+            print(' '.join(pmicmd))
+            exitcode = 0
+        elif self.options.dry_run:
             self.log.info("Dry run, only printing generated mpirun command...")
             print(' '.join(cmd))
             exitcode = 0
