@@ -152,6 +152,34 @@ try:
 except Exception as e:
     raise Exception("mympirun requires setuptools: %s" % e)
 
+# next monstrocity: inject header in script to filter out PYTHONPATH in mixed EB py3/py2 envs
+# mympirun modules rely on the system python and dependencies, so this is fine
+# this can be removed as soon as mympirun is py3 safe
+EB_SAFE_HEADER = """
+import os
+import sys
+if 'EBROOTPYTHON' in os.environ:
+    # ebroots excpet mympirun
+    ignore = [v for k,v in os.environ.items() if k.startswith('EBROOT') and not k.endswith('VSCMINMYMPIRUN')]
+    # add realpaths to (sys.path normally ojnly has realpaths)
+    ignore += [os.path.realpath(x) for x in ignore if os.path.exists(x)]
+    # remove sys.path entries that start with eb path
+    sys.path = [x for x in sys.path if not [y for y in ignore if x.startswith(y)]]
+"""
+# this is a bit tricky, since setuptools some version has moved the function as classmethod to the ScriptWriter class
+#   there is also a legacy/deprecated get_script_header classmethod (that is not covered here)
+# this will also trigger the magic for all dependencies pulled in
+try:
+    orig_header = sys.modules['setuptools.command.easy_install'].ScriptWriter.get_header
+    def new_header(cls, *args, **kwargs):  #pylint: disable=unused-argument
+        return orig_header(*args, **kwargs) + EB_SAFE_HEADER
+    sys.modules['setuptools.command.easy_install'].ScriptWriter.get_header = classmethod(new_header)
+except Exception as e:
+    orig_header = sys.modules['setuptools.command.easy_install'].get_script_header
+    def new_header(*args, **kwargs):
+        return orig_header(*args, **kwargs) + EB_SAFE_HEADER
+    sys.modules['setuptools.command.easy_install'].get_script_header = new_header
+
 
 if __name__ == '__main__':
     shared_setup.action_target(PACKAGE)
