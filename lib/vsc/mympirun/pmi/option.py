@@ -30,6 +30,9 @@ from vsc.mympirun.pmi.mpi import MPI, Wurker
 
 DEFAULT_TIMEOUT = 3600
 
+DISTRIBUTE_PACK = 'pack'
+DISTRIBUTE_CYCLE = 'cycle'
+
 
 class MympirunOption(CommonOption):
     DESCRIPTION = ["mypmirun options", "General advanced mypmirun options"]
@@ -41,6 +44,10 @@ class MympirunOption(CommonOption):
                   "It does not support short options or values with a ',' in them."),
                  "strlist", "store", []),
         'print-launcher': ("Generate and print the launcher command", None, "store_true", None),
+        'distribute': (("Start ranks in a certain distribution on nodes/sockets/cores: "
+                        "%s groups them, %s spreads them") % (DISTRIBUTE_PACK, DISTRIBUTE_CYCLE),
+                       None, "store", None, [DISTRIBUTE_PACK, DISTRIBUTE_CYCLE]),
+        'all-gpus': ("Each rank sees all (requested) gpus", None, "store_true", None),
     }
 
     def _modify_base_options(self, base_opts):

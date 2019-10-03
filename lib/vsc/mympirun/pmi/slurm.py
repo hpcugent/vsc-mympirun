@@ -32,6 +32,13 @@ import re
 from vsc.mympirun.pmi.sched import Sched
 from vsc.mympirun.pmi.pmi import PMI, PMIX
 from vsc.utils.run import async_to_stdout
+from vsc.mympirun.pmi.option import DISTRIBUTE_PACK, DISTRIBUTE_CYCLE
+
+DISTRIBUTE_MAP = {
+    DISTRIBUTE_PACK: 'block:block:block',
+    DISTRIBUTE_CYCLE: 'cycle:cycle:cycle',
+}
+
 
 class Slurm(Sched):
 
@@ -56,6 +63,9 @@ class Slurm(Sched):
 
         # sbatch will set the sbatch parameters as environment variables and they will get picked up by srun
         args.append("--chdir=" + os.getcwd())
+
+        if self.options.distribute:
+            args.append("--distribution=%s" % DISTRIBUTE_MAP[self.options.distribute])
 
         return args
 
@@ -214,7 +224,11 @@ class Slurm(Sched):
             if gpt * tpn != mpi_info['ngpus']:
                 self.log.error("Imbalanced tasks per node %s vs gpus per node %s; using %s gpus per task",
                                tpn, mpi_info['ngpus'], gpt)
-            args.append("--gpus-per-task=%s" % gpt)
+            if self.options.all_gpus:
+                # TODO: this is not slurm specific, needs to be factored out
+                self.log.debug("Not limiting gpus to %s per task, gpus-all set", gpt)
+            else:
+                args.append("--gpus-per-task=%s" % gpt)
 
         return args
 

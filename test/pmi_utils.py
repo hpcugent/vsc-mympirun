@@ -59,6 +59,11 @@ SLURM_NPROCS=64
 SLURM_NTASKS=64
 """
 
+SLURM_2NODES_4GPUS = SLURM_2NODES + """
+SLURM_JOB_GPUS=0,1,2,3
+"""
+
+
 class PMITest(TestCase):
     def setUp(self):
         """Prepare to run test."""
