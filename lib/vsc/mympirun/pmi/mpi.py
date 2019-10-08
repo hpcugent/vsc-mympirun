@@ -73,7 +73,10 @@ class MPI(MpiBase):
             self.log.raiseException("__init__: no executable or command provided")
 
     def main(self):
-        """Magic now!"""
+        """
+        Main method that actually runs the launcher:
+        build the pmi command using pmicd method and add the original command arguments
+        """
         pmicmd, run_function = self.pmicmd()
 
         cmd = pmicmd + self.cmdargs
