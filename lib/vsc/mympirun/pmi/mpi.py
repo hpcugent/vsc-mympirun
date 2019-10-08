@@ -46,7 +46,7 @@ SYSTEM_PMI1_LIB = 'SYSTEM1'
 SYSTEM_PMI2_LIB = 'SYSTEM2'
 
 PMI2LIBS = {
-    AUTOMATIC: '/automatic/via/does/not/exist',  # non-exisiting file picks up some defaults and "stuff works"
+    AUTOMATIC_LIB: '/automatic/via/does/not/exist',  # non-exisiting file picks up some defaults and "stuff works"
     SLURM_PMI1_LIB: '/usr/lib64/slurmpmi/libpmi.so',
     SLURM_PMI2_LIB: '/usr/lib64/slurmpmi/libpmi2.so',
     SYSTEM_PMI1_LIB: '/usr/lib64/libpmi.so',  # possibly/likely pmix
@@ -182,13 +182,13 @@ class MPI(MpiBase):
         if pref is None:
             pref = sorted(PMI2LIBS.keys())
             # move auto last, it will always be "found"
-            pref.remove(AUTOMATIC)
-            pref.append(AUTOMATIC)
+            pref.remove(AUTOMATIC_LIB)
+            pref.append(AUTOMATIC_LIB)
 
         for name in pref:
             lib = PMI2LIBS[name]
-            if name == AUTOMATIC:
-                self.log.debug("Using %s nonexisting PMIv2 lib %s from %s (%s)", AUTOMATIC, lib, pref, PMI2LIBS)
+            if name == AUTOMATIC_LIB:
+                self.log.debug("Using %s nonexisting PMIv2 lib %s from %s (%s)", AUTOMATIC_LIB, lib, pref, PMI2LIBS)
                 return lib
             elif os.path.isfile(lib):
                 self.log.debug("Found PMIv2 lib %s from %s (%s)", lib, pref, PMI2LIBS)
@@ -302,7 +302,7 @@ class IntelMPI(MPI):
         """
         # possibly add option to select the pmi2 backend module
         #    - intel mpi guide also mentions that dapl tuning is required
-        pmi2lib = self.get_pmi2_lib([SLURM_PMI1_LIB, SYSTEM_PMI1_LIB, AUTOMATIC])
+        pmi2lib = self.get_pmi2_lib([SLURM_PMI1_LIB, SYSTEM_PMI1_LIB, AUTOMATIC_LIB])
         if pmi2lib is not None:
             self.set_env('I_MPI_PMI_LIBRARY', pmi2lib)
 

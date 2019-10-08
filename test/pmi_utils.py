@@ -44,7 +44,7 @@ from vsc.mympirun.factory import getinstance
 
 import vsc.mympirun.pmi.mpi as mpim
 import vsc.mympirun.pmi.sched as schedm
-from vsc.mympirun.pmi.option import MympirunOption as mpiopt
+from vsc.mympirun.pmi.option import MypmirunOption as mpiopt
 
 
 SLURM_2NODES = """

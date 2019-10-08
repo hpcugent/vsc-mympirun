@@ -34,7 +34,7 @@ DISTRIBUTE_PACK = 'pack'
 DISTRIBUTE_CYCLE = 'cycle'
 
 
-class MympirunOption(CommonOption):
+class MypmirunOption(CommonOption):
     DESCRIPTION = ["mypmirun options", "General advanced mypmirun options"]
     MPI_CLASS = MPI
 
@@ -58,7 +58,7 @@ class MympirunOption(CommonOption):
         return base_opts
 
 
-class WurkerOption(MympirunOption):
+class WurkerOption(MypmirunOption):
     DESCRIPTION = ["wurker options", "General advanced wurker options"]
     MPI_CLASS = Wurker
 

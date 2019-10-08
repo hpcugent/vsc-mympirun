@@ -44,5 +44,3 @@ class PMIv2(PMI):
 class PMIxv3(PMI):
     FLAVOUR = PMIX
     VERSION = 3
-
-

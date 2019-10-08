@@ -99,7 +99,7 @@ class Slurm(Sched):
         self.log.error("No supported PMIs")
         return []
 
-    def _job_info(self, job_info):
+    def job_info(self, job_info):
         """
         Fill in/complete/edit job_info dict and return it
 
@@ -166,7 +166,7 @@ class Slurm(Sched):
 
         return job_info
 
-    def _pmicmd_size_args(self, mpi_info):
+    def pmicmd_size_args(self, mpi_info):
         """
         Convert mpi_info into launcher list of args
         """

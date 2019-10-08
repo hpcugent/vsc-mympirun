@@ -29,8 +29,8 @@ A PMI wrapper
 
 import vsc.mympirun.pmi.mpi as mpim
 import vsc.mympirun.pmi.sched as schedm
-from vsc.mympirun.pmi.option import MympirunOption
+from vsc.mympirun.pmi.option import MypmirunOption
 from vsc.mympirun.main import main
 
 if __name__ == '__main__':
-    main(mpim, MympirunOption, schedm)
+    main(mpim, MypmirunOption, schedm)
