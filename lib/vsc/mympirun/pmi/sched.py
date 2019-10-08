@@ -62,11 +62,19 @@ class Sched(SchedKlass):
         """get a unique id for this scheduler"""
         self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
-    def set_env(self, key, value):
-        """Set os.environ and track variable"""
-        os.environ[key] = str(value)
-        self.envs.append(key)
-        self.log.debug("Set environment variable %s: %s", key, value)
+    def set_env(self, key, value, keep=False):
+        """
+        Set os.environ and track variable
+        If keep is True, don't override existing value
+        """
+        current = os.environ.get(key)
+        if keep and current is not None:
+            self.log.debug("Keeping existing environment variable %s with value %s (ignore value %s)",
+                           key, current, value)
+        else:
+            os.environ[key] = str(value)
+            self.envs.append(key)
+            self.log.debug("Set environment variable %s: %s", key, value)
 
     def pmicmd(self):
         """
