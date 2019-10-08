@@ -94,29 +94,30 @@ class MPI(MpiBase):
         if exitcode > 0:
             self.log.raiseException("main: exitcode %s > 0; cmd %s" % (exitcode, cmd))
 
+    def _eb_has(self, name, txt=None):
+        """Determine is the is a EB module loaded for name"""
+        if txt is None:
+            txt = name
+
+        root, version = eb_root_version(name)
+        if root:
+            self.log.debug("Found %s root %s version %s", txt, root, version)
+            return True
+        else:
+            self.log.debug("No %s root / version found", txt)
+            return False
+
     def has_ucx(self):
         """
         Determine if there is UCX support
         """
-        root, version = eb_root_version('ucx')
-        if root:
-            self.log.debug("Found UCX root %s version %s", root, version)
-            return True
-        else:
-            self.log.debug("No UCX root / version found")
-            return False
+        return self._eb_has('UCX')
 
     def has_hcoll(self):
         """
         Determine if there is hcoll / FCA support
         """
-        root, version = eb_root_version('FCA')
-        if root:
-            self.log.debug("Found FCA/hcoll root %s version %s", root, version)
-            return True
-        else:
-            self.log.debug("No FCA/hcoll root / version found")
-            return False
+        return self._eb_has('FCA', txt='hcoll / FCA')
 
     def has_pmi(self):
         """
