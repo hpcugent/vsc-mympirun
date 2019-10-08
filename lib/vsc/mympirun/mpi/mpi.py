@@ -44,7 +44,7 @@ import time
 
 from IPy import IP
 from vsc.utils.fancylogger import getLogger
-from vsc.mympirun.common import MpiKlass
+from vsc.mympirun.common import MpiBase
 from vsc.utils.missing import nub
 from vsc.utils.run import CmdList, RunNoShell, RunAsyncLoopStdout, RunFile, RunLoop, run
 
@@ -142,7 +142,7 @@ class RunAsyncMPI(RunAsyncLoopStdout, RunMPI):
         super(RunAsyncMPI, self)._loop_process_output(output)
 
 
-class MPI(MpiKlass):
+class MPI(MpiBase):
     """
     Base MPI class to generate the mpirun command line.
 

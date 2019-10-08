@@ -32,10 +32,10 @@ import re
 
 from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.fancylogger import getLogger
-from vsc.mympirun.common import SchedKlass
+from vsc.mympirun.common import SchedBase
 
 
-class Sched(SchedKlass):
+class Sched(SchedBase):
 
     """General class for scheduler/resource manager related functions."""
 

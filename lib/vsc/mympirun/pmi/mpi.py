@@ -32,7 +32,7 @@ from __future__ import print_function
 import os
 
 from vsc.utils.fancylogger import getLogger
-from vsc.mympirun.common import MpiKlass, eb_root_version, version_in_range
+from vsc.mympirun.common import MpiBase, eb_root_version, version_in_range
 from vsc.mympirun.pmi.pmi import PMIv2, PMIxv3
 
 # TODO: should be made generic somehow
@@ -49,7 +49,7 @@ PMI2LIBS = {
 }
 
 
-class MPI(MpiKlass):
+class MPI(MpiBase):
 
     PMI = None
 

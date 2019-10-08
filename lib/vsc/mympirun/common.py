@@ -221,7 +221,7 @@ def version_in_range(version, lower_limit, upper_limit):
     return in_range
 
 
-class SchedKlass(object):
+class SchedBase(object):
 
     _sched_for = []  # classname is default added
     _sched_environ_test = []
@@ -253,7 +253,7 @@ class SchedKlass(object):
         return False
 
 
-class MpiKlass(object):
+class MpiBase(object):
 
     _mpirun_for = None
     _mpiscriptname_for = []

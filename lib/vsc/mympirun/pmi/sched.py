@@ -30,7 +30,7 @@ The role of the Sched class is mainly to construct the correct sched-specific PM
 
 import os
 from vsc.utils.fancylogger import getLogger
-from vsc.mympirun.common import SchedKlass
+from vsc.mympirun.common import SchedBase
 from vsc.utils.run import run_file, async_to_stdout
 
 # simple intermediate representation of the job resources
@@ -42,7 +42,7 @@ JOB_INFO = {
     'ngpus': None,  # number of gpus per node: None means no GPUs present, 0 means don't use GPUs
 }
 
-class Sched(SchedKlass):
+class Sched(SchedBase):
     LAUNCHER = None
 
     def __init__(self, options=None, **kwargs):
