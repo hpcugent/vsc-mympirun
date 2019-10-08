@@ -38,10 +38,10 @@ _coupler_class_cache = {}
 _log = getLogger('mympirun.factory', fname=False)
 
 
-class CouplerMetaClass(type):
-    def __init__(cls, **kwargs):
-        cls.log = getLogger(cls.__class__.__name__)
-        super(CouplerMetaClass, cls).__init__(**kwargs)
+class LogBase(object):
+    def __init__(self, **kwargs):
+        self.log = getLogger(self.__class__.__name__)
+        super(LogBase, self).__init__(**kwargs)
 
 
 def getinstance(mpi, sched, options):
@@ -54,22 +54,21 @@ def getinstance(mpi, sched, options):
 
     @return: an instance that is a subclass of the selected MPI and Scheduler
     """
-    cache_key = (mpi, sched)
+    base_classes = (LogBase, mpi, sched)
 
-    if cache_key not in _coupler_class_cache:
+    if base_classes not in _coupler_class_cache:
         coupler_class = type(
             "Coupler_%s_%s" % (mpi.__name__, sched.__name__),
-            cache_key,
+            base_classes,
             {
-                '__metaclass__': CouplerMetaClass,
                 'HIDDEN': True,
             }
         )
-        _coupler_class_cache[cache_key] = coupler_class
+        _coupler_class_cache[base_classes] = coupler_class
         tmpl = "Created new Coupler %s class for %s: %s"
     else:
         tmpl = "Fetched Coupler class %s from cache %s: %s"
-        coupler_class = _coupler_class_cache[cache_key]
+        coupler_class = _coupler_class_cache[base_classes]
 
-    _log.debug(tmpl, cache_key, coupler_class.__name__, id(coupler_class))
+    _log.debug(tmpl, base_classes, coupler_class.__name__, id(coupler_class))
     return coupler_class(options=options.options, cmdargs=options.args)
