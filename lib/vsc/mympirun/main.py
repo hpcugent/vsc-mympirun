@@ -104,7 +104,7 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
 
     if not optionparser.args:
         if getattr(optionparser.options, 'print_launcher', False):
-            # inject them, this ignored anyway
+            # inject dummy args as they are needed by the parser, they are ignored anyway
             optionparser.args = ['PRINT', 'LAUNCHER']
         else:
             optionparser.log.warn("no mpi script provided")
