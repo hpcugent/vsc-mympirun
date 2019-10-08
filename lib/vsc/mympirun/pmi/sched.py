@@ -37,7 +37,7 @@ from vsc.utils.run import run_file, async_to_stdout
 JOB_INFO = {
     'tnodes': None,  # total number of nodes
     'ncores': None,  # number of cores per node
-    'nranks': None, # number of ranks per node
+    'nranks': None, # number of MPI ranks per node
     'nmem': None,  # memory per node
     'ngpus': None,  # number of gpus per node: None means no GPUs present, 0 means don't use GPUs
 }
@@ -51,16 +51,9 @@ class Sched(SchedBase):
         if not hasattr(self, 'options'):
             self.options = options
 
-        self.sched_id = None
-        self.set_sched_id()
-
-        self.envs = []  # list of enviroment variable names that is modified
+        self.envs = []  # list of enviroment variable names that are modified
 
         super(Sched, self).__init__(**kwargs)
-
-    def set_sched_id(self):
-        """get a unique id for this scheduler"""
-        self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
     def set_env(self, key, value, keep=False):
         """
@@ -85,18 +78,19 @@ class Sched(SchedBase):
 
         # the mpi calls should only set environment variables
         for name in ['tune', 'pmi', 'debug']:
-            getattr(self, 'mpi_' + name)()
-            self.log.debug("mpi %s", name)
+            method_name = 'mpi_' + name
+            getattr(self, method_name)()
+            self.log.debug("Calling %s", method_name)
 
         for name in ['sched', 'sizing', 'environment', 'mpi', 'debug']:
             args = getattr(self, 'pmicmd_' + name)()
             self.log.debug("Generated pmicmd %s arguments %s", name, args)
-            pmicmd += args
+            pmicmd.extend(args)
 
         run_function, run_function_args = self.run_function()
-        pmicmd += run_function_args
+        pmicmd.extend(run_function_args)
 
-        pmicmd += ['--' + x for x in getattr(self.options, 'pass', [])]  # .pass gives syntax error?
+        pmicmd.extend(['--' + x for x in getattr(self.options, 'pass', [])])  # .pass gives syntax error?
 
         self.log.debug("Generated pmicmd %s", pmicmd)
         return pmicmd, run_function
@@ -133,20 +127,21 @@ class Sched(SchedBase):
 
     def sane_job_info(self, info, hdr='info'):
         """
-        info (e.g. job_info and mpi_info dicts) must match the JOB_INFO template
+        info dict (e.g. job_info and mpi_info dicts) must match the JOB_INFO template
+        to make sure that after passing around and manipulation no unexpected data appears
+        or expected data disappear.
         """
-        JI_keys = set(JOB_INFO.keys())
-        i_keys = set(info.keys())
-        if JI_keys == i_keys:
+        expected_keys = set(JOB_INFO.keys())
+        info_keys = set(info.keys())
+        if expected_keys == info_keys:
             self.log.debug("%s is sane", hdr)
         else:
-            in_i = i_keys - JI_keys
-            if in_i:
-                self.log.error("Keys %s only in %s, not in JOB_INFO", hdr, in_i)
-            in_JI = JI_keys - i_keys
-            if in_JI:
-                self.log.error("Keys %s only in JOB_INFO, not in %s", in_JI, hdr)
-
+            unexpected_keys = info_keys - expected_keys
+            if unexpected_keys:
+                self.log.raiseException("Keys %s only in %s, not in JOB_INFO" % (hdr, sorted(unexpected_keys)))
+            missing_keys = expected_keys - info_keys
+            if missing_keys:
+                self.log.raiseException("Keys %s only in JOB_INFO, not in %s" % (hdr, sorted(missing_keys)))
 
     def pmicmd_sizing(self):
         """Generate the sizing arguments to the launcher as a list"""
@@ -173,7 +168,7 @@ class Sched(SchedBase):
 
         Modified envs should be tracked via self.envs
         """
-        # ignore the envs for now
+        self.log.debug("No environment specific arguments (assuming whole environment is used)")
         return []
 
     def pmicmd_mpi(self):

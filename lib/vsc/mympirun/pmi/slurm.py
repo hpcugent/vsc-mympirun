@@ -61,7 +61,7 @@ class Slurm(Sched):
         """Generate the sched related arguments to the launcher as a list"""
         args = []
 
-        # sbatch will set the sbatch parameters as environment variables and they will get picked up by srun
+        # run from current directory
         args.append("--chdir=" + os.getcwd())
 
         if self.options.distribute:
@@ -87,16 +87,16 @@ class Slurm(Sched):
                 if pmi.VERSION == 2:
                     flavour = 'pmi2'
                 else:
-                    self.log.error("Unsupported PMI version %s", pmi)
+                    self.log.raiseException("Unsupported PMI version %s" % pmi)
             else:
-                self.log.error("Unsupported PMI %s" % pmi)
+                self.log.raiseException("Unsupported PMI %s" % pmi)
 
             if flavour is not None:
                 # first one wins
                 self.log.debug("Mapped PMI %s to flavour %s", pmi, flavour)
                 return ["--mpi=%s" % flavour]
 
-        self.log.error("No supported PMIs")
+        self.log.raiseException("No supported PMIs")
         return []
 
     def job_info(self, job_info):
@@ -114,55 +114,54 @@ class Slurm(Sched):
         SLURM_NPROCS=64
         SLURM_NTASKS=64
         """
-        se = {}  # slurm enviroment
-
-        # TODO: check here if the requested gpus are usable or not (eg corresponding CUDA_DEVICES)
+        slurm_env = {}  # slurm enviroment
 
         dbg = []
         prefix = 'SLURM_'
-        for k, v in os.environ.items():
-            if not k.startswith(prefix):
+        for key, value in os.environ.items():
+            if not key.startswith(prefix):
                 continue
-            dbg.append("%s=%s" % (k, v))
+            dbg.append("%s=%s" % (key, value))
             # some basic type conversion
             try:
-                v = int(v)
+                value = int(value)
             except Exception as e:
                 pass
-            se[k[len(prefix):].lower()] = v
+            slurm_env[key[len(prefix):].lower()] = value
 
         dbgtxt = " ".join(sorted(dbg))
         # add sanity checks
-        if [x for x in se.keys() if 'pack_group' in x]:
+        if [x for x in slurm_env.keys() if 'pack_group' in x]:
             # PACK_GROUP
-            self.log.error("This is an inhomogenous job: PACK_GROUP variables found: %s", dbgtxt)
-        if se['nnodes'] * se['cpus_on_node'] != se['nprocs']:
-            self.log.error("This is an inhomogenous job: nnodes*cpus_on_node!=nprocs: %s", dbgtxt)
+            self.log.raiseException("This is an inhomogenous job: PACK_GROUP variables found: %s" % dbgtxt)
+        if slurm_env['nnodes'] * slurm_env['cpus_on_node'] != slurm_env['nprocs']:
+            self.log.raiseException("This is an inhomogenous job: nnodes*cpus_on_node!=nprocs: %s" % dbgtxt)
         else:
             self.log.debug("SLURM env variables %s", dbgtxt)
 
-        job_info['tnodes'] = se['nnodes']
-        job_info['ncores'] = se['cpus_on_node']
+        job_info['tnodes'] = slurm_env['nnodes']
+        job_info['ncores'] = slurm_env['cpus_on_node']
 
-        job_info['nranks'] = int(se['ntasks'] / se['nnodes'])  # probably not so relevant here
-        if job_info['nranks'] * job_info['tnodes'] != se['ntasks']:
-            self.log.error("Total number of tasks is not equal ranks per node %s time number of nodes: %s",
-                           job_info['nranks'], dbgtxt)
+        job_info['nranks'] = slurm_env['ntasks'] // slurm_env['nnodes']  # probably not so relevant here
+        if job_info['nranks'] * job_info['tnodes'] != slurm_env['ntasks']:
+            self.log.raiseException("Total number of tasks is not equal ranks per node %s time number of nodes: %s" %
+                                    (job_info['nranks'], dbgtxt))
 
-        if 'mem_per_node' in se:
-            job_info['nmem'] = se['mem_per_node']
-        elif 'mem_per_cpu' in se:
-            job_info['nmem'] = se['mem_per_cpu'] * se['cpus_on_node']
+        if 'mem_per_node' in slurm_env:
+            job_info['nmem'] = slurm_env['mem_per_node']
+        elif 'mem_per_cpu' in slurm_env:
+            job_info['nmem'] = slurm_env['mem_per_cpu'] * slurm_env['cpus_on_node']
         else:
             self.log.debug("No memory specification found")
 
-        if 'job_gpus' in se:
+        if 'job_gpus' in slurm_env:
             try:
                 # this should fail when slurm switched to compressed repr (eg 0-3 instead of current 0,1,2,3)
-                ngpus = len(map(int, se['job_gpus'].split(',')))
+                ngpus = len(map(int, slurm_env['job_gpus'].split(',')))
                 job_info['ngpus'] = ngpus
             except Exception as e:
-                self.log.error("Failed to get the number of gpus per node from %s: %s", se['job_gpus'], e)
+                self.log.raiseException("Failed to get the number of gpus per node from %s: %s" %
+                                        (slurm_env['job_gpus'], e))
 
         return job_info
 
@@ -179,12 +178,12 @@ class Slurm(Sched):
         keepre = re.compile(r'^SLURM_.*(' + '|'.join(keep) + ').*')
 
         removed = []
-        for k, v in os.environ.items():
-            if keepre.search(k):
+        for key, value in os.environ.items():
+            if keepre.search(key):
                 continue
-            elif cleanupre.search(k):
-                removed.append("%s=%s" % (k, v))
-                del os.environ[k]
+            elif cleanupre.search(key):
+                removed.append("%s=%s" % (key, value))
+                del os.environ[key]
 
         if removed:
             self.log.debug("Unset environment variables %s", " ".join(removed))
@@ -206,8 +205,8 @@ class Slurm(Sched):
         cpt = mpi_info['ncores'] // tpn
         # sanity check
         if cpt * tpn != mpi_info['ncores']:
-            self.log.error("Imbalanced tasks per node %s vs cores per node %s; using %s cores per task",
-                           tpn, mpi_info['ncores'], cpt)
+            self.log.raiseException("Imbalanced tasks per node %s vs cores per node %s; using %s cores per task" %
+                                    (tpn, mpi_info['ncores'], cpt))
 
         args.append("--cpus-per-task=%s" % cpt)
 
@@ -222,8 +221,8 @@ class Slurm(Sched):
             gpt = mpi_info['ngpus'] // tpn
             # sanity check
             if gpt * tpn != mpi_info['ngpus']:
-                self.log.error("Imbalanced tasks per node %s vs gpus per node %s; using %s gpus per task",
-                               tpn, mpi_info['ngpus'], gpt)
+                self.log.raiseException("Imbalanced tasks per node %s vs gpus per node %s; using %s gpus per task" %
+                                        (tpn, mpi_info['ngpus'], gpt))
             if self.options.all_gpus:
                 # TODO: this is not slurm specific, needs to be factored out
                 self.log.debug("Not limiting gpus to %s per task, gpus-all set", gpt)

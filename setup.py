@@ -167,7 +167,7 @@ if 'EBROOTPYTHON' in os.environ:
     sys.path = [x for x in sys.path if not [y for y in ignore if x.startswith(y)]]
 """
 # this is a bit tricky, since setuptools some version has moved the function as classmethod to the ScriptWriter class
-#   there is also a legacy/deprecated get_script_header classmethod (that is not covered here)
+#   there is also a legacy/deprecated get_script_header classmethod
 # this will also trigger the magic for all dependencies pulled in
 try:
     orig_header = sys.modules['setuptools.command.easy_install'].ScriptWriter.get_header

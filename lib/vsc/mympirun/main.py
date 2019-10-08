@@ -102,13 +102,9 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
         optionparser.log.debug("Found sched class %s from options.schedtype %s (all Sched found %s)",
                                sched.__name__, sched_name, ", ".join(found_sched_names))
 
-    if not optionparser.args:
-        if getattr(optionparser.options, 'print_launcher', False):
-            # inject dummy args as they are needed by the parser, they are ignored anyway
-            optionparser.args = ['PRINT', 'LAUNCHER']
-        else:
-            optionparser.log.warn("no mpi script provided")
-            return None
+    if not optionparser.args and not getattr(optionparser.options, 'print_launcher', False):
+        optionparser.log.warn("no mpi script provided")
+        return None
 
     return mpi, sched, optionparser
 

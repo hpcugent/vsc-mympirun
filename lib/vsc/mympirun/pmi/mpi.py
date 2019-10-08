@@ -71,10 +71,7 @@ class MPI(MpiBase):
         self.hcoll = self.has_hcoll()
 
         # sanity checks
-        if getattr(self, 'sched_id', None) is None:
-            self.log.raiseException("__init__: sched_id is None (should be set by one of the Sched classes)")
-
-        if not self.cmdargs:
+        if not self.cmdargs and not self.options.print_launcher:
             self.log.raiseException("__init__: no executable or command provided")
 
     def main(self):
