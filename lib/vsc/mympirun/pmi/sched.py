@@ -72,7 +72,7 @@ class Sched(SchedBase):
     def pmicmd(self):
         """
         Return generated pmi command (as list) and the run function
-        envs is list of variable names that is modified
+        envs is list of variable names that are modified
         """
         pmicmd = [self.LAUNCHER]
 

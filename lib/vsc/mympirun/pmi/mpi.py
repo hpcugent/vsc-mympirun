@@ -59,6 +59,7 @@ class MPI(MpiBase):
     PMI = None
 
     def __init__(self, options, cmdargs, **kwargs):
+        """Initialise, named attributes are passed to parent MpiBase class"""
         if not hasattr(self, 'log'):
             self.log = getLogger(self.__class__.__name__)
 
@@ -275,6 +276,8 @@ class OpenMPI4(MPI):
 
     def mpi_debug_mpi(self):
         """MPI specific debugging"""
+        # set debug level for plm (Process Lifecycle Management), pml (Point-to-point Messaging Layer),
+        #  btl (Byte Transfer Layer) and mtl (Matching Transport Layer)
         for mca in ['plm', 'pml', 'btl', 'mtl']:
             self.ompi_env('mca', '%s_base_verbose' % mca, self.options.debuglvl)
 

@@ -118,7 +118,7 @@ def main(mpim, mpiopt, schedm):
         if instance_options:
             instance = getinstance(*instance_options)
             instance.main()
-    except Exception as e:
-        fancylogger.getLogger().exception("Main failed: %s" % e)
+    except Exception as err:
+        fancylogger.getLogger().exception("Main failed: %s" % err)
         sys.exit(1)
 

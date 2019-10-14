@@ -62,6 +62,7 @@ class Slurm(Sched):
         args = []
 
         # run from current directory
+        #   sbatch will set the sbatch parameters as environment variables and they will get picked up by srun
         args.append("--chdir=" + os.getcwd())
 
         if self.options.distribute:
