@@ -40,7 +40,7 @@ def export(key, value):
 
 
 def get_preferred_gpu_map():
-    # TODO: make generic or wait for schedmd fix, eg python nvml bindings
+    # issue #158: make generic or wait for schedmd fix, eg python nvml bindings
     #   this is the joltik map: 32 cores, even cores for gpu 0-1, odd for gpus 2-3
     #   so we prefer first 8 even cores for gpu 0, first 8 odd cores for gpu 1 etc etc
     GPU_MAP = [0, 2] * 8 + [1, 3] * 8

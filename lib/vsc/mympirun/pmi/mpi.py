@@ -312,9 +312,9 @@ class IntelMPI(MPI):
             self.set_env('I_MPI_STATS', self.options.stats)
 
 
-class Wurker(MPI):
+class Tasks(MPI):
     """
-    Not an MPI class at all, to create the Slurm/srun wurker command
+    Not an MPI class at all, to create the Slurm/srun mytasks command
     """
     # hide it from showmpi option output
     HIDDEN = True

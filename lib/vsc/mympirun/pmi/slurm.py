@@ -249,11 +249,11 @@ class Slurm(Sched):
         return args
 
 
-class Wurker(Slurm):
+class Tasks(Slurm):
     """Non-mpi srun workload"""
     HIDDEN = True
 
     def pmicmd_mpi(self):
         """Disable mpi"""
-        self.log.debug("No mpi in wurker")
+        self.log.debug("No mpi in mytasks")
         return ["--mpi=none"]

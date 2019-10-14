@@ -26,7 +26,7 @@
 PMI options.
 """
 from vsc.mympirun.option import CommonOption
-from vsc.mympirun.pmi.mpi import MPI, Wurker
+from vsc.mympirun.pmi.mpi import MPI, Tasks
 
 DEFAULT_TIMEOUT = 3600
 
@@ -58,13 +58,13 @@ class MypmirunOption(CommonOption):
         return base_opts
 
 
-class WurkerOption(MypmirunOption):
-    DESCRIPTION = ["wurker options", "General advanced wurker options"]
-    MPI_CLASS = Wurker
+class TasksOption(MypmirunOption):
+    DESCRIPTION = ["mytasks options", "General advanced mytasks options"]
+    MPI_CLASS = Tasks
 
     def _modify_base_options(self, base_opts):
         """Remove some mympirun specific options"""
-        base_opts = super(WurkerOption, self)._modify_base_options(base_opts)
+        base_opts = super(TasksOption, self)._modify_base_options(base_opts)
         for longopt in ['showsched', 'setsched', 'showmpi', 'setmpi']:
             del base_opts[longopt]
 

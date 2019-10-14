@@ -1,6 +1,5 @@
-#!/usr/bin/env python
 #
-# Copyright 2009-2019 Ghent University
+# Copyright 2019-2019 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -24,27 +23,28 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-An srun based non-mpi multi process wrapper
+wurker tests
 """
 
-import sys
-from vsc.utils import fancylogger
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-from vsc.mympirun.factory import getinstance
-from vsc.mympirun.pmi.mpi import Wurker as mpi
-from vsc.mympirun.pmi.slurm import Wurker as sched
-from vsc.mympirun.pmi.option import WurkerOption
+import os
 
-
-def main():
-    try:
-        optionparser = WurkerOption(ismpirun=False)
-        instance = getinstance(mpi, sched, optionparser)
-        instance.main()
-    except Exception:
-        fancylogger.getLogger().exception("Main failed")
-        sys.exit(1)
+from pmi_utils import SLURM_2NODES, PMITest
 
 
-if __name__ == '__main__':
-    main()
+class TasksEnd2End(PMITest):
+    def setUp(self):
+        """Prepare to run test."""
+        super(TasksEnd2End, self).setUp()
+        self.script = os.path.join(os.path.dirname(self.script), 'mytasks.py')
+
+    def test_ompi4_slurm(self):
+        self.set_env(SLURM_2NODES)
+
+        pattern = '--chdir=' + os.getcwd()
+        pattern += ' --nodes=2 --ntasks=64 --cpus-per-task=1 --mem-per-cpu=7600'
+        pattern += ' --export=ALL --mpi=none --output=xyz --abc=123 --def=456'
+        self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
+                    pattern=pattern+' arg1 arg2$')
