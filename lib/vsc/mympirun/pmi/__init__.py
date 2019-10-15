@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 #
 # Copyright 2009-2019 Ghent University
 #
@@ -24,22 +23,7 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-A mpirun wrapper
-
-v1 bash 10/08/2009
-v2 python rewrite 19/03/2010
-v3 refactored python 28/08/2012
-v4 cleanup 5/11/2013
-
-@author: Stijn De Weirdt
-@author: Jens Timmerman
-@author: Jeroen De Clerck
+Allow other packages to extend this namespace, zip safe setuptools style
 """
-
-import vsc.mympirun.mpi.mpi as mpim
-import vsc.mympirun.rm.sched as schedm
-from vsc.mympirun.mpi.option import MympirunOption
-from vsc.mympirun.main import main
-
-if __name__ == '__main__':
-    main(mpim, MympirunOption, schedm)
+import pkg_resources
+pkg_resources.declare_namespace(__name__)

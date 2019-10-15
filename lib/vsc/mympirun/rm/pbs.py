@@ -27,7 +27,7 @@ Torque / PBS
 """
 import os
 
-from vsc.mympirun.mpi.mpi import which
+from vsc.mympirun.common import which
 from vsc.mympirun.rm.sched import Sched
 from vsc.utils.missing import nub
 

@@ -26,132 +26,86 @@
 Optionparser for mympirun
 """
 from __future__ import print_function
+
+import copy
 import os
 
-from vsc.mympirun.mpi.mpi import MPI, TIMEOUT_CODE
 from vsc.utils import fancylogger
 from vsc.utils.generaloption import GeneralOption
 from vsc.utils.missing import get_subclasses
+
+
 # introduce usage / -u option. (original has -h for --hybrid)
-
-DEFAULT_TIMEOUT = 3600
-
 class MympirunParser(GeneralOption.PARSER):
-
     """Simple class to implement other help messages"""
     shorthelp = ('u', '--shorthelp', '--usage',)
     longhelp = ('U', '--help',)
 
 
-class MympirunOption(GeneralOption):
+class CommonOption(GeneralOption):
     """
-    Class that extends vsc-utils.GeneralOption
-
     Parses commandline options and sets them to variables
     """
     PARSER = MympirunParser
     ALLOPTSMANDATORY = False  # eg scriptname and other options. same for mpirun options
     INTERSPERSED = False  # Stop parsing cmdline, all others opts are opts for the exe
+    DESCRIPTION = None
+    MPI_CLASS = None
+    OPTIONS = {}  # to customize
+    BASE_OPTIONS = {
+        # long option: (description, type, action, default, short option)
+
+        "debuglvl": ("Specify debug level", "int", "store", 0),
+
+        "debugmpi": ("Enable MPI level debugging", None, "store_true", False),  # TODO PMI
+
+        "dry-run": ("Dry run mode, just print command that will be executed", None, 'store_true', False, 'D'),
+
+        "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
+
+        "logtofile": ("redirect the logging to a file (instead of stdout/stderr)", "str", "store", None),
+
+        "multi": ("Run the amount of processes multiplied by the given integer", "int", "store", None),  # TODO PMI
+
+        "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
+                   "str", "store", None),
+
+        "setsched": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
+                      "str", "store", None, "S"),
+
+        "setmpi": ("Specify MPI flavor (eg mpich2, openmpi...; will try to guess by default).",
+                   "str", "store", None, "M"),
+
+        "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
+
+        "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
+
+        "stats": ("Set MPI statistics level", "int", "store", 0),  # TODO PMI
+
+    }
 
     def __init__(self, ismpirun=False):
         self.mpirunmode = ismpirun
 
         GeneralOption.__init__(self)
 
+    def _modify_base_options(self, base_opts):
+        """Hook to modify base options, e.g. change help text"""
+        return base_opts
+
     def make_init(self):
         """ add all the options to generaloption, so it can correctly parse the command line arguments """
 
-        opts = {
-            # long option: (description, type, action, default, short option)
-
-            "basepath": ("Directory (preferably shared) to use for temporary mympirun files (default: HOME).",
-                         "str", "store", None),
-
-            'branchcount': ("Set the hydra branchcount", "int", "store", None),
-
-            "debuglvl": ("Specify debug level", "int", "store", 0),
-
-            "debugmpi": ("Enable MPI level debugging", None, "store_true", False),
-
-            "dry-run": ("Dry run mode, just print command that will be executed", None, 'store_true', False, 'D'),
-
-            "double": ("Run double the amount of processes (equivalent to --multi 2)", None, "store_true", False),
-
-            "hybrid": ("Run in hybrid mode, specify number of processes per node.", "int", "store", None, 'h'),
-
-            "launcher": ("The launcher to be used by Hydra (used in recent Intel MPI versions (> 4.1))"
-                         "for example: ssh, pbsdsh, ..", "str", "store", None),
-
-            "logtofile": ("redirect the logging of mympirun to a file (instead of stdout/stderr)",
-                          "str", "store", None),
-
-            "mpdbootverbose": ("Run verbose mpdboot", None, "store_true", False),
-
-            "mpirunoptions": ("String with options to pass to mpirun (will be appended to generate command)",
-                              "str", "store", None),
-
-            "multi": ("Run the amount of processes multiplied by the given integer", "int", "store", None),
-
-            "noenvmodules": ("Don't pass the environment modules variables",
-                             None, "store_true", False),
-
-            "order": ("Reorder the generated nodelist (default: normal. supports: sort, random[_<seed>])",
-                      "str", "store", None),
-
-            "output": ("redirect the output of mpirun to a file (instead of stdout/stderr)",
-                       "str", "store", None),
-
-            "output-check-timeout": ("Warn when no stdout/stderr was seen after start (in seconds; negative number "
-                                     "disables this test", "int", "store", DEFAULT_TIMEOUT),
-
-            "output-check-fatal": ("Exit with code %s instead of warn in case of output check timeout" % TIMEOUT_CODE,
-                                    None, "store_true", False),
-
-            "overridepin": (("Let mympriun set the affinity (default: disabled, left over to MPI implementation). "
-                             "Supported types: 'compact','spread','cycle' (add 'pin' postfix for single core pinning, "
-                             "e.g. 'cyclepin')."), "str", "store", None),
-
-            # don't set it by default. It will be set if needed (eg ipath)
-            "pinmpi": ("Disable MPI pinning", None, "store_true", True),
-
-            "rdma": ("Force rdma device", None, "store_true", None),
-
-            "schedtype": ("Specify scheduler (eg local, pbs...; will try to guess by default).",
-                      "str", "store", None, "S"),
-
-            "setmpi": ("Specify MPI flavor (eg mpich2, openmpi...; will try to guess by default).",
-                       "str", "store", None, "M"),
-
-            "showmpi": ("Print the known MPI classes and exit", None, "store_true", False, 'm'),
-
-            "showsched": ("Print the known Sched classes and exit", None, "store_true", False, 's'),
-
-            "sockets-per-node": ("Number of sockets per node (default: 0, i.e. try to detect #sockets "
-                                 "from /proc/cpuinfo)", "int", "store", 0),
-
-            "ssh": ("Force ssh for mpd startup (will try to use optimised method by default)",
-                    None, "store_false", True),
-
-            "stats": ("Set MPI statistics level", "int", "store", 0),
-
-            "universe": (("Start only this number of processes instead of all (e.g. for MPI_Spawn) Total size of the "
-                          "universe is all requested processes.)"), "int", "store", None),
-
-            'use_psm': ("Use Performance Scaled Messaging", None, "store_true", None),
-
-            "variablesprefix": (("Comma-separated list of exact names or prefixes to match environment variables "
-                                 "(<prefix>_ should match) to pass through."), "string", "extend", []),
-
-        }
-
-        descr = ["mympirun options", "General advanced mympirun options"]
+        opts = self._modify_base_options(copy.deepcopy(self.BASE_OPTIONS))
+        opts.update(self.OPTIONS)
 
         prefix = ''
-        self.log.debug("Add advanced option parser: options %s, description %s, prefix %s", opts, descr, prefix)
-        self.add_group_parser(opts, descr, prefix=prefix)
+        self.log.debug("Add advanced option parser: options %s, description %s, prefix %s",
+                       opts, self.DESCRIPTION, prefix)
+        self.add_group_parser(opts, self.DESCRIPTION, prefix=prefix)
 
         # for all MPI classes, get the additional options
-        for mpi in get_subclasses(MPI):
+        for mpi in get_subclasses(self.MPI_CLASS):
             if mpi.RUNTIMEOPTION is not None:
                 # don't try to add the same set of options twice (based on prefix)
                 prefix = mpi.RUNTIMEOPTION['prefix']

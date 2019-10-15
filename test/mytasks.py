@@ -1,6 +1,5 @@
-#!/usr/bin/env python
 #
-# Copyright 2009-2019 Ghent University
+# Copyright 2019-2019 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -24,22 +23,28 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-A mpirun wrapper
-
-v1 bash 10/08/2009
-v2 python rewrite 19/03/2010
-v3 refactored python 28/08/2012
-v4 cleanup 5/11/2013
-
-@author: Stijn De Weirdt
-@author: Jens Timmerman
-@author: Jeroen De Clerck
+wurker tests
 """
 
-import vsc.mympirun.mpi.mpi as mpim
-import vsc.mympirun.rm.sched as schedm
-from vsc.mympirun.mpi.option import MympirunOption
-from vsc.mympirun.main import main
+import logging
+logging.basicConfig(level=logging.DEBUG)
 
-if __name__ == '__main__':
-    main(mpim, MympirunOption, schedm)
+import os
+
+from pmi_utils import SLURM_2NODES, PMITest
+
+
+class TasksEnd2End(PMITest):
+    def setUp(self):
+        """Prepare to run test."""
+        super(TasksEnd2End, self).setUp()
+        self.script = os.path.join(os.path.dirname(self.script), 'mytasks.py')
+
+    def test_ompi4_slurm(self):
+        self.set_env(SLURM_2NODES)
+
+        pattern = '--chdir=' + os.getcwd()
+        pattern += ' --nodes=2 --ntasks=64 --cpus-per-task=1 --mem-per-cpu=7600'
+        pattern += ' --export=ALL --mpi=none --output=xyz --abc=123 --def=456'
+        self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
+                    pattern=pattern+' arg1 arg2$')

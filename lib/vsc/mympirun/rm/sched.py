@@ -32,69 +32,17 @@ import re
 
 from vsc.utils.affinity import sched_getaffinity
 from vsc.utils.fancylogger import getLogger
-from vsc.utils.missing import get_subclasses
+from vsc.mympirun.common import SchedBase
 
 
-LOGGER = getLogger()
-
-
-def what_sched(requested):
-    """Return the scheduler class """
-
-    def sched_to_key(klass):
-        """Return key for specified scheduler class which can be used for sorting."""
-        # use lowercase class name for sorting
-        key = klass.__name__.lower()
-        # prefix key for SLURM scheduler class with '_'
-        # this is done to consider SLURM before PBS, since $PBS* environment variables may be defined in SLURM job env
-        if key == 'slurm':
-            key = '_' + key
-
-        return key
-
-    # exclude Coupler class which also is a subclass of Sched, since it's not an actual scheduler
-    found_sched = sorted([c for c in get_subclasses(Sched) if c.__name__ != 'Coupler'], key=sched_to_key)
-
-    # Get local scheduler
-    local_sched = get_local_sched(found_sched)
-
-    # first, try to use the scheduler that was requested
-    if requested:
-        for sched in found_sched:
-            if sched._is_sched_for(requested):
-                return sched, found_sched
-        LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
-
-    # next, try to use the scheduler defined by environment variables
-    for sched in found_sched:
-        if sched.SCHED_ENVIRON_NODE_INFO in os.environ and sched.SCHED_ENVIRON_ID in os.environ:
-            return sched, found_sched
-
-    # If that fails, try to force the local scheduler
-    LOGGER.debug("No scheduler found in environment, trying local")
-    return local_sched, found_sched
-
-
-def get_local_sched(found_sched):
-    """Helper function to get local scheduler (or None, if there is no local scheduler)"""
-    res = None
-    for sched in found_sched:
-        if sched._is_sched_for("local"):
-            res = sched
-            break
-    return res
-
-
-class Sched(object):
+class Sched(SchedBase):
 
     """General class for scheduler/resource manager related functions."""
-    _sched_for = []  # classname is default added
-    _sched_environ_test = []
-    SCHED_ENVIRON_ID = None
-    SCHED_ENVIRON_NODE_INFO = None
 
     # if the SCHED_ENVIRON_ID is not found, create one yourself
     AUTOGENERATE_JOBID = False
+
+    SCHED_ENVIRON_NODE_INFO = None
 
     SAFE_RSH_CMD = 'ssh'
     SAFE_RSH_LARGE_CMD = 'sshsleep'
@@ -145,32 +93,9 @@ class Sched(object):
 
         super(Sched, self).__init__(**kwargs)
 
-    # factory methods for Sched. To add a new Sched class just create a new class that extends the cluster class
-    # see http://stackoverflow.com/questions/456672/class-factory-in-python
-    @classmethod
-    def _is_sched_for(cls, name=None):
-        """see if this class can provide support for sched class"""
-        if name is not None:
-            # add class name as default
-            return name in cls._sched_for + [cls.__name__]
-
-        # guess it from environment
-        totest = cls._sched_environ_test
-        if cls.SCHED_ENVIRON_ID is not None:
-            totest.append(cls.SCHED_ENVIRON_ID)
-
-        for envvar in totest:
-            envval = os.environ.get(envvar, None)
-            if not envval:
-                continue
-            else:
-                return True
-
-        return False
-
     # other methods
     def set_sched_id(self):
-        """get a unique id for this scheduler"""
+        """Get a unique id for this scheduler. This is typically the job id"""
         if self.SCHED_ENVIRON_ID is not None:
             self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 

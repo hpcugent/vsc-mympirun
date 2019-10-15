@@ -29,6 +29,9 @@ End-to-end tests for mympirun (with mocking of real 'mpirun' command).
 @author: Kenneth Hoste (HPC-UGent)
 @author: Caroline De Brouwer (HPC-UGent)
 """
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
 import copy
 import glob
 import os
@@ -42,7 +45,8 @@ import vsc.mympirun.rm.sched as schedm
 from vsc.utils.missing import nub
 from vsc.utils.run import run
 
-from vsc.mympirun.mpi.mpi import MPI, which
+from vsc.mympirun.common import which, what_sched
+from vsc.mympirun.mpi.mpi import MPI
 from vsc.mympirun.rm.local import Local
 from vsc.mympirun.rm.pbs import PBS
 from sched import cleanup_PBS_env, reset_env, set_PBS_env, set_SLURM_env
@@ -115,7 +119,6 @@ class TestEnd2End(unittest.TestCase):
         self.assertTrue(os.path.samefile(os.path.dirname(out), expected_path), "%s not in %s" % (out, expected_path))
 
         # set variables that exist within jobs, but not locally, for testing
-        self.tmpdir = tempfile.mkdtemp()
         pbs_tmpdir = os.path.join(self.tmpdir, 'pbs')
         os.makedirs(pbs_tmpdir)
         set_PBS_env(pbs_tmpdir)
@@ -353,11 +356,11 @@ class TestEnd2End(unittest.TestCase):
 
     def test_unset_nodefile(self):
         """ Test if sched falls back to Local if nodefile is not available """
-        self.assertEqual(schedm.what_sched(False)[0], PBS)
+        self.assertEqual(what_sched(False, schedm)[0], PBS)
         nodefile = os.environ['PBS_NODEFILE']
         del os.environ['PBS_NODEFILE']
         # fall back to local if PBS_NODEFILE is not available
-        self.assertEqual(schedm.what_sched(False)[0], Local)
+        self.assertEqual(what_sched(False, schedm)[0], Local)
         # restore env
         os.environ['PBS_NODEFILE'] = nodefile
 

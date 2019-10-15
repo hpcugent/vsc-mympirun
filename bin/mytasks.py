@@ -24,22 +24,27 @@
 # along with vsc-mympirun.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-A mpirun wrapper
-
-v1 bash 10/08/2009
-v2 python rewrite 19/03/2010
-v3 refactored python 28/08/2012
-v4 cleanup 5/11/2013
-
-@author: Stijn De Weirdt
-@author: Jens Timmerman
-@author: Jeroen De Clerck
+An srun based non-mpi multi process wrapper
 """
 
-import vsc.mympirun.mpi.mpi as mpim
-import vsc.mympirun.rm.sched as schedm
-from vsc.mympirun.mpi.option import MympirunOption
-from vsc.mympirun.main import main
+import sys
+from vsc.utils import fancylogger
+
+from vsc.mympirun.factory import getinstance
+from vsc.mympirun.pmi.mpi import Tasks as mpi
+from vsc.mympirun.pmi.slurm import Tasks as sched
+from vsc.mympirun.pmi.option import TasksOption
+
+
+def main():
+    try:
+        optionparser = TasksOption(ismpirun=False)
+        instance = getinstance(mpi, sched, optionparser)
+        instance.main()
+    except Exception:
+        fancylogger.getLogger().exception("Main failed")
+        sys.exit(1)
+
 
 if __name__ == '__main__':
-    main(mpim, MympirunOption, schedm)
+    main()
