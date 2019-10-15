@@ -231,18 +231,18 @@ class MPI(MpiBase):
         """
         Edit / adapt the current job_info to the requested mpi sizing
         """
-        mpi_info = job_info.copy()
+        mpi_info = job_info.deepcopy()
 
         hybrid = self.options.hybrid
         if hybrid is None:
-            if mpi_info['ngpus'] is not None:
-                hybrid = mpi_info['ngpus']
+            if mpi_info.gpus is not None:
+                hybrid = mpi_info.gpus
                 self.log.debug("Setting number of GPUs %s as hybrid value", hybrid)
 
         if hybrid is not None:
             self.log.debug("Setting hybrid %s number of ranks", hybrid)
-            mpi_info['nranks'] = hybrid
-            self.set_env('OMP_NUM_THREADS', max(1, mpi_info['ncores'] // hybrid))
+            mpi_info.ranks = hybrid
+            self.set_env('OMP_NUM_THREADS', max(1, mpi_info.cores // hybrid))
 
         return mpi_info
 

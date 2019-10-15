@@ -29,18 +29,38 @@ The role of the Sched class is mainly to construct the correct sched-specific PM
 """
 
 import os
+from copy import deepcopy
 from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.common import SchedBase
 from vsc.utils.run import run_file, async_to_stdout
 
-# simple intermediate representation of the job resources
-JOB_INFO = {
-    'tnodes': None,  # total number of nodes
-    'ncores': None,  # number of cores per node
-    'nranks': None, # number of MPI ranks per node
-    'nmem': None,  # memory per node
-    'ngpus': None,  # number of gpus per node: None means no GPUs present, 0 means don't use GPUs
-}
+
+class Info(object):
+    def __init__(self, nodes=None, cores=None, ranks=None, mem=None, gpus=None):
+        """Initialise with
+        Total:
+            nodes: total number of nodes
+        Per node:
+            cores: number of cores per node
+            ranks: number of MPI ranks per node
+            mem: memory per node
+            gpus: number of gpus per node: None means no GPUs present, 0 means don't use GPUs
+        """
+        self.nodes = nodes
+        self.cores = cores
+        self.ranks = ranks
+        self.mem = mem
+        self.gpus = gpus
+
+    def __str__(self):
+        """Human readable"""
+        return "%s nodes; with per node %s cores, %s ranks, %s mem, %s gpus" % (
+            self.nodes, self.cores, self.ranks, self.mem, self.gpus)
+
+    def deepcopy(self):
+        """Return a (deep)copy"""
+        return deepcopy(self)
+
 
 class Sched(SchedBase):
     LAUNCHER = None
@@ -125,35 +145,13 @@ class Sched(SchedBase):
         self.log.warn("Nothing done with mpi_info %s, no args generated", mpi_info)
         return []
 
-    def sane_job_info(self, info, hdr='info'):
-        """
-        info dict (e.g. job_info and mpi_info dicts) must match the JOB_INFO template
-        to make sure that after passing around and manipulation no unexpected data appears
-        or expected data disappear.
-        """
-        expected_keys = set(JOB_INFO.keys())
-        info_keys = set(info.keys())
-        if expected_keys == info_keys:
-            self.log.debug("%s is sane", hdr)
-        else:
-            unexpected_keys = info_keys - expected_keys
-            if unexpected_keys:
-                self.log.raiseException("Keys %s only in %s, not in JOB_INFO" % (hdr, sorted(unexpected_keys)))
-            missing_keys = expected_keys - info_keys
-            if missing_keys:
-                self.log.raiseException("Keys %s only in JOB_INFO, not in %s" % (hdr, sorted(missing_keys)))
-
     def pmicmd_sizing(self):
         """Generate the sizing arguments to the launcher as a list"""
-        job_info = self.job_info(JOB_INFO.copy())
-
-        self.sane_job_info(job_info, hdr='job_info')
+        job_info = self.job_info(Info())
         self.log.debug("Got job info %s", job_info)
 
         # compute requested
         mpi_info = self.mpi_size(job_info)
-
-        self.sane_job_info(mpi_info, hdr='mpi_info')
         self.log.debug("Got mpi size info %s", mpi_info)
 
         # generate args
