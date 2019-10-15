@@ -95,7 +95,7 @@ class Sched(SchedBase):
 
     # other methods
     def set_sched_id(self):
-        """get a unique id for this scheduler"""
+        """Get a unique id for this scheduler. This is typically the job id"""
         if self.SCHED_ENVIRON_ID is not None:
             self.sched_id = os.environ.get(self.SCHED_ENVIRON_ID, None)
 
