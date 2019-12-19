@@ -31,10 +31,8 @@ Tests for the vsc.mympirun.mpi.sched module.
 """
 import copy
 import os
-import shutil
 import stat
-import tempfile
-import unittest
+from vsc.install.testing import TestCase
 from vsc.utils.missing import nub
 
 from vsc.mympirun.factory import getinstance
@@ -112,19 +110,21 @@ def reset_env(orig_env):
             os.environ[key] = orig_env[key]
 
 
-class TestSched(unittest.TestCase):
+class TestSched(TestCase):
     """tests for vsc.mympirun.mpi.sched functions"""
 
     def setUp(self):
         """Set up test"""
+        super(TestSched, self).setUp()
+
         self.orig_environ = copy.deepcopy(os.environ)
-        self.tmpdir = tempfile.mkdtemp()
 
     def tearDown(self):
         """Clean up after running test."""
         cleanup_PBS_env()
         reset_env(self.orig_environ)
-        shutil.rmtree(self.tmpdir)
+
+        super(TestSched, self).setUp()
 
     def test_what_sched(self):
         """Test what_sched function."""

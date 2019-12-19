@@ -32,11 +32,8 @@ from IPy import IP
 import os
 import pkgutil
 import re
-import shutil
 import stat
 import string
-import tempfile
-import unittest
 
 from vsc.install.testing import TestCase
 from vsc.utils.run import run
@@ -61,14 +58,16 @@ class TestMPI(TestCase):
     """tests for vsc.mympirun.mpi.mpi functions"""
 
     def setUp(self):
+        super(TestMPI, self).setUp()
+
         self.orig_environ = os.environ
-        self.tmpdir = tempfile.mkdtemp()
         os.environ['HOME'] = self.tmpdir
 
     def tearDown(self):
         """Clean up after running test."""
         reset_env(self.orig_environ)
-        shutil.rmtree(self.tmpdir)
+
+        super(TestMPI, self).tearDown()
 
     #######################
     ## General functions ##
