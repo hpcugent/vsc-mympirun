@@ -42,6 +42,7 @@ import sys
 import tempfile
 import unittest
 import vsc.mympirun.rm.sched as schedm
+from vsc.install.testing import TestCase
 from vsc.utils.missing import nub
 from vsc.utils.run import run
 
@@ -87,11 +88,13 @@ def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
     os.environ['EBVERSION%s' % mpi_name.upper()] = mpi_version
 
 
-class TestEnd2End(unittest.TestCase):
+class TestEnd2End(TestCase):
     """End-to-end tests for mympirun"""
 
     def setUp(self):
         """Prepare to run test."""
+        super(TestEnd2End, self).setUp()
+
         self.orig_environ = copy.deepcopy(os.environ)
 
         # add /bin to $PATH, /lib to $PYTHONPATH
@@ -101,7 +104,7 @@ class TestEnd2End(unittest.TestCase):
         # make sure subshell finds .egg files by adding them to the pythonpath
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
         os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
-        self.tmpdir = tempfile.mkdtemp()
+
         os.environ['HOME'] = self.tmpdir
         mpdconf = open(os.path.join(self.tmpdir, '.mpd.conf'), 'w')
         mpdconf.write("password=topsecretpassword")
@@ -126,9 +129,10 @@ class TestEnd2End(unittest.TestCase):
     def tearDown(self):
         """Clean up after running test."""
         cleanup_PBS_env()
-        os.chmod(self.tmpdir, stat.S_IRUSR|stat.S_IWUSR|stat.S_IXUSR)
-        shutil.rmtree(self.tmpdir)
+        os.chmod(self.tmpdir, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         reset_env(self.orig_environ)
+
+        super(TestEnd2End, self).tearDown()
 
     def test_serial(self):
         """Test running of a serial command via mympirun."""
