@@ -30,9 +30,7 @@ import glob
 import os
 import sys
 import re
-import tempfile
-import shutil
-import tempfile
+
 from vsc.install.testing import TestCase
 from vsc.utils.run import run
 
@@ -88,13 +86,10 @@ class PMITest(TestCase):
         self.which_patcher = patch('vsc.mympirun.common.which')
         self.mock_which = self.which_patcher.start()
 
-        self.tmpdir = tempfile.mkdtemp()
-
     def tearDown(self):
         """Clean up after running test."""
         self.which_patcher.stop()
         reset_env(self.orig_environ)
-        shutil.rmtree(self.tmpdir)
 
         super(PMITest, self).tearDown()
 
