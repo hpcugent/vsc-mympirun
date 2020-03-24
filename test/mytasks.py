@@ -30,6 +30,7 @@ import logging
 logging.basicConfig(level=logging.DEBUG)
 
 import os
+import re
 
 from pmi_utils import SLURM_2NODES, PMITest
 
@@ -43,7 +44,9 @@ class TasksEnd2End(PMITest):
     def test_ompi4_slurm(self):
         self.set_env(SLURM_2NODES)
 
-        pattern = '--chdir=' + os.getcwd()
+        # take into account that path may have characters like '(' and ')'
+        cwd = re.escape(os.getcwd())
+        pattern = '--chdir=' + cwd
         pattern += ' --nodes=2 --ntasks=64 --cpus-per-task=1 --mem-per-cpu=7600'
         pattern += ' --export=ALL --mpi=none --output=xyz --abc=123 --def=456'
         self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
