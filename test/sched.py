@@ -90,6 +90,9 @@ def set_SLURM_env(tmpdir):
     os.environ['SLURM_TASKS_PER_NODE'] = '2,1(x2)'
     os.environ['SLURM_EXPORT_ENV'] = 'NONE'
 
+    # make sure tmpdir is writeable (it may have been made read-only by set_PBS_env)
+    os.chmod(tmpdir, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+
     scontrol = os.path.join(tmpdir, 'scontrol')
     fh = open(scontrol, 'w')
     fh.write("#!/bin/bash\necho node1\necho node2\necho node3\n")
