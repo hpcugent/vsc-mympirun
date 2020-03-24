@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 #
-# Copyright 2009-2012 Ghent University
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2012 Andy Georges
+# Copyright 2009-2020 Ghent University
 #
 # This file is part of VSC-tools,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -49,7 +47,7 @@ PACKAGE = {
     'tests_require': [
         'mock',
     ],
-    'version': '5.0.0',
+    'version': '5.0.1',
     'author': [sdw, kh],
     'maintainer': [sdw, kh],
     'zip_safe': False,
@@ -154,11 +152,13 @@ except Exception as e:
 
 # next monstrocity: inject header in script to filter out PYTHONPATH in mixed EB py3/py2 envs
 # mympirun modules rely on the system python and dependencies, so this is fine
+#   however, system python might pick up loaded Python-2.X modules, and then nothing should be done
 # this can be removed as soon as mympirun is py3 safe
 EB_SAFE_HEADER = """
 import os
 import sys
-if 'EBROOTPYTHON' in os.environ:
+ebp = os.environ.get('EBROOTPYTHON', None)
+if ebp and not os.__file__.startswith(ebp):
     # ebroots excpet mympirun
     ignore = [v for k,v in os.environ.items() if k.startswith('EBROOT') and not k.endswith('VSCMINMYMPIRUN')]
     # add realpaths to (sys.path normally ojnly has realpaths)

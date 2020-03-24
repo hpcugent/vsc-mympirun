@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2019 Ghent University
+# Copyright 2012-2020 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -89,6 +89,9 @@ def set_SLURM_env(tmpdir):
     os.environ['SLURM_NODELIST'] = 'node[1-3]'
     os.environ['SLURM_TASKS_PER_NODE'] = '2,1(x2)'
     os.environ['SLURM_EXPORT_ENV'] = 'NONE'
+
+    # make sure tmpdir is writeable (it may have been made read-only by set_PBS_env)
+    os.chmod(tmpdir, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
     scontrol = os.path.join(tmpdir, 'scontrol')
     fh = open(scontrol, 'w')

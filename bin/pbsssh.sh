@@ -1,7 +1,6 @@
 #!/bin/bash
 ##
-# Copyright 2009-2012 Stijn De Weirdt
-# Copyright 2009-2018 Ghent University
+# Copyright 2009-2020 Ghent University
 #
 # This file is part of VSC-tools,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
