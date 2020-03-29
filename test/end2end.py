@@ -116,7 +116,7 @@ class TestEnd2End(TestCase):
         os.environ['PATH'] = '%s:%s' % (os.path.join(self.tmpdir, 'bin'), os.getenv('PATH', ''))
 
         # make sure we're using the right mympirun installation...
-        ec, out = run([sys.executable, '-c', "import vsc.mympirun; print vsc.mympirun.__file__"])
+        ec, out = run([sys.executable, '-c', "import vsc.mympirun; print(vsc.mympirun.__file__)"])
         out = out.strip()
         expected_path = os.path.join(self.topdir, 'lib', 'vsc', 'mympirun')
         self.assertTrue(os.path.samefile(os.path.dirname(out), expected_path), "%s not in %s" % (out, expected_path))
@@ -341,7 +341,7 @@ class TestEnd2End(TestCase):
         ]
         ec, out = run(command)
 
-        for key in nub(filter(os.environ.has_key, MPI.OPTS_FROM_ENV_BASE)):
+        for key in nub(filter(lambda key: key in os.environ, MPI.OPTS_FROM_ENV_BASE)):
             self.assertTrue(key in out, "%s is not in out" % key)
 
         regex = r'.*-envlist [^ ]*USER.*'

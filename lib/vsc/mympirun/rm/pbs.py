@@ -56,7 +56,6 @@ class PBS(Sched):
         if which(PBSSSH) and which(PBSDSH):
             self.log.debug("Both 'pbsssh' and 'pbsdsh' found, so using 'pbsssh' as remote shell command.")
             self.RSH_LARGE_CMD = PBSSSH
-            self.RSH_LARGE_LIMIT = PBSSSH
             self.HYDRA_LAUNCHER_EXEC = PBSSSH
         elif which(PBSSSH):
             self.log.debug("Can't use '%s' wrapper if '%s' is not available", PBSDSH, PBSSSH)

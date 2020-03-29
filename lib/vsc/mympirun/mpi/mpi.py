@@ -662,7 +662,7 @@ class MPI(MpiBase):
         """
 
         # get all unique variables that are both in os.environ and in OPTS_FROM_ENV_BASE
-        vars_to_pass = nub(filter(os.environ.has_key, self.OPTS_FROM_ENV_BASE))
+        vars_to_pass = nub(filter(lambda key: key in os.environ, self.OPTS_FROM_ENV_BASE))
         self.mpiexec_opts_from_env.extend(vars_to_pass)
 
         prefixes = self.OPTS_FROM_ENV_FLAVOR_PREFIX + self.OPTS_FROM_ENV_BASE_PREFIX + self.options.variablesprefix

@@ -96,8 +96,18 @@ def what_sched(requested, schedm):
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
-        nodeinfo = not hasattr(sched, 'SCHED_ENVIRON_NODE_INFO') or sched.SCHED_ENVIRON_NODE_INFO in os.environ
-        if nodeinfo and sched.SCHED_ENVIRON_ID in os.environ:
+
+        # take into account that SCHED_ENVIRON_NODE_INFO can be None,
+        # and chechking "None in os.environ" fails hard in Python 3 (string value is required)
+        if hasattr(sched, 'SCHED_ENVIRON_NODE_INFO'):
+            if sched.SCHED_ENVIRON_NODE_INFO is not None:
+                nodeinfo = sched.SCHED_ENVIRON_NODE_INFO in os.environ
+            else:
+                nodeinfo = False
+        else:
+            nodeinfo = True
+
+        if nodeinfo and sched.SCHED_ENVIRON_ID is not None and sched.SCHED_ENVIRON_ID in os.environ:
             return sched, found_sched
 
     # If that fails, try to force the local scheduler

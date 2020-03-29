@@ -33,7 +33,6 @@ import os
 import pkgutil
 import re
 import stat
-import string
 
 from vsc.install.testing import TestCase
 from vsc.utils.run import run
@@ -112,9 +111,9 @@ class TestMPI(TestCase):
                 raise Exception("Something went wrong while trying to run `which`: %s" % unixwhich)
 
             self.assertTrue(mpiwhich, msg="mpi which did not return anything, (unix which: %s" % unixwhich)
-            self.assertEqual(mpiwhich, string.strip(unixwhich),
-                             msg="the return values of unix which and which() aren't"" the same: %s != %s" %
-                             (mpiwhich, string.strip(unixwhich)))
+            self.assertEqual(mpiwhich, unixwhich.strip(),
+                             msg="the return values of unix which and which() aren't the same: %s != %s" %
+                             (mpiwhich, unixwhich.strip()))
 
      ###################
      ## MPI functions ##
@@ -201,7 +200,7 @@ class TestMPI(TestCase):
         # matches "IP address / netmask"
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
         print("netmask: %s" % mpi_instance.netmask)
-        for substr in string.split(mpi_instance.netmask, sep=":"):
+        for substr in mpi_instance.netmask.split(':'):
             try:
                 IP(substr)
             except ValueError:
@@ -312,7 +311,7 @@ class TestMPI(TestCase):
         """test if mpiexec_opts_from_env only contains environment variables that start with the given prefix"""
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
 
-        if not os.environ.has_key('PYTHONPATH'):
+        if 'PYTHONPATH' not in os.environ:
             os.environ[key] = "/example:/test/123"
         mpi_instance.set_mpiexec_opts_from_env()
         prefixes = mpi_instance.OPTS_FROM_ENV_FLAVOR_PREFIX
