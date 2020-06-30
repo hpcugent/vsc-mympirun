@@ -98,9 +98,13 @@ def what_sched(requested, schedm):
     for sched in found_sched:
 
         # determine whether environment variable for node info (like $PBS_NODEFILE, $SLURM_NODELIST) is defined;
-        # take into account that SCHED_ENVIRON_NODE_INFO can be None,
-        # and checking "None in os.environ" fails hard in Python 3 (string value is required)
-        nodeinfo = getattr(sched, 'SCHED_ENVIRON_NODE_INFO', True) and (sched.SCHED_ENVIRON_NODE_INFO or '') in os.environ
+        if hasattr(sched, 'SCHED_ENVIRON_NODE_INFO'):
+            # take into account that SCHED_ENVIRON_NODE_INFO can be None,
+            # and checking "None in os.environ" fails hard in Python 3 (string value is required)
+            nodeinfo = (sched.SCHED_ENVIRON_NODE_INFO or '') in os.environ
+        else:
+            # if SCHED_ENVIRON_NODE_INFO attribute does not exist, we still check SCHED_ENVIRON_ID below
+            nodeinfo = True
 
         if nodeinfo:
             # determine whether environment variable that specifies job ID (like $PBS_JOBID, $SLURM_JOBID) is defined
