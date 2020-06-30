@@ -104,7 +104,7 @@ def set_SLURM_env(tmpdir):
 
 def reset_env(orig_env):
     """Reset environment to provided original environment."""
-    for key in nub(os.environ.keys() + orig_env.keys()):
+    for key in nub(list(os.environ.keys()) + list(orig_env.keys())):
         orig_val = orig_env.get(key)
         if orig_val is None:
             if key in os.environ:
@@ -135,7 +135,7 @@ class TestSched(TestCase):
         expected_found_sched = [SLURM, Local, PBS, Scoop]
 
         # if scheduler is specified, then just return corresponding class
-        for key, val in SCHEDDICT.iteritems():
+        for key, val in SCHEDDICT.items():
             sched, found_sched = what_sched(key, schedm)
             self.assertEqual(sched, val)
             self.assertEqual(found_sched, expected_found_sched)
@@ -179,14 +179,18 @@ class TestSched(TestCase):
 
         get_id gets called by the __init__ of getinstance()
         """
-        for key, val in SCHEDDICT.iteritems():
+        for key, val in SCHEDDICT.items():
             if key == 'pbs':
                 set_PBS_env(self.tmpdir)
             elif key == 'slurm':
                 set_SLURM_env(self.tmpdir)
 
             inst = getinstance(mpim.MPI, val, MympirunOption())
-            self.assertTrue(inst.sched_id == os.environ.get(inst.SCHED_ENVIRON_ID, None) or
+            expected = None
+            if inst.SCHED_ENVIRON_ID is not None:
+                expected = os.environ.get(inst.SCHED_ENVIRON_ID)
+
+            self.assertTrue(inst.sched_id == expected or
                             inst.sched_id.startswith("SCHED_%s" % inst.__class__.__name__))
 
     def test_core_on_this_node(self):
@@ -195,7 +199,7 @@ class TestSched(TestCase):
 
         core_on_this_node() gets called by the __init__ of getinstance()
         """
-        for key, val in SCHEDDICT.iteritems():
+        for key, val in SCHEDDICT.items():
             if key == 'pbs':
                 set_PBS_env(self.tmpdir)
             elif key == 'slurm':
@@ -210,7 +214,7 @@ class TestSched(TestCase):
 
         which_cpus() gets called by the __init__ of getinstance()
         """
-        for key, val in SCHEDDICT.iteritems():
+        for key, val in SCHEDDICT.items():
             if key == 'pbs':
                 set_PBS_env(self.tmpdir)
             elif key == 'slurm':

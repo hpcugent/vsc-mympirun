@@ -147,7 +147,7 @@ class Slurm(Sched):
         if 'SLURM_JOB_GPUS' in os.environ:
             try:
                 # this should fail when slurm switched to compressed repr (eg 0-3 instead of current 0,1,2,3)
-                ngpus = len(map(int, os.environ['SLURM_JOB_GPUS'].split(',')))
+                ngpus = len(list(map(int, os.environ['SLURM_JOB_GPUS'].split(','))))
             except Exception as e:
                 self.log.raiseException("Failed to get the number of gpus per node from %s: %s" % (dbgtxt, e))
 

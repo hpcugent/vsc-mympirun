@@ -122,7 +122,7 @@ def check():
                 log.error("OMP_NUM_THREADS set for rank %s to %s does not match affinity width %s" % (rank, omp, af))
 
     # check for mapping
-    for idx, x in enumerate(recvbuf):
+    for idx, _ in enumerate(recvbuf):
         next_idx = (idx + 1) % len(recvbuf)
         if recvbuf[idx]['hostname'] == recvbuf[next_idx]['hostname']:
             if not recvbuf[idx]['affinity'][-1] == recvbuf[next_idx]['affinity'][0] - 1:

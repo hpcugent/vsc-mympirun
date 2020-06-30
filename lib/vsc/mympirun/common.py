@@ -96,9 +96,20 @@ def what_sched(requested, schedm):
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
-        nodeinfo = not hasattr(sched, 'SCHED_ENVIRON_NODE_INFO') or sched.SCHED_ENVIRON_NODE_INFO in os.environ
-        if nodeinfo and sched.SCHED_ENVIRON_ID in os.environ:
-            return sched, found_sched
+
+        # determine whether environment variable for node info (like $PBS_NODEFILE, $SLURM_NODELIST) is defined;
+        if hasattr(sched, 'SCHED_ENVIRON_NODE_INFO'):
+            # take into account that SCHED_ENVIRON_NODE_INFO can be None,
+            # and checking "None in os.environ" fails hard in Python 3 (string value is required)
+            nodeinfo = (sched.SCHED_ENVIRON_NODE_INFO or '') in os.environ
+        else:
+            # if SCHED_ENVIRON_NODE_INFO attribute does not exist, we still check SCHED_ENVIRON_ID below
+            nodeinfo = True
+
+        if nodeinfo:
+            # determine whether environment variable that specifies job ID (like $PBS_JOBID, $SLURM_JOBID) is defined
+            if (getattr(sched, 'SCHED_ENVIRON_ID', None) or '') in os.environ:
+                return sched, found_sched
 
     # If that fails, try to force the local scheduler
     LOGGER.debug("No scheduler found in environment, trying local")
