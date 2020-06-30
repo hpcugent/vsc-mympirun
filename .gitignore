@@ -10,7 +10,7 @@ dist
 setup.cfg
 build
 eggs
-.eggs
+.eggs*
 parts
 var
 sdist
