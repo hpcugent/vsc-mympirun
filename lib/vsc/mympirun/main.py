@@ -121,4 +121,3 @@ def main(mpim, mpiopt, schedm):
     except Exception as err:
         fancylogger.getLogger().exception("Main failed: %s" % err)
         sys.exit(1)
-

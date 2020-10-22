@@ -154,11 +154,26 @@ class MPI(MpiBase):
     HYDRA = None
     HYDRA_LAUNCHER_NAME = "launcher"
 
-    DEVICE_LOCATION_MAP = {'ib': '/dev/infiniband', 'det': '/dev/det', 'shm': '/dev/shm', 'socket': None}
+    DEVICE_LOCATION_MAP = {
+        'ib': '/dev/infiniband',
+        'det': '/dev/det',
+        'shm': '/dev/shm',
+        'socket': None,
+    }
     DEVICE_ORDER = ['ib', 'det', 'shm', 'socket']
-    DEVICE_MPIDEVICE_MAP = {'ib': 'rdma', 'det': 'det', 'shm': 'shm', 'socket': 'socket'}
+    DEVICE_MPIDEVICE_MAP = {
+        'ib': 'rdma',
+        'det': 'det',
+        'shm': 'shm',
+        'socket': 'socket',
+    }
 
-    NETMASK_TYPE_MAP = {'ib': 'ib', 'det': 'eth', 'shm': 'eth', 'socket': 'eth'}
+    NETMASK_TYPE_MAP = {
+        'ib': 'ib',
+        'det': 'eth',
+        'shm': 'eth',
+        'socket': 'eth',
+    }
 
     PINNING_OVERRIDE_METHOD = 'numactl'
 
