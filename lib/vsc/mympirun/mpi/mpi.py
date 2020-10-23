@@ -154,11 +154,26 @@ class MPI(MpiBase):
     HYDRA = None
     HYDRA_LAUNCHER_NAME = "launcher"
 
-    DEVICE_LOCATION_MAP = {'ib': '/dev/infiniband', 'det': '/dev/det', 'shm': '/dev/shm', 'socket': None}
+    DEVICE_LOCATION_MAP = {
+        'ib': '/dev/infiniband',
+        'det': '/dev/det',
+        'shm': '/dev/shm',
+        'socket': None,
+    }
     DEVICE_ORDER = ['ib', 'det', 'shm', 'socket']
-    DEVICE_MPIDEVICE_MAP = {'ib': 'rdma', 'det': 'det', 'shm': 'shm', 'socket': 'socket'}
+    DEVICE_MPIDEVICE_MAP = {
+        'ib': 'rdma',
+        'det': 'det',
+        'shm': 'shm',
+        'socket': 'socket',
+    }
 
-    NETMASK_TYPE_MAP = {'ib': 'ib', 'det': 'eth', 'shm': 'eth', 'socket': 'eth'}
+    NETMASK_TYPE_MAP = {
+        'ib': 'ib',
+        'det': 'eth',
+        'shm': 'eth',
+        'socket': 'eth',
+    }
 
     PINNING_OVERRIDE_METHOD = 'numactl'
 
@@ -414,9 +429,8 @@ class MPI(MpiBase):
 
         mpdfn = os.path.join(self.mympirundir, 'mpdboot')
         try:
-            fp = open(mpdfn, 'w')
-            fp.write(mpdboottxt)
-            fp.close()
+            with open(mpdfn, 'w') as fp:
+                fp.write(mpdboottxt)
         except IOError as err:
             msg = 'make_mpdboot_file: failed to write mpbboot file %s: %s' % (mpdfn, err)
             self.log.raiseException(msg)
@@ -449,9 +463,8 @@ class MPI(MpiBase):
 
         nodefn = os.path.join(self.mympirundir, 'nodes')
         try:
-            fp = open(nodefn, 'w')
-            fp.write(nodetxt)
-            fp.close()
+            with open(nodefn, 'w') as fp:
+                fp.write(nodetxt)
         except IOError as err:
             msg = 'make_machine_file: failed to write nodefile %s: %s' % (nodefn, err)
             self.log.raiseException(msg)
@@ -546,10 +559,10 @@ class MPI(MpiBase):
         if not os.path.exists(mpdconffn):
             self.log.warning(("make_mpdboot: mpd.conf file not found at %s. Creating this file "
                               "(text file with minimal entry 'password=<somesecretpassword>')"), mpdconffn)
-            mpdconff = open(mpdconffn, 'w')
-            mpdconff.write("password=%s" % ''.join(random.choice(string.ascii_uppercase + string.digits)
-                                                   for x in range(10)))
-            mpdconff.close()
+
+            with open(mpdconffn, 'w') as mpdconff:
+                mpdconff.write("password=%s" % ''.join(random.choice(string.ascii_uppercase + string.digits)
+                                                       for x in range(10)))
             # set correct permissions on this file.
             os.chmod(mpdconffn, stat.S_IREAD)
 

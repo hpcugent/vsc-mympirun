@@ -30,7 +30,7 @@ import os
 import re
 import sys
 from vsc.utils.missing import nub
-from vsc.utils.run import CmdList
+from vsc.utils.run import CmdList, run
 
 from vsc.mympirun.common import version_in_range
 from vsc.mympirun.mpi.mpi import MPI
@@ -58,9 +58,21 @@ class OpenMPI(MPI):
 
     REMOTE_OPTION_TEMPLATE = ['--mca', 'pls_rsh_agent', '%(rsh)s']
 
+    def use_ucx_pml(self):
+        """Determine whether or not to use the UCX Point-to-Point Messaging Layer (PML)."""
+        # don't use UCX by default (mostly because of backwards-compatibility)
+        return False
+
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
-        self.mpiexec_global_options['btl'] = self.device
+
+        if self.use_ucx_pml():
+            self.mpiexec_global_options['pml'] = 'ucx'
+            # disable uct btl, see http://openucx.github.io/ucx/running.html
+            self.mpiexec_global_options['btl'] = '^uct'
+        else:
+            # default PML (ob1) uses Byte Transport Layer (BTL)
+            self.mpiexec_global_options['btl'] = self.device
 
         # make sure Open Run-Time Environment (ORTE) uses FQDN hostnames
         # using short hostnames may cause problems (e.g. if SLURM is configured to use FQDN hostnames)
@@ -121,26 +133,27 @@ class OpenMPI(MPI):
                     node = rank / self.ppn
                     socket = rank / (self.ppn / sockets_per_node)
                     slot = rank % (self.ppn / sockets_per_node)
-                    ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
+                    ranktxt += "rank %i=+n%i slot=%i:%i\n" % (rank, node, socket, slot)
 
             elif override_type in ('spread', 'scatter'):
-                #spread ranks evenly across nodes, but also spread them across sockets
+                # spread ranks evenly across nodes, but also spread them across sockets
                 for rank in range(universe):
                     node = rank % self.nodes_tot_cnt
                     socket = (rank % self.ppn) % sockets_per_node
                     slot = (rank % self.ppn) / sockets_per_node
-                    ranktxt += "rank %i=+n%i slot=%i:%i\n" %(rank, node, socket, slot)
+                    ranktxt += "rank %i=+n%i slot=%i:%i\n" % (rank, node, socket, slot)
 
             else:
                 self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
                                         self.pinning_override_type)
 
-            open(rankfn, 'w').write(ranktxt)
+            with open(rankfn, 'w') as fp:
+                fp.write(ranktxt)
             self.log.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
             cmd = CmdList('-rf', rankfn)
 
-        except IOError:
-            self.log.raiseException('pinning_override: failed to write rankfile %s' % rankfn)
+        except IOError as err:
+            self.log.raiseException('pinning_override: failed to write rankfile %s: %s' % (rankfn, err))
 
         return cmd
 
@@ -184,7 +197,6 @@ class OpenMPI(MPI):
         super(OpenMPI, self).prepare()
 
 
-
 class OpenMpiOversubscribe(OpenMPI):
 
     """
@@ -193,7 +205,6 @@ class OpenMpiOversubscribe(OpenMPI):
     """
 
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '1.7.0', '3'))
-
 
     def set_mpiexec_options(self):
 
@@ -209,7 +220,7 @@ class OpenMpi3(OpenMpiOversubscribe):
     An implementation of the MPI class for OpenMPI 3.x & more recent.
     """
 
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '3', None))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '3', '4'))
 
     # 'sm' BTL (Byte Transfer Layer) was replaced by the 'vader' BTL
     # cfr. https://www.open-mpi.org/faq/?category=sm
@@ -219,3 +230,28 @@ class OpenMpi3(OpenMpiOversubscribe):
         'shm': 'vader,self',
         'socket': 'vader,tcp,self',
     }
+
+
+class OpenMpi4(OpenMpi3):
+
+    """
+    An implementation of the MPI class for OpenMPI 4.x & more recent.
+    """
+
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '4', None))
+
+    def use_ucx_pml(self):
+        """Determine whether or not to use the UCX Point-to-Point Messaging Layer (PML)."""
+
+        # use UCX if 'ompi_info' reports that it is a supported PML;
+        # only for OpenMPI 4.x and newer, as recommended by UCX:
+        # "OpenMPI supports UCX starting from version 3.0, but it's recommended to use
+        # "version 4.0 or higher due to stability and performance improvements."
+        # (see https://openucx.github.io/ucx/running.html#openmpi-with-ucx)
+        cmd = "ompi_info"
+        ec, out = run(cmd)
+        if ec:
+            self.log.raiseException("use_ucx_pml: failed to run cmd '%s', ec: %s, out: %s" % (cmd, ec, out))
+
+        pml_ucx_pattern = ' pml: ucx '
+        return bool(re.search(pml_ucx_pattern, out))
