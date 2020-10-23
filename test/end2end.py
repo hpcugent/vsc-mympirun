@@ -477,7 +477,7 @@ class TestEnd2End(TestCase):
 
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        regex = re.compile("^fake mpirun called with args:.*--mca btl vader,openib,self")
+        regex = re.compile("^fake mpirun called with args:.*--mca btl vader[a-z,]+self")
         self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
 
     def test_openmpi4(self):
@@ -498,8 +498,8 @@ class TestEnd2End(TestCase):
         regex = re.compile(r"^fake mpirun called with args:.*--mca pml ucx --mca btl \^uct")
         self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
 
-        # openib BTL should not be used when UCX is used as PML
-        regex = re.compile("--mca btl .*openib")
+        # BTL self should not be specified when UCX is used as PML (but 'btl ^uct' is specified)
+        regex = re.compile("--mca btl .*self")
         self.assertFalse(regex.search(out), "Pattern '%s' should not be found in: %s" % (regex.pattern, out))
 
         # if ompi_info doesn't report UCX as a supported PML, then openib btl is still used
@@ -509,5 +509,5 @@ class TestEnd2End(TestCase):
         ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        regex = re.compile("^fake mpirun called with args:.*--mca btl vader,openib,self")
+        regex = re.compile("^fake mpirun called with args:.*--mca btl vader[a-z,]+self")
         self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
