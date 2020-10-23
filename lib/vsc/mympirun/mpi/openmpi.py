@@ -243,7 +243,11 @@ class OpenMpi4(OpenMpiOversubscribe):
     def use_ucx_pml(self):
         """Determine whether or not to use the UCX Point-to-Point Messaging Layer (PML)."""
 
-        # if 'ompi_info' reports that UCX is a supported PML
+        # use UCX if 'ompi_info' reports that it is a supported PML;
+        # only for OpenMPI 4.x and newer, as recommended by UCX:
+        # "OpenMPI supports UCX starting from version 3.0, but it's recommended to use
+        # "version 4.0 or higher due to stability and performance improvements."
+        # (see https://openucx.github.io/ucx/running.html#openmpi-with-ucx)
         cmd = "ompi_info"
         ec, out = run(cmd)
         if ec:
