@@ -29,18 +29,12 @@ End-to-end tests for mympirun (with mocking of real 'mpirun' command).
 @author: Kenneth Hoste (HPC-UGent)
 @author: Caroline De Brouwer (HPC-UGent)
 """
-import logging
-logging.basicConfig(level=logging.DEBUG)
-
 import copy
 import glob
 import os
 import re
-import shutil
 import stat
 import sys
-import tempfile
-import unittest
 import vsc.mympirun.rm.sched as schedm
 from vsc.install.testing import TestCase
 from vsc.utils.missing import nub
@@ -74,6 +68,7 @@ else
 fi
 """
 
+
 def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
     """Install fake mpirun command with given name in specified location"""
     if not os.path.exists(path):
@@ -82,7 +77,7 @@ def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
     if not txt:
         txt = FAKE_MPIRUN
     open(fake_mpirun, 'w').write(txt)
-    os.chmod(fake_mpirun, stat.S_IRUSR|stat.S_IXUSR)
+    os.chmod(fake_mpirun, stat.S_IRUSR | stat.S_IXUSR)
     os.environ['PATH'] = '%s:%s' % (path, os.getenv('PATH', ''))
     os.environ['EBROOT%s' % mpi_name.upper()] = os.path.dirname(fake_mpirun)
     os.environ['EBVERSION%s' % mpi_name.upper()] = mpi_version
@@ -182,7 +177,6 @@ class TestEnd2End(TestCase):
             text = output.read()
             self.assertTrue(regex.match(text), "Pattern '%s' found in: %s" % (regex.pattern, text))
 
-
     def test_hanging(self):
         """ Test --output-check-timeout option when program has no output"""
         no_output_mpirun = '\n'.join([
@@ -203,10 +197,10 @@ class TestEnd2End(TestCase):
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
         regex = re.compile(("mympirun has been running for .* seconds without seeing any output.\n"
-                            "This may mean that your program is hanging, please check and make sure that is not the case!"))
+                            "This may mean that your program is hanging, please check and make sure "
+                            "that is not the case!"))
 
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
-
 
     def test_hanging_file(self):
         """ Test --output-check-timeout option when program has no output writing to file"""
@@ -233,7 +227,6 @@ class TestEnd2End(TestCase):
         regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
 
-
     def test_hanging_fatal(self):
         """Test fatal hanging check when program has no output"""
         no_output_mpirun = '\n'.join([
@@ -255,7 +248,6 @@ class TestEnd2End(TestCase):
         regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
         self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
 
-
     def test_option_double(self):
         """Test --double command line option"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
@@ -263,7 +255,6 @@ class TestEnd2End(TestCase):
         # set_pbs_env() sets 2 cores, so double is 4
         self.assertEqual(out, ('\n'.join(['localhost'] * 4)))
         self.assertEqual(len(out.split('\n')), 4)
-
 
     def test_option_multi(self):
         """Test --multi command line option"""
@@ -273,14 +264,12 @@ class TestEnd2End(TestCase):
         self.assertEqual(out, ('\n'.join(['localhost'] * 6)))
         self.assertEqual(len(out.split('\n')), 6)
 
-
     def test_option_hybrid(self):
         """Test --hybrid command line option"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
         ec, out = run([sys.executable, self.mympiscript, '--hybrid', '5', 'hostname'])
         self.assertEqual(out, ('\n'.join(['localhost'] * 5)))
         self.assertEqual(len(out.split('\n')), 5)
-
 
     def test_option_universe(self):
         """Test --universe command line option"""
@@ -315,7 +304,6 @@ class TestEnd2End(TestCase):
         """Test --universe command line option with hydra impi"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.124.67')
 
-        cmd = "%s %s --universe 1 hostname"
         ec, out = run([sys.executable, self.mympiscript, '--universe', '1', 'hostname'])
 
         np_regex = re.compile('-np 1')
@@ -466,3 +454,13 @@ class TestEnd2End(TestCase):
         # $SLURM_EXPORT_ENV should no longer be defined in environment
         regex = re.compile('SLURM_EXPORT_ENV', re.M)
         self.assertFalse(regex.search(out), "Pattern '%s' *not* found in: %s" % (regex.pattern, out))
+
+    def test_openmpi3(self):
+        """Test dry run with OpenMPI 3."""
+        install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '3.1.4')
+        ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
+
+    def test_openmpi4(self):
+        """Test dry run with OpenMPI 4."""
+        install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '4.0.3')
+        ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
