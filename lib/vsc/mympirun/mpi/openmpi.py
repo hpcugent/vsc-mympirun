@@ -232,7 +232,7 @@ class OpenMpi3(OpenMpiOversubscribe):
     }
 
 
-class OpenMpi4(OpenMpiOversubscribe):
+class OpenMpi4(OpenMpi3):
 
     """
     An implementation of the MPI class for OpenMPI 4.x & more recent.
