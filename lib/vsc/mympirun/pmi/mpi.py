@@ -249,7 +249,7 @@ class MPI(MpiBase):
         return mpi_info
 
 
-class OpenMPI3(MPI):
+class OpenMPI31xOr4x(MPI):
     """
     An implementation of the MPI class for OpenMPI 3.1.x + OpenMPI 4.x (and more recent), supporting PMIx 3.x
     """
