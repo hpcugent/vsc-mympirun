@@ -30,8 +30,10 @@ The role of the MPI class is very limited, mainly to provide supported PMI flavo
 from __future__ import print_function
 
 import os
+import re
 
 from vsc.utils.fancylogger import getLogger
+from vsc.utils.run import run
 from vsc.mympirun.common import MpiBase, eb_root_version, version_in_range
 from vsc.mympirun.pmi.pmi import PMIv2, PMIxv3
 
@@ -247,20 +249,32 @@ class MPI(MpiBase):
         return mpi_info
 
 
-class OpenMPI4(MPI):
-
+class OpenMPI3(MPI):
     """
-    An implementation of the MPI class for OpenMPI supporting UCX and PMIx 3, starting with OpenMPI 4
+    An implementation of the MPI class for OpenMPI 3.1.x + OpenMPI 4.x (and more recent), supporting PMIx 3.x
     """
-
     _mpiscriptname_for = ['opmirun']
     _mpirun_for = 'OpenMPI'
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '4.0.0', None))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '3.1.0', None))
 
     PMI = [PMIxv3]
 
+    def has_ucx(self):
+        """Determine whether or not to use the UCX Point-to-Point Messaging Layer (PML)."""
+        # only use UCX as PML if ompi_info reports it as supported *and* a UCX module is loaded (don't use system UCX)
+
+        # use UCX if 'ompi_info' reports that it is a supported PML;
+        cmd = "ompi_info"
+        ec, out = run(cmd)
+        if ec:
+            self.log.raiseException("has_ucx: failed to run cmd '%s', ec: %s, out: %s" % (cmd, ec, out))
+
+        ompi_info_pml_ucx = bool(re.search(' pml: ucx ', out))
+
+        return ompi_info_pml_ucx and self._eb_has('UCX')
+
     def ompi_env(self, what, key, value):
-        """Set ompenmpi PMI variables"""
+        """Set environment variables for OpenMPI"""
         self.set_env('OMPI_%s_%s' % (what.upper(), key), value)
 
     def mpi_tune_hcoll_mpi(self):
@@ -271,8 +285,10 @@ class OpenMPI4(MPI):
 
     def mpi_tune_ucx_mpi(self):
         """MPI-specific UCX tuning"""
-        # use UCX as point-to-point management layer (is probaby default)
+        # use UCX as point-to-point management layer
         self.ompi_env('mca', 'pml', 'ucx')
+        # disable uct btl, see http://openucx.github.io/ucx/running.html
+        self.ompi_env('mca', 'btl', '^uct')
 
     def mpi_debug_mpi(self):
         """MPI specific debugging"""
