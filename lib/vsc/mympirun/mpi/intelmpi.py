@@ -44,6 +44,7 @@ def _enable_disable(boolvalue):
     """Return enable/disable for boolean value"""
     return {True: 'enable', False: 'disable'}.get(bool(boolvalue))
 
+
 def _one_zero(boolvalue):
     """Return enable/disable for boolean value"""
     return int(bool(boolvalue))
@@ -72,7 +73,7 @@ class IntelMPI(MPI):
 
     MPIRUN_LOCALHOSTNAME = socket.gethostname()
 
-    OPTS_FROM_ENV_FLAVOR_PREFIX = ['I_MPI']
+    OPTS_FROM_ENV_FLAVOR_PREFIX = ['I_MPI', 'FI_PROVIDER']
 
     OPTS_FROM_ENV_TEMPLATE = ['-envlist', '%(commaseparated)s']
 
@@ -97,15 +98,19 @@ class IntelMPI(MPI):
             mpd = which(['mpd.py'])
             self.mpdboot_options.append('-m "\\\"%s --bulletproof\\\""' % mpd)
 
+    def set_impi_tmpdir(self):
+        """Set location of temporary directory that Intel MPI should use."""
+        # this one also needs to be set at runtime
+        impi_tmpdir = tempfile.gettempdir()
+        self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = impi_tmpdir
+        os.environ['I_MPI_MPD_TMPDIR'] = impi_tmpdir
+        self.log.debug("Set intel temp dir based on I_MPI_MPD_TMPDIR: %s", os.environ['I_MPI_MPD_TMPDIR'])
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
         super(IntelMPI, self).set_mpiexec_global_options()
 
-        # this one also needs to be set at runtime
-        self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
-        os.environ['I_MPI_MPD_TMPDIR'] = tempfile.gettempdir()
-        self.log.debug("Set intel temp dir based on I_MPI_MPD_TMPDIR: %s", os.environ['I_MPI_MPD_TMPDIR'])
+        self.set_impi_tmpdir()
 
         if self.options.debuglvl > 0:
             self.mpiexec_global_options['I_MPI_DEBUG'] = "+%s" % self.options.debuglvl
@@ -256,6 +261,20 @@ class IntelHydraMPIPbsdsh(IntelHydraMPI):
     """ MPI class for IntelMPI, with hydra and supporting pbsdsh """
     # pbsdsh is supported from Intel MPI 5.0.3:
     # https://software.intel.com/sites/default/files/managed/b7/99/intelmpi-5.0-update3-releasenotes-linux.pdf
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5.0.3', None))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5.0.3', '2019.0'))
 
     HYDRA_LAUNCHER = RM_HYDRA_LAUNCHER
+
+
+class IntelMPI2019(IntelHydraMPIPbsdsh):
+    """MPI class for Intel MPI version 2019 and more recent."""
+
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '2019.0', None))
+
+    def set_impi_tmpdir(self):
+        """Set location of temporary directory that Intel MPI should use."""
+        # this one also needs to be set at runtime
+        impi_tmpdir = tempfile.gettempdir()
+        self.mpiexec_global_options['I_MPI_TMPDIR'] = impi_tmpdir
+        os.environ['I_MPI_TMPDIR'] = impi_tmpdir
+        self.log.debug("Specified temporary directory to use via $I_MPI_TMPDIR: %s", os.environ['I_MPI_TMPDIR'])
