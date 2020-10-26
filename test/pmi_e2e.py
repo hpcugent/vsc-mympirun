@@ -35,43 +35,48 @@ import re
 from pmi_utils import SLURM_2NODES, SLURM_2NODES_4GPUS, PMITest
 
 
-
 class PMIEnd2End(PMITest):
     def test_simple(self):
         self.set_slurm_ompi4_ucx(SLURM_2NODES)
 
-        self.pmirun(['--showmpi', '--debug'], pattern='Found MPI classes IntelMPI, OpenMPI4$')
+        self.pmirun(['--showmpi', '--debug'], pattern='Found MPI classes IntelMPI, OpenMPI31xOr4x$')
         self.pmirun(['--showsched', '--debug'], pattern='Found Sched classes Slurm$')
 
-    def test_ompi4_slurm(self):
-        self.set_slurm_ompi4_ucx(SLURM_2NODES)
+    def test_slurm(self):
 
-        # take into account that path may have characters like '(' and ')'
-        cwd = re.escape(os.getcwd())
-        pattern = '--chdir=' + cwd
-        pattern += ' --nodes=2 --ntasks=64 --cpus-per-task=1 --mem-per-cpu=7600'
-        pattern += ' --export=ALL --mpi=pmix_v3 --output=xyz --abc=123 --def=456'
-        self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
-                    pattern=pattern+' arg1 arg2$')
+        for prep_env_method in (self.set_slurm_ompi3, self.set_slurm_ompi4_ucx):
 
-    def test_ompi4_slurm_gpus(self):
-        self.set_slurm_ompi4_ucx(SLURM_2NODES_4GPUS)
+            prep_env_method(SLURM_2NODES)
 
-        # take into account that path may have characters like '(' and ')'
-        cwd = re.escape(os.getcwd())
-        pattern = '--chdir=' + cwd
-        pattern += ' --nodes=2 --ntasks=8 --cpus-per-task=8 --mem-per-cpu=7600'
-        pattern += ' --gpus-per-task=1'
-        pattern += ' --export=ALL --mpi=pmix_v3'
-        self.pmirun(['--debug', 'arg1', 'arg2'],
-                    pattern=pattern+' arg1 arg2$')
+            # take into account that path may have characters like '(' and ')'
+            cwd = re.escape(os.getcwd())
+            pattern = '--chdir=' + cwd
+            pattern += ' --nodes=2 --ntasks=64 --cpus-per-task=1 --mem-per-cpu=7600'
+            pattern += ' --export=ALL --mpi=pmix_v3 --output=xyz --abc=123 --def=456'
+            self.pmirun(['--debug', '--output=xyz', '--pass=abc=123,def=456', 'arg1', 'arg2'],
+                        pattern=pattern+' arg1 arg2$')
 
-        pattern = '--chdir=' + cwd
-        pattern += ' --distribution=block:block:block'
-        pattern += ' --nodes=2 --ntasks=8 --cpus-per-task=8 --mem-per-cpu=7600'
-        pattern += ' --export=ALL --mpi=pmix_v3'
-        self.pmirun(['--debug', '--all-gpus', '--distribute=pack', 'arg1', 'arg2'],
-                    pattern=pattern+' arg1 arg2$')
+    def test_slurm_gpus(self):
+
+        for prep_env_method in (self.set_slurm_ompi3, self.set_slurm_ompi4_ucx):
+
+            prep_env_method(SLURM_2NODES_4GPUS)
+
+            # take into account that path may have characters like '(' and ')'
+            cwd = re.escape(os.getcwd())
+            pattern = '--chdir=' + cwd
+            pattern += ' --nodes=2 --ntasks=8 --cpus-per-task=8 --mem-per-cpu=7600'
+            pattern += ' --gpus-per-task=1'
+            pattern += ' --export=ALL --mpi=pmix_v3'
+            self.pmirun(['--debug', 'arg1', 'arg2'],
+                        pattern=pattern+' arg1 arg2$')
+
+            pattern = '--chdir=' + cwd
+            pattern += ' --distribution=block:block:block'
+            pattern += ' --nodes=2 --ntasks=8 --cpus-per-task=8 --mem-per-cpu=7600'
+            pattern += ' --export=ALL --mpi=pmix_v3'
+            self.pmirun(['--debug', '--all-gpus', '--distribute=pack', 'arg1', 'arg2'],
+                        pattern=pattern+' arg1 arg2$')
 
     def test_print_launcher(self):
         self.set_slurm_ompi4_ucx(SLURM_2NODES)

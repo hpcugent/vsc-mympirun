@@ -37,6 +37,7 @@ from vsc.utils.run import run
 
 from sched import reset_env
 from mock import patch
+from end2end import install_fake_cmd
 
 from vsc.mympirun.main import get_mpi_and_sched_and_options
 from vsc.mympirun.factory import getinstance
@@ -126,10 +127,31 @@ class PMITest(TestCase):
         else:
             os.environ.update(env)
 
+    def install_fake_ompi_info(self, ompi_ver):
+        # add dummy ompi_info command (required by OpenMPI31xOr4x.has_ucx method)
+        ompi_info_lines = [
+            "#!/bin/bash",
+            "echo '                 MCA btl: openib (MCA v2.1.0, API v3.0.0, Component v%s)'" % ompi_ver,
+            "echo '                 MCA pml: ucx (MCA v2.1.0, API v2.0.0, Component v%s)'" % ompi_ver,
+        ]
+        install_fake_cmd('ompi_info', self.tmpdir, '\n'.join(ompi_info_lines))
+
+    def set_slurm_ompi3(self, env):
+        self.set_env(env)
+
+        # OpenMPI used in foss/2019b (no UCX dep)
+        ompi_ver = '3.1.4'
+        self.set_mpi('OpenMPI', ompi_ver)
+        self.install_fake_ompi_info(ompi_ver)
+
     def set_slurm_ompi4_ucx(self, env):
         self.set_env(env)
-        self.set_mpi('OpenMPI', '4.0.1')
-        self.eb('ucx', '1.2.3')
+
+        # OpenMPI with UCX dep used in foss/2020a
+        ompi_ver = '4.0.3'
+        self.set_mpi('OpenMPI', ompi_ver)
+        self.eb('ucx', '1.8.0')
+        self.install_fake_ompi_info(ompi_ver)
 
     def get_instance(self):
         opts = get_mpi_and_sched_and_options(mpim, mpiopt, schedm)
