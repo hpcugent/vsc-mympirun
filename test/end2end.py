@@ -279,12 +279,18 @@ class TestEnd2End(TestCase):
         self.assertEqual(out, ('\n'.join(['localhost'] * 6)))
         self.assertEqual(len(out.split('\n')), 6)
 
-    def test_option_hybrid(self):
-        """Test --hybrid command line option"""
+    def test_option_hybrid_impi(self):
+        """Test --hybrid command line option with Intel MPI"""
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=FAKE_MPIRUN_MACHINEFILE)
         ec, out = run([sys.executable, self.mympiscript, '--hybrid', '5', 'hostname'])
         self.assertEqual(out, ('\n'.join(['localhost'] * 5)))
         self.assertEqual(len(out.split('\n')), 5)
+
+    def test_option_hybrid_openmpi(self):
+        """Test --hybrid command line option with OpenMPI"""
+        install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '3.1')
+        ec, out = run([sys.executable, self.mympiscript, '--hybrid', '5', 'hostname'])
+        self.assertTrue(" --map-by ppr:5:node " in out)
 
     def test_option_universe(self):
         """Test --universe command line option"""
@@ -414,7 +420,6 @@ class TestEnd2End(TestCase):
 
         ec, out = run([sys.executable, self.mympiscript, '--sched', 'local', 'hostname'])
         self.assertFalse("-bootstrap" in out, "using local scheduler, no bootstrap launcher should be specified: " + out)
-
 
     def test_launcher_opt_ompi(self):
         """Test ompi v 2.0 bug (mympirun should produce error and stop)"""

@@ -80,6 +80,15 @@ class OpenMPI(MPI):
 
         super(OpenMPI, self).set_mpiexec_global_options()
 
+    def set_mpiexec_options(self):
+        """Set mpiexec options"""
+        super(OpenMPI, self).set_mpiexec_options()
+
+        # specify number of processes to start per node if --hybrid is used
+        if self.options.hybrid:
+            procs_per_node = self.multiplier * self.options.hybrid
+            self.mpiexec_options.add(['--map-by', 'ppr:%s:node' % procs_per_node])
+
     def _make_final_mpirun_cmd(self):
         """
         Create the acual mpirun command
@@ -208,7 +217,7 @@ class OpenMpiOversubscribe(OpenMPI):
 
     def set_mpiexec_options(self):
 
-        super(OpenMPI, self).set_mpiexec_options()
+        super(OpenMpiOversubscribe, self).set_mpiexec_options()
 
         if self.multiplier > 1 or len(self.mpinodes) > self.ppn:
             self.mpiexec_options.add("--oversubscribe")
