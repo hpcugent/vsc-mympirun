@@ -500,7 +500,10 @@ class TestEnd2End(TestCase):
         ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
         self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
 
-        regex = re.compile(r"^fake mpirun called with args:.*--mca pml ucx --mca btl \^uct")
+        regex = re.compile(r"^fake mpirun called with args:.*--mca pml ucx")
+        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
+
+        regex = re.compile(r"^fake mpirun called with args:.*--mca btl \^uct")
         self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
 
         # BTL self should not be specified when UCX is used as PML (but 'btl ^uct' is specified)
