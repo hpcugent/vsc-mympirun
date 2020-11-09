@@ -278,3 +278,12 @@ class IntelMPI2019(IntelHydraMPIPbsdsh):
         self.mpiexec_global_options['I_MPI_TMPDIR'] = impi_tmpdir
         os.environ['I_MPI_TMPDIR'] = impi_tmpdir
         self.log.debug("Specified temporary directory to use via $I_MPI_TMPDIR: %s", os.environ['I_MPI_TMPDIR'])
+
+    def set_mpiexec_global_options(self):
+        """Set mpiexec global options"""
+        super(IntelMPI2019, self).set_mpiexec_global_options()
+
+        # $I_MPI_CPUINFO is no longer valid for recent Intel MPI 2019 versions, so don't set it
+        # (setting it anyway triggers a warning "I_MPI_CPUINFO environment variable is not supported")
+        if 'I_MPI_CPUINFO' in self.mpiexec_global_options:
+            del self.mpiexec_global_options['I_MPI_CPUINFO']
