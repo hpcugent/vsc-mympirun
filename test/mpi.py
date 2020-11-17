@@ -312,7 +312,10 @@ class TestMPI(TestCase):
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
 
         if 'PYTHONPATH' not in os.environ:
-            os.environ[key] = "/example:/test/123"
+            os.environ['PYTHONPATH'] = "/example:/test/123"
+
+        os.environ['UCX_TLS'] = 'rc,ud,sm,self'
+
         mpi_instance.set_mpiexec_opts_from_env()
         prefixes = mpi_instance.OPTS_FROM_ENV_FLAVOR_PREFIX
         prefixes += mpi_instance.OPTS_FROM_ENV_BASE_PREFIX
@@ -325,7 +328,7 @@ class TestMPI(TestCase):
             self.assertTrue(env_var in os.environ, msg="%s is not in os.environ, while it should be" % env_var)
 
         self.assertTrue('PYTHONPATH' in mpi_instance.mpiexec_opts_from_env)
-
+        self.assertTrue('UCX_TLS' in mpi_instance.mpiexec_opts_from_env)
 
     def test_make_mpirun(self):
         """test if make_mpirun correctly builds the complete mpirun command"""

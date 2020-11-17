@@ -73,7 +73,7 @@ class IntelMPI(MPI):
 
     MPIRUN_LOCALHOSTNAME = socket.gethostname()
 
-    OPTS_FROM_ENV_FLAVOR_PREFIX = ['I_MPI', 'FI_PROVIDER']
+    OPTS_FROM_ENV_FLAVOR_PREFIX = ['I_MPI']
 
     OPTS_FROM_ENV_TEMPLATE = ['-envlist', '%(commaseparated)s']
 
