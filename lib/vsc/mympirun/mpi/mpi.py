@@ -188,7 +188,20 @@ class MPI(MpiBase):
     MODULE_ENVIRONMENT_VARIABLES = ['MODULEPATH', 'LOADEDMODULES', 'MODULESHOME']
 
     OPTS_FROM_ENV_BASE = ['LD_LIBRARY_PATH', 'PATH', 'PYTHONPATH', 'CLASSPATH', 'LD_PRELOAD', 'PYTHONUNBUFFERED']
-    OPTS_FROM_ENV_BASE_PREFIX = ['OMP', 'MKL', 'KMP', 'DAPL', 'PSM', 'IPATH', 'TMI', 'PSC', 'O64', 'VSMP']
+    OPTS_FROM_ENV_BASE_PREFIX = [
+        'DAPL',
+        'FI_PROVIDER',
+        'IPATH',
+        'KMP',
+        'MKL',
+        'O64',
+        'OMP',
+        'PSC',
+        'PSM',
+        'TMI',
+        'VSMP',
+        'UCX',
+    ]
     OPTS_FROM_ENV_FLAVOR_PREFIX = []  # to be set per flavor
 
     def __init__(self, options, cmdargs, **kwargs):
