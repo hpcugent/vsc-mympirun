@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2020 Ghent University
+# Copyright 2012-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -234,7 +234,7 @@ class TestMPI(TestCase):
         # disable make_mympirundir
         mpi_instance.make_mympirundir = lambda: True
         mpi_instance.mympirundir = '/does/not/exist/'
-        self.assertErrorRegex(IOError, "failed to write nodefile", mpi_instance.make_machine_file)
+        self.assertErrorRegex(Exception, "/does/not/exist", mpi_instance.make_machine_file)
 
         # openmpi oversubscribing
         mpi_instance = getinstance(OpenMpiOversubscribe, Local, MympirunOption())

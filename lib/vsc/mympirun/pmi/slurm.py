@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2020 Ghent University
+# Copyright 2019-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,7 +25,7 @@
 """
 Slurm PMI class, i.e. wrap around srun
 """
-
+import logging
 import os
 import re
 
@@ -84,22 +84,21 @@ class Slurm(Sched):
                 if pmi.VERSION == 3:
                     flavour += '_v3'
                 else:
-                    self.log.warn("Unsupported PMIx version %s, trying with generic %s", pmi, flavour)
+                    logging.warn("Unsupported PMIx version %s, trying with generic %s", pmi, flavour)
             elif pmi.FLAVOUR == PMI:
                 if pmi.VERSION == 2:
                     flavour = 'pmi2'
                 else:
-                    self.log.raiseException("Unsupported PMI version %s" % pmi)
+                    raise Exception("Unsupported PMI version %s" % pmi)
             else:
-                self.log.raiseException("Unsupported PMI %s" % pmi)
+                raise Exception("Unsupported PMI %s" % pmi)
 
             if flavour is not None:
                 # first one wins
-                self.log.debug("Mapped PMI %s to flavour %s", pmi, flavour)
+                logging.debug("Mapped PMI %s to flavour %s", pmi, flavour)
                 return ["--mpi=%s" % flavour]
 
-        self.log.raiseException("No supported PMIs")
-        return []
+        raise Exception("No supported PMIs")
 
     def job_info(self, job_info):
         """
@@ -118,7 +117,7 @@ class Slurm(Sched):
         dbgtxt = ', '.join(['%s=%s' % (k, v) for k, v in sorted(os.environ.items()) if k.startswith('SLURM_')])
 
         if 'SLURM_PACK_SIZE' in os.environ:
-            self.log.raiseException("This is an inhomogenous job (PACK_SIZE set): %s" % dbgtxt)
+            raise Exception("This is an inhomogenous job (PACK_SIZE set): %s" % dbgtxt)
 
         nodes = int(os.environ['SLURM_NNODES'])
         cores = int(os.environ['SLURM_CPUS_ON_NODE'])
@@ -127,20 +126,20 @@ class Slurm(Sched):
 
         # add sanity checks
         if nodes * cores != int(os.environ['SLURM_NPROCS']):
-            self.log.raiseException("This is an inhomogenous job: nodes*cores!=nprocs: %s" % dbgtxt)
+            raise Exception("This is an inhomogenous job: nodes*cores!=nprocs: %s" % dbgtxt)
         else:
-            self.log.debug("SLURM env variables %s", dbgtxt)
+            logging.debug("SLURM env variables %s", dbgtxt)
 
         total_tasks = int(os.environ['SLURM_NTASKS'])
 
         job_info.ranks = total_tasks // nodes
         if total_tasks % nodes:
-            self.log.raiseException("Total number of tasks is not equal ranks per node %s time number of nodes: %s" %
-                                    (job_info.ranks, dbgtxt))
+            msg = "Total number of tasks is not equal ranks per node %s time number of nodes: %s"
+            raise Exception(msg % (job_info.ranks, dbgtxt))
 
         mem = os.environ.get('SLURM_MEM_PER_NODE', int(os.environ.get('SLURM_MEM_PER_CPU', -1)) * cores)
         if mem < 0:
-            self.log.debug("No memory specification found")
+            logging.debug("No memory specification found")
         else:
             job_info.mem = int(mem)
 
@@ -149,7 +148,7 @@ class Slurm(Sched):
                 # this should fail when slurm switched to compressed repr (eg 0-3 instead of current 0,1,2,3)
                 ngpus = len(list(map(int, os.environ['SLURM_JOB_GPUS'].split(','))))
             except Exception as e:
-                self.log.raiseException("Failed to get the number of gpus per node from %s: %s" % (dbgtxt, e))
+                raise Exception("Failed to get the number of gpus per node from %s: %s" % (dbgtxt, e))
 
             job_info.gpus = ngpus
 
@@ -176,9 +175,9 @@ class Slurm(Sched):
                 del os.environ[key]
 
         if removed:
-            self.log.debug("Unset environment variables %s", " ".join(removed))
+            logging.debug("Unset environment variables %s", " ".join(removed))
         else:
-            self.log.debug("No environment variables unset")
+            logging.debug("No environment variables unset")
 
         args = []
 
@@ -190,7 +189,7 @@ class Slurm(Sched):
 
         # sanity check
         if mpi_info.cores % mpi_info.ranks:
-            self.log.raiseException("Imbalanced cores and ranks per node %s" % mpi_info)
+            raise Exception("Imbalanced cores and ranks per node %s" % mpi_info)
         else:
             # cores per task == cores per rank
             args.append("--cpus-per-task=%s" % (mpi_info.cores // mpi_info.ranks))
@@ -198,20 +197,20 @@ class Slurm(Sched):
 
         # redistribute all the memory to the tasks/cores
         if mpi_info.mem is None:
-            self.log.debug("No memory specified (assuming slurm.conf defaults)")
+            logging.debug("No memory specified (assuming slurm.conf defaults)")
         else:
             args.append("--mem-per-cpu=%s" % (mpi_info.mem // mpi_info.cores))
 
         if mpi_info.gpus is not None:
             if self.options.all_gpus:
                 # TODO: this is not slurm specific, needs to be factored out
-                self.log.debug("Not limiting gpus per rank, gpus-all set")
+                logging.debug("Not limiting gpus per rank, gpus-all set")
             elif mpi_info.gpus < mpi_info.ranks:
                 # enable MPS
                 #   probably also needs to check for imbalance
-                self.log.raiseException("MPS not supported yet: %s" % mpi_info)
+                raise Exception("MPS not supported yet: %s" % mpi_info)
             elif mpi_info.gpus % mpi_info.ranks:
-                self.log.raiseException("Imbalanced tasks and gpus per node (ranks < gpus): %s" % mpi_info)
+                raise Exception("Imbalanced tasks and gpus per node (ranks < gpus): %s" % mpi_info)
             else:
                 args.append("--gpus-per-task=%s" % (mpi_info.gpus // mpi_info.ranks))
 
@@ -241,5 +240,5 @@ class Tasks(Slurm):
 
     def pmicmd_mpi(self):
         """Disable mpi"""
-        self.log.debug("No mpi in mytasks")
+        logging.debug("No mpi in mytasks")
         return ["--mpi=none"]

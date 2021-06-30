@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2020 Ghent University
+# Copyright 2019-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -27,10 +27,9 @@ Base PMI Sched class, all actual classes should inherit from this one
 
 The role of the Sched class is mainly to construct the correct sched-specific PMI call
 """
-
+import logging
 import os
 from copy import deepcopy
-from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.common import SchedBase
 from vsc.utils.run import run_file, async_to_stdout
 
@@ -66,8 +65,6 @@ class Sched(SchedBase):
     LAUNCHER = None
 
     def __init__(self, options=None, **kwargs):
-        if not hasattr(self, 'log'):
-            self.log = getLogger(self.__class__.__name__)
         if not hasattr(self, 'options'):
             self.options = options
 
@@ -82,12 +79,12 @@ class Sched(SchedBase):
         """
         current = os.environ.get(key)
         if keep and current is not None:
-            self.log.debug("Keeping existing environment variable %s with value %s (ignore value %s)",
-                           key, current, value)
+            logging.debug("Keeping existing environment variable %s with value %s (ignore value %s)",
+                          key, current, value)
         else:
             os.environ[key] = str(value)
             self.envs.append(key)
-            self.log.debug("Set environment variable %s: %s", key, value)
+            logging.debug("Set environment variable %s: %s", key, value)
 
     def pmicmd(self):
         """
@@ -100,11 +97,11 @@ class Sched(SchedBase):
         for name in ['tune', 'pmi', 'debug']:
             method_name = 'mpi_' + name
             getattr(self, method_name)()
-            self.log.debug("Calling %s", method_name)
+            logging.debug("Calling %s", method_name)
 
         for name in ['sched', 'sizing', 'environment', 'mpi', 'debug']:
             args = getattr(self, 'pmicmd_' + name)()
-            self.log.debug("Generated pmicmd %s arguments %s", name, args)
+            logging.debug("Generated pmicmd %s arguments %s", name, args)
             pmicmd.extend(args)
 
         run_function, run_function_args = self.run_function()
@@ -112,7 +109,7 @@ class Sched(SchedBase):
 
         pmicmd.extend(['--' + x for x in getattr(self.options, 'pass', [])])  # .pass gives syntax error?
 
-        self.log.debug("Generated pmicmd %s", pmicmd)
+        logging.debug("Generated pmicmd %s", pmicmd)
         return pmicmd, run_function
 
     def run_function(self):
@@ -135,28 +132,28 @@ class Sched(SchedBase):
         """
         Fill in/complete/edit job_info dict and return it
         """
-        self.log.warn("Nothing done with job_info %s", job_info)
+        logging.warn("Nothing done with job_info %s", job_info)
         return job_info
 
     def pmicmd_size_args(self, mpi_info):
         """
         Convert mpi_info into launcher list of args
         """
-        self.log.warn("Nothing done with mpi_info %s, no args generated", mpi_info)
+        logging.warn("Nothing done with mpi_info %s, no args generated", mpi_info)
         return []
 
     def pmicmd_sizing(self):
         """Generate the sizing arguments to the launcher as a list"""
         job_info = self.job_info(Info())
-        self.log.debug("Got job info %s", job_info)
+        logging.debug("Got job info %s", job_info)
 
         # compute requested
         mpi_info = self.mpi_size(job_info)
-        self.log.debug("Got mpi size info %s", mpi_info)
+        logging.debug("Got mpi size info %s", mpi_info)
 
         # generate args
         args = self.pmicmd_size_args(mpi_info)
-        self.log.debug("Got pmi cmd args %s", args)
+        logging.debug("Got pmi cmd args %s", args)
 
         return args
 
@@ -166,7 +163,7 @@ class Sched(SchedBase):
 
         Modified envs should be tracked via self.envs
         """
-        self.log.debug("No environment specific arguments (assuming whole environment is used)")
+        logging.debug("No environment specific arguments (assuming whole environment is used)")
         return []
 
     def pmicmd_mpi(self):

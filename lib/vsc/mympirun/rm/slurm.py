@@ -1,5 +1,5 @@
 #
-# Copyright 2018-2020 Ghent University
+# Copyright 2018-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,6 +25,7 @@
 """
 SLURM
 """
+import logging
 import os
 import re
 
@@ -50,18 +51,18 @@ class SLURM(Sched):
 
         nodelist = os.environ.get(self.SCHED_ENVIRON_NODE_INFO)
         if nodelist is None:
-            self.log.raiseException("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
+            raise Exception("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
         else:
-            self.log.debug("set_nodes: obtained $%s value: %s", self.SCHED_ENVIRON_NODE_INFO, nodelist)
+            logging.debug("set_nodes: obtained $%s value: %s", self.SCHED_ENVIRON_NODE_INFO, nodelist)
 
         cmd = "scontrol show hostname %s" % nodelist
         ec, out = run(cmd)
         if ec:
-            self.log.raiseException("set_nodes: failed to get list of unique hostnames using '%s': %s" % (cmd, out))
+            raise Exception("set_nodes: failed to get list of unique hostnames using '%s': %s" % (cmd, out))
         else:
             res = out.strip().split('\n')
 
-        self.log.debug("_get_uniq_nodes: %s" % res)
+        logging.debug("_get_uniq_nodes: %s", res)
         return res
 
     def _get_tasks_per_node(self):
@@ -73,9 +74,9 @@ class SLURM(Sched):
         tpn_key = 'SLURM_TASKS_PER_NODE'
         tpn_spec = os.environ.get(tpn_key)
         if tpn_spec is None:
-            self.log.raiseException("set_nodes: failed to get $%s from environment" % tpn_key)
+            raise Exception("set_nodes: failed to get $%s from environment" % tpn_key)
         else:
-            self.log.debug("set_nodes: obtained $%s value: %s", tpn_key, tpn_spec)
+            logging.debug("set_nodes: obtained $%s value: %s", tpn_key, tpn_spec)
             # duplicate counts are compacted into something like '2(x3)', so we unroll those
             compact_regex = re.compile(r'^(?P<task_cnt>\d+)\(x(?P<repeat_cnt>\d+)\)$')
             tpn = []
@@ -86,7 +87,7 @@ class SLURM(Sched):
                 else:
                     tpn.append(int(entry))
 
-        self.log.debug("_get_tasks_per_node: %s" % tpn)
+        logging.debug("_get_tasks_per_node: %s", tpn)
         return tpn
 
     def set_nodes(self):
@@ -96,7 +97,7 @@ class SLURM(Sched):
         tpn = self._get_tasks_per_node()
 
         if len(self.nodes_uniq) != len(tpn):
-            self.log.raiseException("nodes_uniq vs tpn (tasks per node) mismatch: %s vs %s" % (self.nodes_uniq, tpn))
+            raise Exception("nodes_uniq vs tpn (tasks per node) mismatch: %s vs %s" % (self.nodes_uniq, tpn))
 
         self.nodes_tot_cnt = sum(tpn)
 
@@ -104,4 +105,4 @@ class SLURM(Sched):
         for (node, task_cnt) in zip(self.nodes_uniq, tpn):
             self.nodes.extend([node] * task_cnt)
 
-        self.log.debug("set_nodes: %s (cnt: %d; uniq: %s)", self.nodes, self.nodes_tot_cnt, self.nodes_uniq)
+        logging.debug("set_nodes: %s (cnt: %d; uniq: %s)", self.nodes, self.nodes_tot_cnt, self.nodes_uniq)

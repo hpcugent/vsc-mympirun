@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2020 Ghent University
+# Copyright 2011-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,7 +25,7 @@
 """
 CLI main functions common for mpi and pmi
 """
-
+import logging
 import os
 import pkgutil
 import sys
@@ -88,16 +88,15 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
         return None
 
     if mpi is None:
-        optionparser.log.raiseException(("No MPI class found that supports scriptname %s; isfake %s). Please use "
-                                         "mympirun through one of the direct calls or make sure the mpirun command can"
-                                         " be found. Found MPI %s") %
-                                        (scriptname, isfake, ", ".join(found_mpi_names)))
+        msg = "No MPI class found that supports scriptname %s; isfake %s). Please use mympirun "
+        msg += "through one of the direct calls or make sure the mpirun command can be found. Found MPI %s"
+        raise Exception(msg % (scriptname, isfake, ", ".join(found_mpi_names)))
     else:
-        optionparser.log.debug("Found MPI class %s (scriptname %s; isfake %s)", mpi.__name__, scriptname, isfake)
+        logging.debug("Found MPI class %s (scriptname %s; isfake %s)", mpi.__name__, scriptname, isfake)
 
     if sched is None:
-        optionparser.log.raiseException("No sched class found (options.schedtype %s ; found Sched classes %s)",
-                                        sched_name, ", ".join(found_sched_names))
+        msg = "No sched class found (options.schedtype %s ; found Sched classes %s)"
+        raise Exception(msg % (sched_name, ", ".join(found_sched_names)))
     else:
         optionparser.log.debug("Found sched class %s from options.schedtype %s (all Sched found %s)",
                                sched.__name__, sched_name, ", ".join(found_sched_names))
@@ -119,5 +118,5 @@ def main(mpim, mpiopt, schedm):
             instance = getinstance(*instance_options)
             instance.main()
     except Exception as err:
-        fancylogger.getLogger().exception("Main failed: %s" % err)
+        logging.error(err)
         sys.exit(1)

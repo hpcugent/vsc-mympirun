@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2020 Ghent University
+# Copyright 2019-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -28,11 +28,10 @@ Base PMI MPI class, all actual classes should inherit from this one
 The role of the MPI class is very limited, mainly to provide supported PMI flavour/version
 """
 from __future__ import print_function
-
+import logging
 import os
 import re
 
-from vsc.utils.fancylogger import getLogger
 from vsc.utils.run import run
 from vsc.mympirun.common import MpiBase, eb_root_version, version_in_range
 from vsc.mympirun.pmi.pmi import PMIv2, PMIxv3
@@ -62,9 +61,6 @@ class MPI(MpiBase):
 
     def __init__(self, options, cmdargs, **kwargs):
         """Initialise, named attributes are passed to parent MpiBase class"""
-        if not hasattr(self, 'log'):
-            self.log = getLogger(self.__class__.__name__)
-
         self.options = options
         self.cmdargs = cmdargs
 
@@ -75,7 +71,7 @@ class MPI(MpiBase):
 
         # sanity checks
         if not self.cmdargs and not self.options.print_launcher:
-            self.log.raiseException("__init__: no executable or command provided")
+            raise Exception("__init__: no executable or command provided")
 
     def main(self):
         """
@@ -90,14 +86,14 @@ class MPI(MpiBase):
             print(' '.join(pmicmd))
             exitcode = 0
         elif self.options.dry_run:
-            self.log.info("Dry run, only printing generated mpirun command...")
+            logging.info("Dry run, only printing generated mpirun command...")
             print(' '.join(cmd))
             exitcode = 0
         else:
             exitcode, _ = run_function(cmd)
 
         if exitcode > 0:
-            self.log.raiseException("main: exitcode %s > 0; cmd %s" % (exitcode, cmd))
+            raise Exception("main: exitcode %s > 0; cmd %s" % (exitcode, cmd))
 
     def _eb_has(self, name, txt=None):
         """Determine is the is a EB module loaded for name"""
@@ -106,10 +102,10 @@ class MPI(MpiBase):
 
         root, version = eb_root_version(name)
         if root:
-            self.log.debug("Found %s root %s version %s", txt, root, version)
+            logging.debug("Found %s root %s version %s", txt, root, version)
             return True
         else:
-            self.log.debug("No %s root / version found", txt)
+            logging.debug("No %s root / version found", txt)
             return False
 
     def has_ucx(self):
@@ -133,23 +129,23 @@ class MPI(MpiBase):
         if self.PMI is None:
             # TODO: detect somehow
             #   this is hard because most likely it will use the system pmi libraries
-            self.log.error("Detecting PMI is not implemented")
+            logging.error("Detecting PMI is not implemented")
             return None
         else:
-            self.log.debug("Has PMI %s (forced)", self.PMI)
+            logging.debug("Has PMI %s (forced)", self.PMI)
             return self.PMI
 
     def mpi_tune_hcoll_mpi(self):
         """MPI specific HCOLL tuning/enabling"""
-        self.log.debug("No MPI-specific hcoll tuning")
+        logging.debug("No MPI-specific hcoll tuning")
 
     def mpi_tune_mpi(self):
         """MPI specific tuning/enabling"""
-        self.log.debug("No MPI-specific MPI tuning")
+        logging.debug("No MPI-specific MPI tuning")
 
     def mpi_tune_ucx_mpi(self):
         """MPI specific UCX tuning/enabling"""
-        self.log.debug("No MPI-specific UCX tuning")
+        logging.debug("No MPI-specific UCX tuning")
 
     def mpi_tune(self):
         """
@@ -161,7 +157,7 @@ class MPI(MpiBase):
             # TODO: tag matching: UCX_RC_VERBS_TM_ENABLE=y ?
             self.mpi_tune_ucx_mpi()
         else:
-            self.log.debug("No UCX found, so no UCX tuning")
+            logging.debug("No UCX found, so no UCX tuning")
 
         if self.hcoll:
             # mpi hcoll settings
@@ -175,7 +171,7 @@ class MPI(MpiBase):
             self.set_env('HCOLL_CUDA_SBGP', 'p2p', keep=True)
             self.set_env('HCOLL_CUDA_BCOL', 'nccl', keep=True)
         else:
-            self.log.debug("No hcoll found, no hcoll tuning")
+            logging.debug("No hcoll found, no hcoll tuning")
 
     def get_pmi2_lib(self, pref=None):
         """Locate the pmi2 libs"""
@@ -188,28 +184,28 @@ class MPI(MpiBase):
         for name in pref:
             lib = PMI2LIBS[name]
             if name == AUTOMATIC_LIB:
-                self.log.debug("Using %s nonexisting PMIv2 lib %s from %s (%s)", AUTOMATIC_LIB, lib, pref, PMI2LIBS)
+                logging.debug("Using %s nonexisting PMIv2 lib %s from %s (%s)", AUTOMATIC_LIB, lib, pref, PMI2LIBS)
                 return lib
             elif os.path.isfile(lib):
-                self.log.debug("Found PMIv2 lib %s from %s (%s)", lib, pref, PMI2LIBS)
+                logging.debug("Found PMIv2 lib %s from %s (%s)", lib, pref, PMI2LIBS)
                 return lib
 
-        self.log.error("Cannot find PMIv2 lib from %s (%s)", pref, PMI2LIBS)
+        logging.error("Cannot find PMIv2 lib from %s (%s)", pref, PMI2LIBS)
         return None
 
     def mpi_pmi(self):
         """
         Enable PMI e.g. via environment variables.
         """
-        self.log.debug("Nothing to do to enable PMI")
+        logging.debug("Nothing to do to enable PMI")
 
     def mpi_debug_mpi(self):
         """MPI specific debugging"""
-        self.log.debug("No MPI debugging")
+        logging.debug("No MPI debugging")
 
     def mpi_debug_ucx_mpi(self):
         """MPI specific UCX debugging"""
-        self.log.debug("No MPI-speciifc UCX debugging")
+        logging.debug("No MPI-speciifc UCX debugging")
 
     def mpi_debug(self):
         """
@@ -239,10 +235,10 @@ class MPI(MpiBase):
         if hybrid is None:
             if mpi_info.gpus is not None:
                 hybrid = mpi_info.gpus
-                self.log.debug("Setting number of GPUs %s as hybrid value", hybrid)
+                logging.debug("Setting number of GPUs %s as hybrid value", hybrid)
 
         if hybrid is not None:
-            self.log.debug("Setting hybrid %s number of ranks", hybrid)
+            logging.debug("Setting hybrid %s number of ranks", hybrid)
             mpi_info.ranks = hybrid
             self.set_env('OMP_NUM_THREADS', max(1, mpi_info.cores // hybrid))
 
@@ -267,7 +263,7 @@ class OpenMPI31xOr4x(MPI):
         cmd = "ompi_info"
         ec, out = run(cmd)
         if ec:
-            self.log.raiseException("has_ucx: failed to run cmd '%s', ec: %s, out: %s" % (cmd, ec, out))
+            raise Exception("has_ucx: failed to run cmd '%s', ec: %s, out: %s" % (cmd, ec, out))
 
         ompi_info_pml_ucx = bool(re.search(' pml: ucx ', out))
 

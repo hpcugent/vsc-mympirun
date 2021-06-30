@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2020 Ghent University
+# Copyright 2012-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -415,8 +415,9 @@ class TestEnd2End(TestCase):
 
         # unknown launcher being specified only results in a warning (we allow specifying launchers that are not listed)
         ec, out = run([sys.executable, self.mympiscript, '--launcher', 'doesnotexist', 'hostname'])
-        regex = r'WARNING .* Specified launcher doesnotexist does not exist'
-        self.assertTrue(re.search(regex, out), "mympirun should warn for non-existing launcher")
+        regex = r'WARNING.*Specified launcher doesnotexist does not exist'
+        fail_msg = "mympirun should warn for non-existing launcher; pattern '%s' should be found in: %s"
+        self.assertTrue(re.search(regex, out), fail_msg % (regex, out))
 
         ec, out = run([sys.executable, self.mympiscript, '--sched', 'local', 'hostname'])
         self.assertFalse("-bootstrap" in out, "using local scheduler, no bootstrap launcher should be specified: " + out)

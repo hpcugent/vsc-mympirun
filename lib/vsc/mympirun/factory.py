@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2020 Ghent University
+# Copyright 2011-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -28,20 +28,10 @@ mpi and scheduler class
 
 @author: Stijn De Weirdt, Jens Timmerman
 """
-
-from vsc.utils.fancylogger import getLogger
+import logging
 
 
 _coupler_class_cache = {}
-
-
-_log = getLogger('mympirun.factory', fname=False)
-
-
-class LogBase(object):
-    def __init__(self, **kwargs):
-        self.log = getLogger(self.__class__.__name__)
-        super(LogBase, self).__init__(**kwargs)
 
 
 def getinstance(mpi, sched, options):
@@ -54,7 +44,7 @@ def getinstance(mpi, sched, options):
 
     @return: an instance that is a subclass of the selected MPI and Scheduler
     """
-    base_classes = (LogBase, mpi, sched)
+    base_classes = (mpi, sched)
 
     if base_classes not in _coupler_class_cache:
         coupler_class = type(
@@ -70,5 +60,5 @@ def getinstance(mpi, sched, options):
         tmpl = "Fetched Coupler class %s from cache %s: %s"
         coupler_class = _coupler_class_cache[base_classes]
 
-    _log.debug(tmpl, base_classes, coupler_class.__name__, id(coupler_class))
+    logging.debug(tmpl, base_classes, coupler_class.__name__, id(coupler_class))
     return coupler_class(options=options.options, cmdargs=options.args)

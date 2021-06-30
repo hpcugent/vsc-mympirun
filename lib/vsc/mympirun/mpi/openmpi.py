@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2020 Ghent University
+# Copyright 2009-2021 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -26,6 +26,7 @@
 OpenMPI specific classes
 Documentation can be found at https://www.open-mpi.org/doc/
 """
+import logging
 import os
 import re
 import sys
@@ -107,17 +108,17 @@ class OpenMPI(MPI):
             except IOError as err:
                 error_msg = "Failed to read /proc/cpuinfo to determine number of sockets per node: %s" % err
                 error_msg += "; use --sockets-per-node to override"
-                self.log.error(error_msg)
+                logging.error(error_msg)
                 sys.exit(1)
 
             if proc_cpuinfo:
                 res = re.findall('^physical id.*', proc_cpuinfo, re.M)
                 sockets_per_node = len(nub(res))
-                self.log.debug("Sockets per node found in cpuinfo: set to %s" % sockets_per_node)
+                logging.debug("Sockets per node found in cpuinfo: set to %s", sockets_per_node)
 
             if sockets_per_node == 0:
-                self.log.warning("Could not derive number of sockets per node from /proc/cpuinfo. "
-                                 "Assuming a single socket, use --sockets-per-node to override.")
+                logging.warning("Could not derive number of sockets per node from /proc/cpuinfo. "
+                                "Assuming a single socket, use --sockets-per-node to override.")
                 sockets_per_node = 1
 
         return sockets_per_node
@@ -127,7 +128,7 @@ class OpenMPI(MPI):
 
         override_type = self.pinning_override_type
 
-        self.log.debug("pinning_override: type %s ", override_type)
+        logging.debug("pinning_override: type %s ", override_type)
 
         ranktxt = ""
         sockets_per_node = self.determine_sockets_per_node()
@@ -153,16 +154,15 @@ class OpenMPI(MPI):
                     ranktxt += "rank %i=+n%i slot=%i:%i\n" % (rank, node, socket, slot)
 
             else:
-                self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
-                                        self.pinning_override_type)
+                raise Exception("pinning_override: unsupported pinning_override_type  %s" % self.pinning_override_type)
 
             with open(rankfn, 'w') as fp:
                 fp.write(ranktxt)
-            self.log.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
+            logging.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
             cmd = CmdList('-rf', rankfn)
 
         except IOError as err:
-            self.log.raiseException('pinning_override: failed to write rankfile %s: %s' % (rankfn, err))
+            raise Exception('pinning_override: failed to write rankfile %s: %s' % (rankfn, err))
 
         return cmd
 
@@ -200,7 +200,7 @@ class OpenMPI(MPI):
         # (unless OpenMPI installation was configured with --enable-orterun-prefix-by-default)
         # cfr. https://www.mail-archive.com/devel@lists.open-mpi.org/msg17305.html
         if SLURM_EXPORT_ENV in os.environ:
-            self.log.info("Undefining $%s (was '%s')", SLURM_EXPORT_ENV, os.getenv(SLURM_EXPORT_ENV))
+            logging.info("Undefining $%s (was '%s')", SLURM_EXPORT_ENV, os.getenv(SLURM_EXPORT_ENV))
             del os.environ[SLURM_EXPORT_ENV]
 
         super(OpenMPI, self).prepare()
@@ -260,7 +260,7 @@ class OpenMpi4(OpenMpi3):
         cmd = "ompi_info"
         ec, out = run(cmd)
         if ec:
-            self.log.raiseException("use_ucx_pml: failed to run cmd '%s', ec: %s, out: %s" % (cmd, ec, out))
+            raise Exception("use_ucx_pml: failed to run cmd '%s', ec: %s, out: %s" % (cmd, ec, out))
 
         pml_ucx_pattern = ' pml: ucx '
         return bool(re.search(pml_ucx_pattern, out))
