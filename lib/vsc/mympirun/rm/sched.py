@@ -83,10 +83,10 @@ class Sched(SchedBase):
         ppn = os.environ.get('PBS_NUM_PPN')
         if ppn is not None:
             self.ppn = int(ppn)
-            self.log.debug("Determined # cores per node via $PBS_NUM_PPN: %s" % self.ppn)
+            self.log.debug("Determined # cores per node via $PBS_NUM_PPN: %s", self.ppn)
         else:
             self.ppn = len(self.cpus)
-            self.log.debug("Failed to determine # cores per node via $PBS_NUM_PPN, using affinity: found %s" % self.ppn)
+            self.log.debug("Failed to determine # cores per node via $PBS_NUM_PPN, using affinity: found %s", self.ppn)
         self.set_ppn()
 
         self.mpinodes = None
@@ -149,7 +149,7 @@ class Sched(SchedBase):
         for node in self.nodes:
             self.ppn_dict.setdefault(node, 0)
             self.ppn_dict[node] += 1
-        self.log.debug("Number of processors per node: %s" % self.ppn_dict)
+        self.log.debug("Number of processors per node: %s", str(self.ppn_dict))
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -218,8 +218,8 @@ class Sched(SchedBase):
                 random.seed(seed)
                 self.log.debug("set_mpinodes: setting random seed %s", seed)
             random.shuffle(res)
-            self.log.debug("set_mpinodes shuffled nodes (mode %s)" %
-                           ordermode)
+            self.log.debug("set_mpinodes shuffled nodes (mode %s)", ordermode)
+
         elif ordermode[0] in ('sort',):
             res.sort()
             self.log.debug("set_mpinodes sort nodes (mode %s)", ordermode)

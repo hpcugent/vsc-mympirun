@@ -82,17 +82,17 @@ def check():
     # internal sanity check
     lens = [len(x) for x in recvbuf]
     if len(set(lens)) > 1:
-        log.error("Not all reports contain same amount of data (%s)" % (set(lens)))
+        log.error("Not all reports contain same amount of data (%s)", set(lens))
 
     for idx, rep in enumerate(recvbuf):
         if not idx == rep['rank']:
-            log.error('Report rank %s does not match gather index %s' % (rep['rank'], idx))
+            log.error('Report rank %s does not match gather index %s', rep['rank'], idx)
 
     # all nodes same property ?
     for prop in ['kernel']:
         props = [x[prop] for x in recvbuf]
         if len(set(props)) > 1:
-            log.error("Not all ranks report identical property %s (%s)" % (prop, set(props)))
+            log.error("Not all ranks report identical property %s (%s)", prop, set(props))
 
     # make nodes/rank structure
     hostnames = set([y['hostname'] for y in recvbuf])
@@ -106,7 +106,7 @@ def check():
         for af in afs:
             for coreid in af:
                 if coreid in res:
-                    log.error("In node %s affinity overlap on core %s found" % (node, coreid))
+                    log.error("In node %s affinity overlap on core %s found", node, coreid)
                 else:
                     res.append(coreid)
 
@@ -119,21 +119,20 @@ def check():
     else:
         for rank, (omp, af) in enumerate(zip(omps, afs)):
             if not len(af) == int(omp):
-                log.error("OMP_NUM_THREADS set for rank %s to %s does not match affinity width %s" % (rank, omp, af))
+                log.error("OMP_NUM_THREADS set for rank %s to %s does not match affinity width %s", rank, omp, af)
 
     # check for mapping
     for idx, _ in enumerate(recvbuf):
         next_idx = (idx + 1) % len(recvbuf)
         if recvbuf[idx]['hostname'] == recvbuf[next_idx]['hostname']:
             if not recvbuf[idx]['affinity'][-1] == recvbuf[next_idx]['affinity'][0] - 1:
-                log.error("No nn on same node for rank %s (aff %s) and next rank %s (aff %s)" %
-                          (idx, recvbuf[idx]['affinity'], next_idx, recvbuf[next_idx]['affinity']))
+                log.error("No nn on same node for rank %s (aff %s) and next rank %s (aff %s)",
+                          idx, recvbuf[idx]['affinity'], next_idx, recvbuf[next_idx]['affinity'])
         else:
             if not recvbuf[next_idx]['affinity'][0] == 0:
-                log.error("No nn on different nodes for rank %s (hn %s aff %s) and next rank %s (hn %s aff %s)" %
-                           (idx, recvbuf[idx]['hostname'], recvbuf[idx]['affinity'],
-                            next_idx, recvbuf[next_idx]['hostname'], recvbuf[next_idx]['affinity'])
-                          )
+                log.error("No nn on different nodes for rank %s (hn %s aff %s) and next rank %s (hn %s aff %s)",
+                          idx, recvbuf[idx]['hostname'], recvbuf[idx]['affinity'],
+                          next_idx, recvbuf[next_idx]['hostname'], recvbuf[next_idx]['affinity'])
 
 
 if __name__ == '__main__':

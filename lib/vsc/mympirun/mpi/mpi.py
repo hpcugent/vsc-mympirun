@@ -699,7 +699,7 @@ class MPI(MpiBase):
                 if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and env_var not in vars_to_pass:
                     self.mpiexec_opts_from_env.append(env_var)
 
-        self.log.debug("Vars passed: %s" % self.mpiexec_opts_from_env)
+        self.log.debug("Vars passed: %s", str(self.mpiexec_opts_from_env))
 
     def set_mpiexec_options(self):
         """Add various options to mpiexec_options."""
@@ -752,10 +752,10 @@ class MPI(MpiBase):
             self.log.debug("Using specified launcher: %s", launcher)
             if launcher not in avail_launchers:
                 err = "Specified launcher %s does not exist, available launchers: %s"
-                self.log.warning(err % (launcher, avail_launchers))
+                self.log.warning(err, launcher, avail_launchers)
         else:
             if default_launcher:
-                self.log.debug("No launcher specified, using default launcher: %s" % default_launcher)
+                self.log.debug("No launcher specified, using default launcher: %s", default_launcher)
                 launcher = default_launcher
             else:
                 self.log.raiseException("There is no launcher specified, and no default launcher found")
@@ -796,8 +796,8 @@ class MPI(MpiBase):
             key = key.strip().lower()
             value = regex.groupdict()['value']
             if value is None:
-                self.log.debug("get_hydra_info: failed to get hydra info: missing value in %s (out: %s)" %
-                               (regex.groupdict(), out))
+                self.log.debug("get_hydra_info: failed to get hydra info: missing value in %s (out: %s)",
+                               str(regex.groupdict()), out)
                 value = ''
             values = [x.strip().strip('"').strip("'") for x in value.split() if x.strip()]
             hydra_info[key] = values

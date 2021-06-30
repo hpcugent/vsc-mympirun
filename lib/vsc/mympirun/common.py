@@ -318,7 +318,7 @@ class MpiBase(object):
                         res = mpirun_version_check(mpiversion)
                         LOGGER.debug("found mpirun version %s match for %s: %s", mpiversion, cls, res)
                     elif mpirun_version_check is None:
-                        LOGGER.debug("no mpirun version provided, skipping version check, match for %s" % cls)
+                        LOGGER.debug("no mpirun version provided, skipping version check, match for %s", cls)
                         res = True
                     else:
                         LOGGER.debug("mpi version not found, not match for %s", cls)

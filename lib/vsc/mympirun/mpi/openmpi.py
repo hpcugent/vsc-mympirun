@@ -113,7 +113,7 @@ class OpenMPI(MPI):
             if proc_cpuinfo:
                 res = re.findall('^physical id.*', proc_cpuinfo, re.M)
                 sockets_per_node = len(nub(res))
-                self.log.debug("Sockets per node found in cpuinfo: set to %s" % sockets_per_node)
+                self.log.debug("Sockets per node found in cpuinfo: set to %s", sockets_per_node)
 
             if sockets_per_node == 0:
                 self.log.warning("Could not derive number of sockets per node from /proc/cpuinfo. "

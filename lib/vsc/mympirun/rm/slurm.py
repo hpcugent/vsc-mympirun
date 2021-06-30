@@ -61,7 +61,7 @@ class SLURM(Sched):
         else:
             res = out.strip().split('\n')
 
-        self.log.debug("_get_uniq_nodes: %s" % res)
+        self.log.debug("_get_uniq_nodes: %s", res)
         return res
 
     def _get_tasks_per_node(self):
@@ -86,7 +86,7 @@ class SLURM(Sched):
                 else:
                     tpn.append(int(entry))
 
-        self.log.debug("_get_tasks_per_node: %s" % tpn)
+        self.log.debug("_get_tasks_per_node: %s", tpn)
         return tpn
 
     def set_nodes(self):

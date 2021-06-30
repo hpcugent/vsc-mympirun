@@ -90,8 +90,8 @@ def get_mpi_and_sched_and_options(mpim, mpiopt, schedm):
     if mpi is None:
         optionparser.log.raiseException(("No MPI class found that supports scriptname %s; isfake %s). Please use "
                                          "mympirun through one of the direct calls or make sure the mpirun command can"
-                                         " be found. Found MPI %s") %
-                                        (scriptname, isfake, ", ".join(found_mpi_names)))
+                                         " be found. Found MPI %s"),
+                                        scriptname, isfake, ", ".join(found_mpi_names))
     else:
         optionparser.log.debug("Found MPI class %s (scriptname %s; isfake %s)", mpi.__name__, scriptname, isfake)
 
@@ -119,5 +119,5 @@ def main(mpim, mpiopt, schedm):
             instance = getinstance(*instance_options)
             instance.main()
     except Exception as err:
-        fancylogger.getLogger().exception("Main failed: %s" % err)
+        fancylogger.getLogger().exception("Main failed: %s", err)
         sys.exit(1)
