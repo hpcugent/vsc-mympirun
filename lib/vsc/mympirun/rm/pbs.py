@@ -25,6 +25,7 @@
 """
 Torque / PBS
 """
+import logging
 import os
 
 from vsc.mympirun.common import which
@@ -54,29 +55,29 @@ class PBS(Sched):
         # pbsssh is only used if native support for pbsdsh is not supported in the MPI library;
         # e.g. Intel MPI v5.x and newer supports using pbsdsh as launcher natively, no need for pbsssh wrapper
         if which(PBSSSH) and which(PBSDSH):
-            self.log.debug("Both 'pbsssh' and 'pbsdsh' found, so using 'pbsssh' as remote shell command.")
+            logging.debug("Both 'pbsssh' and 'pbsdsh' found, so using 'pbsssh' as remote shell command.")
             self.RSH_LARGE_CMD = PBSSSH
             self.HYDRA_LAUNCHER_EXEC = PBSSSH
         elif which(PBSSSH):
-            self.log.debug("Can't use '%s' wrapper if '%s' is not available", PBSDSH, PBSSSH)
+            logging.debug("Can't use '%s' wrapper if '%s' is not available", PBSDSH, PBSSSH)
         else:
-            self.log.debug("'%s' wrapper not available, so can't use it", PBSSSH)
+            logging.debug("'%s' wrapper not available, so can't use it", PBSSSH)
 
-        self.log.info("Using '%s' as remote shell command", self.get_rsh())
+        logging.info("Using '%s' as remote shell command", self.get_rsh())
 
     def set_nodes(self):
 
         filename = os.environ.get(self.SCHED_ENVIRON_NODE_INFO)
         if filename is None:
-            self.log.raiseException("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
+            raise Exception("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
 
         try:
             self.nodes = [x.strip() for x in open(filename).read().split("\n") if len(x.strip()) > 0]
-            self.log.debug("set_nodes: from %s: %s", filename, self.nodes)
+            logging.debug("set_nodes: from %s: %s", filename, self.nodes)
         except IOError:
-            self.log.raiseException("set_nodes: failed to get nodes from nodefile %s" % filename)
+            raise Exception("set_nodes: failed to get nodes from nodefile %s" % filename)
 
         self.nodes_uniq = nub(self.nodes)
         self.nodes_tot_cnt = len(self.nodes)
 
-        self.log.debug("set_nodes: %s (cnt: %d; uniq: %s)", self.nodes, self.nodes_tot_cnt, self.nodes_uniq)
+        logging.debug("set_nodes: %s (cnt: %d; uniq: %s)", self.nodes, self.nodes_tot_cnt, self.nodes_uniq)

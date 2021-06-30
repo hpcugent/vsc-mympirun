@@ -31,6 +31,7 @@ Base MPI class, all actual classes should inherit from this one
 """
 from __future__ import print_function
 
+import logging
 import os
 import random
 import re
@@ -43,7 +44,6 @@ import sys
 import time
 
 from IPy import IP
-from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.common import MpiBase
 from vsc.utils.missing import nub
 from vsc.utils.run import CmdList, RunNoShell, RunAsyncLoopStdout, RunFile, RunLoop, run
@@ -78,10 +78,10 @@ class RunMPI(RunNoShell):
             msg = TIMEOUT_WARNING % (time_passed, self.output_timeout)
             # avoid getting warning multiple times by setting seen_output to True if a warning was produced
             self.seen_output = True
-            self.log.warn(msg)
+            logging.warn(msg)
             if self.fatal_no_output:
                 self.stop_tasks()
-                self.log.error(TIMEOUT_FATAL_MSG)
+                logging.error(TIMEOUT_FATAL_MSG)
                 sys.exit(TIMEOUT_CODE)
 
 
@@ -205,8 +205,6 @@ class MPI(MpiBase):
     OPTS_FROM_ENV_FLAVOR_PREFIX = []  # to be set per flavor
 
     def __init__(self, options, cmdargs, **kwargs):
-        if not hasattr(self, 'log'):
-            self.log = getLogger(self.__class__.__name__)
         self.options = options
         self.cmdargs = cmdargs
 
@@ -238,18 +236,18 @@ class MPI(MpiBase):
 
         # sanity checks
         if getattr(self, 'sched_id', None) is None:
-            self.log.raiseException("__init__: sched_id is None (should be set by one of the Sched classes)")
+            msg = "__init__: sched_id is None (should be set by one of the Sched classes)"
+            raise Exception(msg)
 
         if not self.cmdargs:
-            self.log.raiseException("__init__: no executable or command provided")
-
+            msg = "__init__: no executable or command provided"
+            raise Exception(msg)
 
     # other general functionality
     def _has_hydra(self):
         """Has HYDRA or not"""
         return self.HYDRA
 
-    ### main ###
     def main(self):
         """Main method"""
         self.prepare()
@@ -265,8 +263,8 @@ class MPI(MpiBase):
         self.make_mpirun()
 
         # actual execution
-        self.log.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
-        self.log.info("writing mpirun output to %s", self.options.output)
+        logging.debug("main: going to execute cmd %s", " ".join(self.mpirun_cmd))
+        logging.info("writing mpirun output to %s", self.options.output)
 
         run_kwargs = {
             'fatal_no_output': self.options.output_check_fatal,
@@ -279,7 +277,7 @@ class MPI(MpiBase):
             run_mpirun_cmd = RunAsyncMPI.run
 
         if self.options.dry_run:
-            self.log.info("Dry run, only printing generated mpirun command...")
+            logging.info("Dry run, only printing generated mpirun command...")
             print(' '.join(self.mpirun_cmd))
             exitcode = 0
         else:
@@ -288,7 +286,8 @@ class MPI(MpiBase):
         self.cleanup()
 
         if exitcode > 0:
-            self.log.raiseException("main: exitcode %s > 0; cmd %s" % (exitcode, self.mpirun_cmd))
+            msg = "main: exitcode %s > 0; cmd %s" % (exitcode, self.mpirun_cmd)
+            raise Exception(msg)
 
     ### BEGIN prepare ###
     def prepare(self):
@@ -308,15 +307,15 @@ class MPI(MpiBase):
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
         if not self.cores_per_node == len(self.cpus):
-            self.log.info("check_usable_cpus: non-standard cpus found: found cpus %s, usable cpus %s",
-                          self.cores_per_node, len(self.cpus))
+            logging.info("check_usable_cpus: non-standard cpus found: found cpus %s, usable cpus %s",
+                         self.cores_per_node, len(self.cpus))
 
     def check_limit(self):
         """Check if the softlimit of the stack exceeds 1MB, if it doesn't, show an error."""
         soft, _ = resource.getrlimit(resource.RLIMIT_STACK)  # in bytes
         if soft > -1 and soft < 1024 * 1024:
             # non-fatal
-            self.log.error("Stack size %s%s too low? Increase with ulimit -s unlimited", soft, 'kB')
+            logging.error("Stack size %s%s too low? Increase with ulimit -s unlimited", soft, 'kB')
 
     def set_omp_threads(self):
         """
@@ -333,7 +332,7 @@ class MPI(MpiBase):
             else:
                 threads = max(self.ppn // self.options.hybrid, 1)
 
-        self.log.debug("Set OMP_NUM_THREADS to %s", threads)
+        logging.debug("Set OMP_NUM_THREADS to %s", threads)
 
         os.environ['OMP_NUM_THREADS'] = str(threads)
 
@@ -354,28 +353,31 @@ class MPI(MpiBase):
         }
 
         if self.netmasktype not in device_ip_reg_map:
-            self.log.raiseException("set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)" %
-                                    (self.netmasktype, device_ip_reg_map))
+            msg = "set_netmask: can't get netmask for %s: unknown mode (device_ip_reg_map %s)"
+            msg = msg % (self.netmasktype, device_ip_reg_map)
+            raise Exception(msg)
 
         cmd = "/sbin/ip addr show"
         exitcode, out = run(cmd)
         if exitcode > 0:
-            self.log.raiseException("set_netmask: failed to run cmd '%s', ec: %s, out: %s" % (cmd, exitcode, out))
+            msg = "set_netmask: failed to run cmd '%s', ec: %s, out: %s" % (cmd, exitcode, out)
+            raise Exception(msg)
 
         reg = re.compile(device_ip_reg_map[self.netmasktype])
         if not reg.search(out):
-            self.log.raiseException("set_netmask: can't get netmask for %s: no matches found (reg %s out %s)" %
-                                    (self.netmasktype, device_ip_reg_map[self.netmasktype], out))
+            msg = "set_netmask: can't get netmask for %s: no matches found (reg %s out %s)"
+            msg = msg % (self.netmasktype, device_ip_reg_map[self.netmasktype], out)
+            raise Exception(msg)
 
         res = []
         for ipaddr_mask in reg.finditer(out):
             ip_info = IP(ipaddr_mask.group(1), make_net=True)
             network_netmask = "%s/%s" % (ip_info.net(), ip_info.netmask())
             res.append(network_netmask)
-            self.log.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s",
-                           ipaddr_mask.group(1), network_netmask)
+            logging.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s",
+                          ipaddr_mask.group(1), network_netmask)
 
-        self.log.debug("set_netmask: return complete netmask %s", res)
+        logging.debug("set_netmask: return complete netmask %s", res)
         if res:
             self.netmask = os.pathsep.join(res)
 
@@ -385,7 +387,7 @@ class MPI(MpiBase):
         See DEVICE_ORDER for order of preference.
         """
         if self.device is not None and not force:
-            self.log.debug("select_device: device already set: %s", self.device)
+            logging.debug("select_device: device already set: %s", self.device)
             return
 
         founddev = None
@@ -408,23 +410,24 @@ class MPI(MpiBase):
                 if path is None or os.path.exists(path):
                     founddev = dev
                     self.device = self.DEVICE_MPIDEVICE_MAP[dev]
-                    self.log.debug("select_device: found path %s for device %s", path, self.device)
+                    logging.debug("select_device: found path %s for device %s", path, self.device)
                     break
 
         if self.device is None:
-            self.log.raiseException("select_device: failed to set device.")
+            msg = "select_device: failed to set device."
+            raise Exception(msg)
 
         self.netmasktype = self.NETMASK_TYPE_MAP[founddev]
-        self.log.debug("select_device: set netmasktype %s for device %s (founddev %s)",
-                       self.netmasktype, self.device, founddev)
+        logging.debug("select_device: set netmasktype %s for device %s (founddev %s)",
+                      self.netmasktype, self.device, founddev)
 
     def set_device(self, founddev):
         """Set self.device to founddev, but doublecheck if the path to this device actually exists """
         self.device = self.DEVICE_MPIDEVICE_MAP[founddev]
         path = self.DEVICE_LOCATION_MAP[founddev]
         if path is None or not os.path.exists(path):
-            self.log.warning("Forcing device %s (founddevice %s), but path %s not found.",
-                             self.device, founddev, path)
+            logging.warning("Forcing device %s (founddevice %s), but path %s not found.",
+                            self.device, founddev, path)
 
     def make_mpdboot_file(self):
         """
@@ -446,10 +449,10 @@ class MPI(MpiBase):
                 fp.write(mpdboottxt)
         except IOError as err:
             msg = 'make_mpdboot_file: failed to write mpbboot file %s: %s' % (mpdfn, err)
-            self.log.raiseException(msg)
+            raise Exception(msg)
 
         self.mpdboot_node_filename = mpdfn
-        self.log.debug("make_mpdboot_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
+        logging.debug("make_mpdboot_file: wrote mpdbootfile %s:\n%s", mpdfn, mpdboottxt)
 
     def make_machine_file(self, nodetxt=None, universe=None):
         """
@@ -480,16 +483,18 @@ class MPI(MpiBase):
                 fp.write(nodetxt)
         except IOError as err:
             msg = 'make_machine_file: failed to write nodefile %s: %s' % (nodefn, err)
-            self.log.raiseException(msg)
+            raise Exception(msg)
 
         self.mpiexec_node_filename = nodefn
-        self.log.debug("make_machine_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
+        logging.debug("make_machine_file: wrote nodefile %s:\n%s", nodefn, nodetxt)
 
     def get_universe_ncpus(self):
         """Construct dictionary with number of processes to start per node, based on --universe"""
         if self.options.universe > self.nodes_tot_cnt:
-            ex = "Universe asks for more processes (%s) than available processors (%s)"
-            self.log.raiseException(ex % (self.options.universe, self.nodes_tot_cnt))
+            msg = "Universe asks for more processes (%s) than available processors (%s)"
+            msg = msg % (self.options.universe, self.nodes_tot_cnt)
+            raise Exception(msg)
+
         nodes = self.nodes_uniq[:]
         universe_ppn = dict((node, 0) for node in nodes)
         proc_cnt = 0
@@ -515,7 +520,8 @@ class MPI(MpiBase):
         if basepath is None:
             basepath = os.environ['HOME']
         if not os.path.exists(basepath):
-            self.log.raiseException("make_mympirun_dir: basepath %s should exist." % basepath)
+            msg = "make_mympirun_dir: basepath %s should exist." % basepath
+            raise Exception(msg)
 
         # add random 6-char salt to basepath
         randstr = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(6))
@@ -527,19 +533,21 @@ class MPI(MpiBase):
                 total_size += os.path.getsize(os.path.join(dirpath, filename))
 
         if total_size >= TEMPDIR_ERROR_SIZE:
-            size_err = "the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size)
-            self.log.raiseException(size_err)
+            msg = "the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size)
+            raise Exception(msg)
+
         elif total_size >= TEMPDIR_WARN_SIZE:
-            self.log.warn("the size of %s is currently %s ", self.mympirunbasedir, total_size)
+            logging.warn("the size of %s is currently %s ", self.mympirunbasedir, total_size)
 
         destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
         if not os.path.exists(destdir):
             try:
                 os.makedirs(destdir)
             except os.error:
-                self.log.raiseException('make_mympirun_dir: failed to make job dir %s' % destdir)
+                msg = 'make_mympirun_dir: failed to make job dir %s' % destdir
+                raise Exception(msg)
 
-        self.log.debug("make_mympirun_dir: tmp mympirundir %s", destdir)
+        logging.debug("make_mympirun_dir: tmp mympirundir %s", destdir)
         self.mympirundir = destdir
 
     ### BEGIN pinning ###
@@ -555,10 +563,10 @@ class MPI(MpiBase):
             setattr(self.options, 'pinmpi', True)
 
         if self.pinning_override_type is not None:
-            self.log.debug("set_pinning: overriding pin type to %s, pinmpi set to False", self.pinning_override_type)
+            logging.debug("set_pinning: overriding pin type to %s, pinmpi set to False", self.pinning_override_type)
             self.options.pinmpi = False
         else:
-            self.log.debug("set_pinning: pinmpi %s", self.options.pinmpi)
+            logging.debug("set_pinning: pinmpi %s", self.options.pinmpi)
 
     ### BEGIN mpdboot ###
     def make_mpdboot(self):
@@ -570,8 +578,8 @@ class MPI(MpiBase):
         # check .mpd.conf existence
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         if not os.path.exists(mpdconffn):
-            self.log.warning(("make_mpdboot: mpd.conf file not found at %s. Creating this file "
-                              "(text file with minimal entry 'password=<somesecretpassword>')"), mpdconffn)
+            logging.warning(("make_mpdboot: mpd.conf file not found at %s. Creating this file "
+                             "(text file with minimal entry 'password=<somesecretpassword>')"), mpdconffn)
 
             with open(mpdconffn, 'w') as mpdconff:
                 mpdconff.write("password=%s" % ''.join(random.choice(string.ascii_uppercase + string.digits)
@@ -583,16 +591,16 @@ class MPI(MpiBase):
 
         self.make_mpdboot_options()
 
-        self.log.debug("make_mpdboot set options %s", self.mpdboot_options)
+        logging.debug("make_mpdboot set options %s", self.mpdboot_options)
 
     def set_mpdboot_localhost_interface(self):
         """Sets mpdboot_localhost_interface to the first result of get_localhosts()."""
         localhosts = self.get_localhosts()
         if len(localhosts) > 1:
-            self.log.warning(("set_mpdboot_localhost_interface: more then one match for localhost from unique nodes "
-                              " found %s, using 1st."), localhosts)
+            logging.warning(("set_mpdboot_localhost_interface: more then one match for localhost from unique nodes "
+                             " found %s, using 1st."), localhosts)
         nodename, iface = localhosts[0]  # take the first one
-        self.log.debug("set_mpdboot_localhost_interface: mpd localhost interface %s found for %s", iface, nodename)
+        logging.debug("set_mpdboot_localhost_interface: mpd localhost interface %s found for %s", iface, nodename)
         self.mpdboot_localhost_interface = (nodename, iface)
 
     def get_localhosts(self):
@@ -617,18 +625,20 @@ class MPI(MpiBase):
                 regex = reg_iface.search(out)
                 if regex:
                     iface = regex.group(1)
-                    self.log.debug("get_localhost idx %s: localhost interface %s found for %s (ip: %s)",
-                                   idx, iface, nodename, ip)
+                    logging.debug("get_localhost idx %s: localhost interface %s found for %s (ip: %s)",
+                                  idx, iface, nodename, ip)
 
                     res.append((nodename, iface))
                 else:
-                    self.log.debug("get_localhost idx %s: no interface match for prefixes %s out %s",
-                                   idx, iface_prefix, out)
+                    logging.debug("get_localhost idx %s: no interface match for prefixes %s out %s",
+                                  idx, iface_prefix, out)
             else:
-                self.log.error("get_localhost idx %s: cmd %s failed with output %s", idx, cmd, out)
+                msg = "get_localhost idx %s: cmd %s failed with output %s" % (idx, cmd, out)
+                raise Exception(msg)
 
         if not res:
-            self.log.raiseException("get_localhost: can't find localhost from nodes %s" % self.nodes_uniq)
+            msg = "get_localhost: can't find localhost from nodes %s" % self.nodes_uniq
+            raise Exception(msg)
         return res
 
     def make_mpdboot_options(self):
@@ -647,10 +657,10 @@ class MPI(MpiBase):
             else:
                 localmachine = self.mpdboot_localhost_interface[0]
                 iface = ['--ifhn=%s' % localmachine]
-            self.log.debug('Set mpdboot interface option "%s"', iface)
+            logging.debug('Set mpdboot interface option "%s"', iface)
             self.mpdboot_options.add(iface)
         else:
-            self.log.debug('No mpdboot interface option')
+            logging.debug('No mpdboot interface option')
 
         # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0 and not self.has_hydra:
@@ -699,7 +709,7 @@ class MPI(MpiBase):
                 if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and env_var not in vars_to_pass:
                     self.mpiexec_opts_from_env.append(env_var)
 
-        self.log.debug("Vars passed: %s", str(self.mpiexec_opts_from_env))
+        logging.debug("Vars passed: %s" % self.mpiexec_opts_from_env)
 
     def set_mpiexec_options(self):
         """Add various options to mpiexec_options."""
@@ -737,11 +747,11 @@ class MPI(MpiBase):
         if getattr(self, 'HYDRA_RMK', None) is not None:
             rmk = [x for x in self.HYDRA_RMK if x in self.hydra_info.get('rmk', [])]
             if len(rmk) > 0:
-                self.log.debug("make_mpiexec_hydra_options: HYDRA: rmk %s, using first", rmk)
+                logging.debug("make_mpiexec_hydra_options: HYDRA: rmk %s, using first", rmk)
                 self.mpiexec_options.add(['-rmk', rmk[0]])
             else:
-                self.log.debug("make_mpiexec_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s",
-                               self.HYDRA_RMK, self.hydra_info)
+                logging.debug("make_mpiexec_hydra_options: no rmk from HYDRA_RMK %s and hydra_info %s",
+                              self.HYDRA_RMK, self.hydra_info)
 
         launcher = None
         default_launcher = getattr(self, 'HYDRA_LAUNCHER', None)
@@ -749,16 +759,17 @@ class MPI(MpiBase):
 
         if self.options.launcher:
             launcher = self.options.launcher
-            self.log.debug("Using specified launcher: %s", launcher)
+            logging.debug("Using specified launcher: %s", launcher)
             if launcher not in avail_launchers:
                 err = "Specified launcher %s does not exist, available launchers: %s"
-                self.log.warning(err, launcher, avail_launchers)
+                logging.warning(err % (launcher, avail_launchers))
         else:
             if default_launcher:
-                self.log.debug("No launcher specified, using default launcher: %s", default_launcher)
+                logging.debug("No launcher specified, using default launcher: %s" % default_launcher)
                 launcher = default_launcher
             else:
-                self.log.raiseException("There is no launcher specified, and no default launcher found")
+                msg = "There is no launcher specified, and no default launcher found"
+                raise Exception(msg)
 
         if launcher == RM_HYDRA_LAUNCHER:
             launcher = self.RM_HYDRA_LAUNCHER
@@ -774,10 +785,10 @@ class MPI(MpiBase):
                 launcher_exec = self.get_rsh()
 
             if launcher_exec:
-                self.log.debug("make_mpiexec_hydra_options: HYDRA using launcher exec %s", launcher_exec)
+                logging.debug("make_mpiexec_hydra_options: HYDRA using launcher exec %s", launcher_exec)
                 self.mpiexec_options.add(['-%s-exec' % self.HYDRA_LAUNCHER_NAME, launcher_exec])
             else:
-                self.log.debug("make_mpiexec_hydra_options: no launcher exec")
+                logging.debug("make_mpiexec_hydra_options: no launcher exec")
 
     def get_hydra_info(self):
         """Get a dict with hydra info."""
@@ -785,23 +796,26 @@ class MPI(MpiBase):
         cmd = "mpirun -info"
         exitcode, out = run(cmd)
         if exitcode > 0:
-            self.log.raiseException("get_hydra_info: failed to run cmd %s: %s" % (cmd, out))
+            msg = "get_hydra_info: failed to run cmd %s: %s" % (cmd, out)
+            raise Exception(msg)
 
         hydra_info = {}
         for regex in reg_hydra_info.finditer(out):
             key = regex.groupdict()['key']
             if key is None:
-                self.log.raiseException("get_hydra_info: failed to get hydra info: missing key in %s (out: %s)" %
-                                        (regex.groupdict(), out))
+                msg = "get_hydra_info: failed to get hydra info: missing key in %s (out: %s)"
+                msg = msg % (regex.groupdict(), out)
+                raise Exception(msg)
+
             key = key.strip().lower()
             value = regex.groupdict()['value']
             if value is None:
-                self.log.debug("get_hydra_info: failed to get hydra info: missing value in %s (out: %s)",
-                               str(regex.groupdict()), out)
+                logging.debug("get_hydra_info: failed to get hydra info: missing value in %s (out: %s)" %
+                               (regex.groupdict(), out))
                 value = ''
             values = [x.strip().strip('"').strip("'") for x in value.split() if x.strip()]
             hydra_info[key] = values
-        self.log.debug("get_hydra_info: found info %s", hydra_info)
+        logging.debug("get_hydra_info: found info %s", hydra_info)
 
         keymap = {
             "rmk": r'^resource\s+management\s+kernel.*available',
@@ -817,11 +831,11 @@ class MPI(MpiBase):
                 continue
             else:
                 if len(matches) > 1:
-                    self.log.warning("get_hydra_info: more than one match %s found: newkey %s regtxt %s hydrainfo %s",
+                    logging.warning("get_hydra_info: more than one match %s found: newkey %s regtxt %s hydrainfo %s",
                                      matches, newkey, regtxt, hydra_info)
                 self.hydra_info[newkey] = matches[0]
 
-        self.log.debug("get_hydra_info: filtered info %s", self.hydra_info)
+        logging.debug("get_hydra_info: filtered info %s", self.hydra_info)
 
     def get_mpiexec_global_options(self):
         """
@@ -837,13 +851,13 @@ class MPI(MpiBase):
         for key, val in self.mpiexec_global_options.items():
             if key in self.mpiexec_opts_from_env:
                 # environment variable is already set
-                self.log.debug("get_mpiexec_global_options: found global option %s in mpiexec_opts_from_env.", key)
+                logging.debug("get_mpiexec_global_options: found global option %s in mpiexec_opts_from_env.", key)
             else:
                 # insert the keyvalue pair into the correct command line argument
                 # the command for setting the environment variable depends on the mpi flavor
                 opts.add(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, tmpl_vals={'name': key, "value": val})
 
-        self.log.debug("get_mpiexec_global_options: template %s return options %s",
+        logging.debug("get_mpiexec_global_options: template %s return options %s",
                        self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, opts)
         return opts
 
@@ -856,18 +870,18 @@ class MPI(MpiBase):
         """
 
         opts = CmdList()
-        self.log.debug("get_mpiexec_opts_from_env: variables (and current value) to pass: %s",
-                       [[x, os.environ[x]] for x in self.mpiexec_opts_from_env])
+        logging.debug("get_mpiexec_opts_from_env: variables (and current value) to pass: %s",
+                      [[x, os.environ[x]] for x in self.mpiexec_opts_from_env])
 
         if '%(commaseparated)s' in self.OPTS_FROM_ENV_TEMPLATE:
-            self.log.debug("get_mpiexec_opts_from_env: found commaseparated in template.")
+            logging.debug("get_mpiexec_opts_from_env: found commaseparated in template.")
             tmpl_vals = {'commaseparated': ','.join(self.mpiexec_opts_from_env)}
             opts.add(self.OPTS_FROM_ENV_TEMPLATE, tmpl_vals=tmpl_vals)
         else:
             for key in self.mpiexec_opts_from_env:
                 opts.add(self.OPTS_FROM_ENV_TEMPLATE, tmpl_vals={'name': key, 'value': os.environ[key]})
 
-        self.log.debug("get_mpiexec_opts_from_env: template %s return options %s", self.OPTS_FROM_ENV_TEMPLATE, opts)
+        logging.debug("get_mpiexec_opts_from_env: template %s return options %s", self.OPTS_FROM_ENV_TEMPLATE, opts)
         return opts
 
     ### BEGIN mpirun ###
@@ -879,12 +893,12 @@ class MPI(MpiBase):
         self._make_final_mpirun_cmd()
         if self.options.mpirunoptions is not None:
             self.mpirun_cmd.add(self.options.mpirunoptions.split(' '))
-            self.log.debug("make_mpirun: added user provided options %s", self.options.mpirunoptions)
+            logging.debug("make_mpirun: added user provided options %s", self.options.mpirunoptions)
 
         if self.pinning_override_type is not None:
             self.mpirun_cmd.add(self.pinning_override())
 
-        self.log.debug("make_mpirun: adding cmdargs %s", self.cmdargs)
+        logging.debug("make_mpirun: adding cmdargs %s", self.cmdargs)
         self.mpirun_cmd.add(self.cmdargs)
 
     def _make_final_mpirun_cmd(self):
@@ -898,12 +912,14 @@ class MPI(MpiBase):
 
     def pinning_override(self):
         """overriding the pinning method has to be handled by the flavor"""
-        self.log.raiseException("pinning_override: not implemented.")
+        msg = "pinning_override: not implemented."
+        raise Exception(msg)
 
     def cleanup(self):
         """Remove top-level temporary run directory"""
         try:
             shutil.rmtree(self.mympirunbasedir)
-            self.log.debug("cleanup: removed mympirundir %s", self.mympirunbasedir)
+            logging.debug("cleanup: removed mympirundir %s", self.mympirunbasedir)
         except OSError as err:
-            self.log.raiseException("cleanup: cleaning up mympirundir %s failed: %s", self.mympirunbasedir, err)
+            msg = "cleanup: cleaning up mympirundir %s failed: %s" % (self.mympirunbasedir, err)
+            raise Exception(msg)

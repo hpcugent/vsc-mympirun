@@ -25,13 +25,13 @@
 """
 Main sched class
 """
+import logging
 import os
 import time
 import random
 import re
 
 from vsc.utils.affinity import sched_getaffinity
-from vsc.utils.fancylogger import getLogger
 from vsc.mympirun.common import SchedBase
 
 
@@ -60,8 +60,6 @@ class Sched(SchedBase):
     RM_HYDRA_LAUNCHER = None
 
     def __init__(self, options=None, **kwargs):
-        if not hasattr(self, 'log'):
-            self.log = getLogger(self.__class__.__name__)
         if not hasattr(self, 'options'):
             self.options = options
 
@@ -83,10 +81,10 @@ class Sched(SchedBase):
         ppn = os.environ.get('PBS_NUM_PPN')
         if ppn is not None:
             self.ppn = int(ppn)
-            self.log.debug("Determined # cores per node via $PBS_NUM_PPN: %s", self.ppn)
+            logging.debug("Determined # cores per node via $PBS_NUM_PPN: %s", self.ppn)
         else:
             self.ppn = len(self.cpus)
-            self.log.debug("Failed to determine # cores per node via $PBS_NUM_PPN, using affinity: found %s", self.ppn)
+            logging.debug("Failed to determine # cores per node via $PBS_NUM_PPN, using affinity: found %s", self.ppn)
         self.set_ppn()
 
         self.mpinodes = None
@@ -102,14 +100,13 @@ class Sched(SchedBase):
 
         if self.sched_id is None:
             if self.AUTOGENERATE_JOBID:
-                self.log.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
-                              self.SCHED_ENVIRON_ID)
+                logging.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
+                             self.SCHED_ENVIRON_ID)
                 self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
                                                     random.randint(0, 10 ** 5 - 1))
-                self.log.debug("set_sched_id: using generated id %s", self.sched_id)
+                logging.debug("set_sched_id: using generated id %s", self.sched_id)
             else:
-                self.log.raiseException("set_sched_id: failed to get id from environment variable %s" %
-                                        self.SCHED_ENVIRON_ID)
+                raise Exception("set_sched_id: failed to get id from environment variable %s" % self.SCHED_ENVIRON_ID)
 
     def set_cores_per_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""
@@ -119,7 +116,7 @@ class Sched(SchedBase):
 
         self.cores_per_node = len(regcores.findall(open(filename).read()))
 
-        self.log.debug("set_cores_per_node: found %s", self.cores_per_node)
+        logging.debug("set_cores_per_node: found %s", self.cores_per_node)
 
     def set_cpus(self):
         """
@@ -134,14 +131,14 @@ class Sched(SchedBase):
         try:
             proc_affinity = sched_getaffinity()  # get affinity for current proc
             self.cpus = [idx for idx, cpu in enumerate(proc_affinity.cpus) if cpu == 1]
-            self.log.debug("found cpus from affinity: %s", self.cpus)
+            logging.debug("found cpus from affinity: %s", self.cpus)
         except Exception:
             self.cpus = range(self.cores_per_node)
-            self.log.debug("could not find cpus from affinity, simulating with range(cores_per_node): %s", self.cpus)
+            logging.debug("could not find cpus from affinity, simulating with range(cores_per_node): %s", self.cpus)
 
     def set_nodes(self):
         """get a list with the node of every requested processor/core"""
-        self.log.raiseException("set_nodes not implemented")
+        raise Exception("set_nodes not implemented")
 
     def set_ppn(self):
         """Determine the processors per node, based on the list of nodes and the list of unique nodes"""
@@ -149,7 +146,7 @@ class Sched(SchedBase):
         for node in self.nodes:
             self.ppn_dict.setdefault(node, 0)
             self.ppn_dict[node] += 1
-        self.log.debug("Number of processors per node: %s", str(self.ppn_dict))
+        logging.debug("Number of processors per node: %s", str(self.ppn_dict))
 
     def get_rsh(self):
         """Determine remote shell command"""
@@ -169,7 +166,7 @@ class Sched(SchedBase):
             else:
                 rsh = self.RSH_CMD
 
-        self.log.debug("get_rsh returns %s", rsh)
+        logging.debug("get_rsh returns %s", rsh)
         return rsh
 
     def is_large(self):
@@ -177,7 +174,7 @@ class Sched(SchedBase):
 
         res = ((self.nodes_tot_cnt > self.RSH_LARGE_LIMIT) and
                (any(c == self.cores_per_node for c in self.ppn_dict.values())))
-        self.log.debug("is_large returns %s", res)
+        logging.debug("is_large returns %s", res)
         return res
 
     def set_multiplier(self):
@@ -211,20 +208,20 @@ class Sched(SchedBase):
         ordermode = ordermode.split("_")
         if ordermode[0] in ('normal',):
             # do nothing
-            self.log.debug("set_mpinodes: no reordering (mode %s)", ordermode)
+            logging.debug("set_mpinodes: no reordering (mode %s)", ordermode)
         elif ordermode[0] in ('random',):
             if len(ordermode) == 2:
                 seed = int(ordermode[1])
                 random.seed(seed)
-                self.log.debug("set_mpinodes: setting random seed %s", seed)
+                logging.debug("set_mpinodes: setting random seed %s", seed)
             random.shuffle(res)
-            self.log.debug("set_mpinodes shuffled nodes (mode %s)", ordermode)
+            logging.debug("set_mpinodes shuffled nodes (mode %s)", ordermode)
 
         elif ordermode[0] in ('sort',):
             res.sort()
-            self.log.debug("set_mpinodes sort nodes (mode %s)", ordermode)
+            logging.debug("set_mpinodes sort nodes (mode %s)", ordermode)
         else:
-            self.log.raiseException("set_mpinodes unknown ordermode %s" % ordermode)
+            raise Exception("set_mpinodes unknown ordermode %s" % ordermode)
 
         self.mpinodes = res
 

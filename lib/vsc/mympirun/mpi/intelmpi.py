@@ -27,7 +27,7 @@ Intel MPI specific class
 
 Documentation can be found at https://software.intel.com/en-us/node/528769
 """
-
+import logging
 import os
 import socket
 import tempfile
@@ -81,7 +81,7 @@ class IntelMPI(MPI):
         """Has HYDRA or not"""
         mgr = os.environ.get('I_MPI_PROCESS_MANAGER', None)
         if mgr == 'mpd':
-            self.log.debug("No hydra, I_MPI_PROCESS_MANAGER set to %s", mgr)
+            logging.debug("No hydra, I_MPI_PROCESS_MANAGER set to %s", mgr)
             return False
         else:
             return super(IntelMPI, self)._has_hydra()
@@ -104,7 +104,7 @@ class IntelMPI(MPI):
         impi_tmpdir = tempfile.gettempdir()
         self.mpiexec_global_options['I_MPI_MPD_TMPDIR'] = impi_tmpdir
         os.environ['I_MPI_MPD_TMPDIR'] = impi_tmpdir
-        self.log.debug("Set intel temp dir based on I_MPI_MPD_TMPDIR: %s", os.environ['I_MPI_MPD_TMPDIR'])
+        logging.debug("Set intel temp dir based on I_MPI_MPD_TMPDIR: %s", os.environ['I_MPI_MPD_TMPDIR'])
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
@@ -148,9 +148,9 @@ class IntelMPI(MPI):
             if 'TMI_CONFIG' in os.environ:
                 tmicfg = os.environ.get('TMI_CONFIG')
                 if not os.path.exists(tmicfg):
-                    self.log.error('TMI_CONFIG set (%s), but not found.', tmicfg)
+                    logging.error('TMI_CONFIG set (%s), but not found.', tmicfg)
             elif not os.path.exists('/etc/tmi.conf'):
-                self.log.debug("No TMI_CONFIG and no /etc/tmi.conf found, creating one")
+                logging.debug("No TMI_CONFIG and no /etc/tmi.conf found, creating one")
                 # make the psm tmi config
                 tmicfg = os.path.join(self.mympirundir, '..', 'intelmpi.tmi.conf')
                 if not os.path.exists(tmicfg):
@@ -162,7 +162,7 @@ class IntelMPI(MPI):
                 self.mpiexec_global_options['TMI_DEBUG'] = '1'
 
             if self.options.pinmpi:
-                self.log.debug('Have PSM set affinity (disable I_MPI_PIN)')
+                logging.debug('Have PSM set affinity (disable I_MPI_PIN)')
                 self.mpiexec_global_options['I_MPI_PIN'] = '0'
 
     def mpirun_prepare_execution(self):
@@ -176,7 +176,7 @@ class IntelMPI(MPI):
     def pinning_override(self):
         """ pinning """
 
-        self.log.debug("pinning_override: type %s ", self.pinning_override_type)
+        logging.debug("pinning_override: type %s ", self.pinning_override_type)
 
         cmd = CmdList()
         if self.pinning_override_type in ('packed', 'compact', 'bunch'):
@@ -184,8 +184,7 @@ class IntelMPI(MPI):
         elif self.pinning_override_type in ('spread', 'scatter'):
             cmd.add(['-env', 'I_MPI_PIN_PROCESSOR_LIST=allcores:map=%s' % self.pinning_override_type])
         else:
-            self.log.raiseException("pinning_override: unsupported pinning_override_type  %s" %
-                                    self.pinning_override_type)
+            raise Exception("pinning_override: unsupported pinning_override_type  %s" % self.pinning_override_type)
 
         return cmd
 
@@ -247,7 +246,7 @@ class IntelHydraMPI(IntelMPI):
 
         if self.options.impi_daplud:
             if self.options.impi_xrc:
-                self.log.warning('Ignoring XRC setting when also requesting UD')
+                logging.warning('Ignoring XRC setting when also requesting UD')
             self.mpiexec_global_options['I_MPI_DAPL_UD'] = _enable_disable(self.options.impi_daplud)
             if 'I_MPI_DAPL_UD_PROVIDER' not in os.environ:
                 self.mpiexec_global_options['I_MPI_DAPL_UD_PROVIDER'] = 'ofa-v2-mlx4_0-1u'
@@ -277,7 +276,7 @@ class IntelMPI2019(IntelHydraMPIPbsdsh):
         impi_tmpdir = tempfile.gettempdir()
         self.mpiexec_global_options['I_MPI_TMPDIR'] = impi_tmpdir
         os.environ['I_MPI_TMPDIR'] = impi_tmpdir
-        self.log.debug("Specified temporary directory to use via $I_MPI_TMPDIR: %s", os.environ['I_MPI_TMPDIR'])
+        logging.debug("Specified temporary directory to use via $I_MPI_TMPDIR: %s", os.environ['I_MPI_TMPDIR'])
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""

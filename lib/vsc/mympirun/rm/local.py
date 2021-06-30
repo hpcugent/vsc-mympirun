@@ -25,6 +25,8 @@
 """
 Local scheduler : no scheduler, act on single node
 """
+import logging
+
 from vsc.mympirun.rm.sched import Sched
 
 
@@ -52,7 +54,7 @@ class Local(Sched):
         self.nodes_uniq = [localhostname]
         self.nodes = self.nodes_uniq * self.nodes_tot_cnt
 
-        self.log.debug("set_nodes: cnt: %d; uniq: %s", self.nodes_tot_cnt, self.nodes_uniq)
+        logging.debug("set_nodes: cnt: %d; uniq: %s", self.nodes_tot_cnt, self.nodes_uniq)
 
     def is_local(self):
         """

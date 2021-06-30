@@ -25,15 +25,13 @@
 """
 Common between mpi and pmi
 """
+import logging
 import os
 import re
 import sys
 
-from vsc.utils.fancylogger import getLogger
 from distutils.version import LooseVersion
 from vsc.utils.missing import get_subclasses
-
-LOGGER = getLogger()
 
 # part of the directory that contains the installed fakes
 INSTALLATION_SUBDIRECTORY_NAME = '(VSC-tools|(?:vsc-)?mympirun)'
@@ -55,7 +53,7 @@ def eb_root_version(name):
         if var_name in os.environ:
             res.append(os.environ.get(var_name))
         else:
-            LOGGER.debug("$%s not defined for %s", var_name, name)
+            logging.debug("$%s not defined for %s", var_name, name)
             return (None, None)
 
     return tuple(res)
@@ -92,7 +90,7 @@ def what_sched(requested, schedm):
         for sched in found_sched:
             if sched._is_sched_for(requested):
                 return sched, found_sched
-        LOGGER.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
+        logging.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
@@ -112,7 +110,7 @@ def what_sched(requested, schedm):
                 return sched, found_sched
 
     # If that fails, try to force the local scheduler
-    LOGGER.debug("No scheduler found in environment, trying local")
+    logging.debug("No scheduler found in environment, trying local")
     return local_sched, found_sched
 
 
@@ -149,7 +147,7 @@ def what_mpi(name, mpi_klass):
     mpirun_path = which('mpirun')
     if mpirun_path is None:
         # no MPI implementation installed
-        LOGGER.warn("no mpirun command found")
+        logging.warn("no mpirun command found")
         return None, None, supp_mpi_impl
 
     scriptname = os.path.basename(os.path.abspath(name))
@@ -158,7 +156,7 @@ def what_mpi(name, mpi_klass):
     # ompirun for OpenMPI or mhmpirun for mpich)
     for mpi in supp_mpi_impl:
         if mpi._is_mpiscriptname_for(scriptname) and mpi._is_mpirun_for(mpirun_path):
-            LOGGER.debug("%s was used to call mympirun", scriptname)
+            logging.debug("%s was used to call mympirun", scriptname)
             return scriptname, mpi, supp_mpi_impl
 
     # mympirun was not called through a known alias, so find out which MPI
@@ -168,7 +166,7 @@ def what_mpi(name, mpi_klass):
             return scriptname, mpi, supp_mpi_impl
 
     # no specific flavor found, default to mpirun_path
-    LOGGER.warn("The executable that called mympirun (%s) isn't supported, defaulting to %s", name, mpirun_path)
+    logging.warn("The executable that called mympirun (%s) isn't supported, defaulting to %s", name, mpirun_path)
     return mpirun_path, None, supp_mpi_impl
 
 
@@ -178,7 +176,7 @@ def stripfake():
     This function removes the fake path trickery from $PATH (assumes (VSC-tools|mympirun)/1.0.0/bin/fake).
     """
 
-    LOGGER.debug("PATH before stripfake(): %s", os.environ['PATH'])
+    logging.debug("PATH before stripfake(): %s", os.environ['PATH'])
 
     # compile a regex that matches the faked mpirun
     reg_fakepath = re.compile(
@@ -197,7 +195,7 @@ def stripfake():
     # remove all $PATH elements that match the fakepath regex
     os.environ['PATH'] = os.pathsep.join([x for x in oldpath if not reg_fakepath.match(x)])
 
-    LOGGER.debug("PATH after stripfake(): %s", os.environ['PATH'])
+    logging.debug("PATH after stripfake(): %s", os.environ['PATH'])
 
 
 def which(cmd):
@@ -211,9 +209,9 @@ def which(cmd):
         cmd_path = os.path.join(path, cmd)
         # only accept path is command is there, and both readable and executable
         if os.access(cmd_path, os.R_OK | os.X_OK):
-            LOGGER.info("Command %s found at %s", cmd, cmd_path)
+            logging.info("Command %s found at %s", cmd, cmd_path)
             return cmd_path
-    LOGGER.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
+    logging.warning("Could not find command '%s' (with permissions to read/execute it) in $PATH (%s)", cmd, paths)
     return None
 
 
@@ -286,47 +284,47 @@ class MpiBase(object):
 
         mpiname = cls._mpirun_for
         if mpiname:
-            LOGGER.debug("Checking whether %s (MPI name: %s) matches %s", cls, mpiname, mpirun_path)
+            logging.debug("Checking whether %s (MPI name: %s) matches %s", cls, mpiname, mpirun_path)
 
             # first, check whether specified mpirun location is in $EBROOT<NAME>
             mpiroot, mpiversion = eb_root_version(mpiname)
             if mpiroot:
-                LOGGER.debug("found mpi root: %s", mpiroot)
+                logging.debug("found mpi root: %s", mpiroot)
                 # try to determine resolved path for both, this may file if we hit a non-existing paths
                 try:
                     mpirun_path_real = os.path.realpath(mpirun_path)
                     mpiroot = os.path.realpath(mpiroot)
                 except (IOError, OSError) as err:
-                    LOGGER.debug("Failed to resolve paths %s and %s, ignoring it: %s", mpirun_path, mpiroot, err)
+                    logging.debug("Failed to resolve paths %s and %s, ignoring it: %s", mpirun_path, mpiroot, err)
 
                 # only if mpirun location is in $EBROOT* location, we should check the version too
                 if mpirun_path.startswith(mpiroot) or mpirun_path_real.startswith(mpiroot):
-                    LOGGER.debug("%s (real %s) is in subdirectory of %s", mpirun_path, mpirun_path_real, mpiroot)
+                    logging.debug("%s (real %s) is in subdirectory of %s", mpirun_path, mpirun_path_real, mpiroot)
 
                     # next, check if version meets requirements (checked via _mpirun_version function)
 
                     # mympirun is not compatible with OpenMPI version 2.0: this version contains a bug
                     # see https://github.com/hpcugent/vsc-mympirun/issues/113
                     if mpiname == "OpenMPI" and version_in_range(mpiversion, "2.0", "2.1"):
-                        LOGGER.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
-                                      "compatible with mympirun. This issue is not present in OpenMPI 1.x and it has "
-                                      "been fixed in OpenMPI 2.1 and further."))
+                        logging.error(("OpenMPI 2.0.x uses a different naming protocol for nodes. As a result, it isn't "
+                                       "compatible with mympirun. This issue is not present in OpenMPI 1.x and it has "
+                                       "been fixed in OpenMPI 2.1 and further."))
                         sys.exit(1)
 
                     mpirun_version_check = getattr(cls, '_mpirun_version', None)
                     if mpirun_version_check and mpiversion:
                         res = mpirun_version_check(mpiversion)
-                        LOGGER.debug("found mpirun version %s match for %s: %s", mpiversion, cls, res)
+                        logging.debug("found mpirun version %s match for %s: %s", mpiversion, cls, res)
                     elif mpirun_version_check is None:
-                        LOGGER.debug("no mpirun version provided, skipping version check, match for %s", cls)
+                        logging.debug("no mpirun version provided, skipping version check, match for %s", cls)
                         res = True
                     else:
-                        LOGGER.debug("mpi version not found, not match for %s", cls)
+                        logging.debug("mpi version not found, not match for %s", cls)
                 else:
-                    LOGGER.debug("%s (real %s) is not in subdirectory of %s, no match for %s",
-                                 mpirun_path, mpirun_path_real, mpiroot, cls)
+                    logging.debug("%s (real %s) is not in subdirectory of %s, no match for %s",
+                                  mpirun_path, mpirun_path_real, mpiroot, cls)
             else:
-                LOGGER.debug("mpi root not defined, no match for %s", cls)
+                logging.debug("mpi root not defined, no match for %s", cls)
 
         return res
 
