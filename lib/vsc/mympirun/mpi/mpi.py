@@ -901,9 +901,9 @@ class MPI(MpiBase):
         self.log.raiseException("pinning_override: not implemented.")
 
     def cleanup(self):
-        """Remove temporary directory (mympirundir)"""
+        """Remove top-level temporary run directory"""
         try:
-            shutil.rmtree(self.mympirundir)
-            self.log.debug("cleanup: removed mympirundir %s", self.mympirundir)
+            shutil.rmtree(self.mympirunbasedir)
+            self.log.debug("cleanup: removed mympirundir %s", self.mympirunbasedir)
         except OSError as err:
-            self.log.raiseException("cleanup: cleaning up mympirundir %s failed: %s", self.mympirundir, err)
+            self.log.raiseException("cleanup: cleaning up mympirundir %s failed: %s", self.mympirunbasedir, err)
