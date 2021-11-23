@@ -85,10 +85,16 @@ class OpenMPI(MPI):
         """Set mpiexec options"""
         super(OpenMPI, self).set_mpiexec_options()
 
-        # specify number of processes to start per node if --hybrid is used
         if self.options.hybrid:
+            # specify number of processes to start per node if --hybrid is used
             procs_per_node = self.multiplier * self.options.hybrid
             self.mpiexec_options.add(['--map-by', 'ppr:%s:node' % procs_per_node])
+        else:
+            # map MPI processes by core (default is --map-by numa),
+            # and bind to core (default is --bind-to numa' when # ranks > 2),
+            # to match default behaviour of Intel MPI;
+            # this is important for performance for OpenFOAM for example, especially on AMD Rome CPUs
+            self.mpiexec_options.add(['--map-by', 'core', '--bind-to', 'core'])
 
     def _make_final_mpirun_cmd(self):
         """

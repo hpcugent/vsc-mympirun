@@ -507,6 +507,10 @@ class TestEnd2End(TestCase):
         regex = re.compile(r"^fake mpirun called with args:.*--mca btl \^uct")
         self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
 
+        # mapping/binding to core is done by default
+        regex = re.compile(r"^fake mpirun called with args:.*--map-by core --bind-to core")
+        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
+
         # BTL self should not be specified when UCX is used as PML (but 'btl ^uct' is specified)
         regex = re.compile("--mca btl .*self")
         self.assertFalse(regex.search(out), "Pattern '%s' should not be found in: %s" % (regex.pattern, out))
