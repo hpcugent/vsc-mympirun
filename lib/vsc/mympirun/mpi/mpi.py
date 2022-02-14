@@ -844,6 +844,9 @@ class MPI(MpiBase):
         Iterates over mpiexec_global_options, and picks the options that aren't already in mpiexec_opts_from_env.
         This way the options that are set with environment variables get a higher priority.
 
+        If value of mpiexec_global_options is a list, the 2nd item of that list is the template to use (instead of
+        MPIEXEC_TEMPLATE_GLOBAL_OPTION).
+
         @return: the final list of options, including the correct command line argument for the mpi flavor
         """
         opts = CmdList()
@@ -855,7 +858,13 @@ class MPI(MpiBase):
             else:
                 # insert the keyvalue pair into the correct command line argument
                 # the command for setting the environment variable depends on the mpi flavor
-                opts.add(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, tmpl_vals={'name': key, "value": val})
+                if isinstance(val, (list, tuple)):
+                    template = val[1]
+                    val = val[0]
+                else:
+                    template = self.MPIEXEC_TEMPLATE_GLOBAL_OPTION
+
+                opts.add(template, tmpl_vals={'name': key, "value": val})
 
         logging.debug("get_mpiexec_global_options: template %s return options %s",
                        self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, opts)

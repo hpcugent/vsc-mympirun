@@ -71,9 +71,22 @@ class OpenMPI(MPI):
             self.mpiexec_global_options['pml'] = 'ucx'
             # disable uct btl, see http://openucx.github.io/ucx/running.html
             self.mpiexec_global_options['btl'] = '^uct'
+            if self.options.debuglvl > 3:
+                os.environ['UCX_LOG_LEVEL'] = 'debug'
+                self.mpiexec_global_options['pml_ucx_verbose'] = self.options.debuglvl
+
+            if self.options.stats:
+                # report UCX stats at the end to stdout
+                os.environ['UCX_STATS_TRIGGER'] =  'exit'
+                os.environ['UCX_STATS_DEST'] = 'stdout'
         else:
             # default PML (ob1) uses Byte Transport Layer (BTL)
             self.mpiexec_global_options['btl'] = self.device
+
+        if self.options.debuglvl > 3:
+            value = [None, "--%(name)s"]
+            for key in ['report-bindings', 'display-map', 'display-allocation']:
+                self.mpiexec_global_options[key] = value
 
         # make sure Open Run-Time Environment (ORTE) uses FQDN hostnames
         # using short hostnames may cause problems (e.g. if SLURM is configured to use FQDN hostnames)
@@ -226,6 +239,8 @@ class OpenMpiOversubscribe(OpenMPI):
         super(OpenMpiOversubscribe, self).set_mpiexec_options()
 
         if self.multiplier > 1 or len(self.mpinodes) > self.ppn:
+            logging.debug("Enable oversubscribe multiplier %s > or mpinodes %s > ppn %s",
+                          self.multiplier > 1, len(self.mpinodes), self.ppn)
             self.mpiexec_options.add("--oversubscribe")
 
 
