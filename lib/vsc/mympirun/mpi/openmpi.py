@@ -78,7 +78,7 @@ class OpenMPI(MPI):
 
             if self.options.stats:
                 # report UCX stats at the end to stdout
-                os.environ['UCX_STATS_TRIGGER'] =  'exit'
+                os.environ['UCX_STATS_TRIGGER'] = 'exit'
                 os.environ['UCX_STATS_DEST'] = 'stdout'
         else:
             # default PML (ob1) uses Byte Transport Layer (BTL)
@@ -86,7 +86,7 @@ class OpenMPI(MPI):
 
         if self.options.debuglvl > 3:
             value = [None, "--%(name)s"]
-            for key in ['report-bindings', 'display-map', 'display-allocation']:
+            for key in ['report-bindings', 'display-map', 'display-allocation', 'tag-output']:
                 self.mpiexec_global_options[key] = value
 
         # make sure Open Run-Time Environment (ORTE) uses FQDN hostnames
@@ -108,7 +108,7 @@ class OpenMPI(MPI):
         # make sure we start enough per node so it can fill the total_number_of_processes
         tnop = self.total_number_of_processes()
         un = len(self.nodes_uniq)
-        ppn = math.ceil(tnop / un)
+        ppn = int(math.ceil(tnop / un))
         logging.debug("Setting up map for %s (%s total number of processes on %s unique nodes)", ppn, tnop, un)
 
         mapby = [
