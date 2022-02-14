@@ -865,8 +865,9 @@ class MPI(MpiBase):
                 # insert the keyvalue pair into the correct command line argument
                 # the command for setting the environment variable depends on the mpi flavor
                 if isinstance(val, (list, tuple)):
-                    template = val[1]
-                    val = val[0]
+                    if len(val) != 2:
+                        raise Exception("Invalid template list/tuple passed %s" % (val,))
+                    val, template = val
                 else:
                     template = self.MPIEXEC_TEMPLATE_GLOBAL_OPTION
 

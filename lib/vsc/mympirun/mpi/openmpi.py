@@ -85,7 +85,8 @@ class OpenMPI(MPI):
             self.mpiexec_global_options['btl'] = self.device
 
         if self.options.debuglvl > 3:
-            value = [None, "--%(name)s"]
+            # need to add toggle switches like --abc (i.e. without value)
+            value = (None, "--%(name)s")
             for key in ['report-bindings', 'display-map', 'display-allocation', 'tag-output']:
                 self.mpiexec_global_options[key] = value
 
@@ -106,13 +107,15 @@ class OpenMPI(MPI):
             over = 'NO'
 
         # make sure we start enough per node so it can fill the total_number_of_processes
-        tnop = self.total_number_of_processes()
-        un = len(self.nodes_uniq)
-        ppn = int(math.ceil(tnop / un))
-        logging.debug("Setting up map for %s (%s total number of processes on %s unique nodes)", ppn, tnop, un)
+        tot_processes = self.total_number_of_processes()
+        unique_nodes = len(self.nodes_uniq)
+        processes_per_node = int(math.ceil(tot_processes / unique_nodes))
+        logging.debug("Setting up map for %s (%s total number of processes on %s unique nodes)",
+                      processes_per_node, tot_processes, unique_nodes)
 
+        # See https://www.open-mpi.org/doc/current/man1/mpirun.1.php "Mapping, Ranking, and Binding: Oh My!"
         mapby = [
-            'ppr', "%s" % ppn, 'node',
+            'ppr', str(processes_per_node), 'node',
             "PE=%s" % os.environ['OMP_NUM_THREADS'],
             "SPAN",
             "%sOVERSUBSCRIBE" % over,
