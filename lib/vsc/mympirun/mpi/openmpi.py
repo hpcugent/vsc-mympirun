@@ -202,7 +202,7 @@ class OpenMPI(MPI):
                     nodetxt += "%s slots=%s\n" % (node, universe_ppn[node])
 
             # in case of oversubscription or multinode, also use 'slots='
-            elif self.multiplier > 1 or self.ppn < len(self.mpinodes):
+            elif self.is_oversubscribed():
                 for node in nub(self.mpinodes):
                     nodetxt += '%s slots=%s\n' % (node, self.ppn)
             else:
@@ -238,9 +238,7 @@ class OpenMpiOversubscribe(OpenMPI):
 
         super(OpenMpiOversubscribe, self).set_mpiexec_options()
 
-        if self.multiplier > 1 or len(self.mpinodes) > self.ppn:
-            logging.debug("Enable oversubscribe multiplier %s > or mpinodes %s > ppn %s",
-                          self.multiplier > 1, len(self.mpinodes), self.ppn)
+        if self.is_oversubscribed():
             self.mpiexec_options.add("--oversubscribe")
 
 

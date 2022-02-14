@@ -225,6 +225,18 @@ class Sched(SchedBase):
 
         self.mpinodes = res
 
+    def is_oversubscribed(self):
+        """Determine if mpi job is oversubscribed"""
+        res = False
+        if self.multiplier > 1:
+            res = True
+            logging.debug("Is oversubscribed: multiplier %s > 1", self.multiplier > 1)
+        elif self.ppn * len(self.nodes_uniq) < len(self.mpinodes):
+            res = True
+            logging.debug("Is oversubscribed: ppn %s * unique nodes %s < mpinodes %s",
+                          self.ppn, len(self.nodes_uniq), len(self.mpinodes))
+        return  res
+
     def is_local(self):
         """
         Return whether this is a local scheduler or not.
