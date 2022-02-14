@@ -711,6 +711,19 @@ class MPI(MpiBase):
 
         logging.debug("Vars passed: %s", str(self.mpiexec_opts_from_env))
 
+    def total_number_of_processes(self):
+        """Total number processes to start"""
+        # number of procs to start
+        if self.options.universe is not None and self.options.universe > 0:
+            num_proc = self.options.universe
+        elif self.options.hybrid:
+            num_proc = len(self.nodes_uniq) * self.options.hybrid * self.multiplier
+        else:
+            num_proc = self.nodes_tot_cnt * self.multiplier
+
+        logging.debug("Total number of processes to start %s", num_proc)
+        return num_proc
+
     def set_mpiexec_options(self):
         """Add various options to mpiexec_options."""
         self.mpiexec_options = CmdList(*self.MPIEXEC_OPTIONS)
@@ -723,14 +736,7 @@ class MPI(MpiBase):
         # mpdboot global variables
         self.mpiexec_options.add(self.get_mpiexec_global_options())
 
-        # number of procs to start
-        if self.options.universe is not None and self.options.universe > 0:
-            self.mpiexec_options.add(['-np', str(self.options.universe)])
-        elif self.options.hybrid:
-            num_proc = len(self.nodes_uniq) * self.options.hybrid * self.multiplier
-            self.mpiexec_options.add(['-np', str(num_proc)])
-        else:
-            self.mpiexec_options.add(['-np', str(self.nodes_tot_cnt * self.multiplier)])
+        self.mpiexec_options.add(['-np', str(self.total_number_of_processes())])
 
         # pass local env variables to mpiexec
         self.mpiexec_options.add(self.get_mpiexec_opts_from_env())
