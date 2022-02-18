@@ -113,7 +113,7 @@ class OpenMPI(MPI):
         logging.debug("Setting up map for %s (%s total number of processes on %s unique nodes)",
                       processes_per_node, tot_processes, unique_nodes)
 
-        # See https://www.open-mpi.org/doc/current/man1/mpirun.1.php "Mapping, Ranking, and Binding: Oh My!"
+        # See https://www.open-mpi.org/doc/v4.1/man1/mpirun.1.php "Mapping, Ranking, and Binding: Oh My!"
         mapby = [
             'ppr', str(processes_per_node), 'node',
             "PE=%s" % os.environ['OMP_NUM_THREADS'],
