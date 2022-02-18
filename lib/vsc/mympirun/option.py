@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2021 Ghent University
+# Copyright 2009-2022 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -46,6 +46,7 @@ class CommonOption(GeneralOption):
     """
     Parses commandline options and sets them to variables
     """
+    SETROOTLOGGER = True
     PARSER = MympirunParser
     ALLOPTSMANDATORY = False  # eg scriptname and other options. same for mpirun options
     INTERSPERSED = False  # Stop parsing cmdline, all others opts are opts for the exe

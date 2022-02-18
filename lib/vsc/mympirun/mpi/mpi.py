@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2021 Ghent University
+# Copyright 2011-2022 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -711,6 +711,19 @@ class MPI(MpiBase):
 
         logging.debug("Vars passed: %s", str(self.mpiexec_opts_from_env))
 
+    def total_number_of_processes(self):
+        """Total number processes to start"""
+        # number of procs to start
+        if self.options.universe is not None and self.options.universe > 0:
+            num_proc = self.options.universe
+        elif self.options.hybrid:
+            num_proc = len(self.nodes_uniq) * self.options.hybrid * self.multiplier
+        else:
+            num_proc = self.nodes_tot_cnt * self.multiplier
+
+        logging.debug("Total number of processes to start %s", num_proc)
+        return num_proc
+
     def set_mpiexec_options(self):
         """Add various options to mpiexec_options."""
         self.mpiexec_options = CmdList(*self.MPIEXEC_OPTIONS)
@@ -723,14 +736,7 @@ class MPI(MpiBase):
         # mpdboot global variables
         self.mpiexec_options.add(self.get_mpiexec_global_options())
 
-        # number of procs to start
-        if self.options.universe is not None and self.options.universe > 0:
-            self.mpiexec_options.add(['-np', str(self.options.universe)])
-        elif self.options.hybrid:
-            num_proc = len(self.nodes_uniq) * self.options.hybrid * self.multiplier
-            self.mpiexec_options.add(['-np', str(num_proc)])
-        else:
-            self.mpiexec_options.add(['-np', str(self.nodes_tot_cnt * self.multiplier)])
+        self.mpiexec_options.add(['-np', str(self.total_number_of_processes())])
 
         # pass local env variables to mpiexec
         self.mpiexec_options.add(self.get_mpiexec_opts_from_env())
@@ -844,6 +850,9 @@ class MPI(MpiBase):
         Iterates over mpiexec_global_options, and picks the options that aren't already in mpiexec_opts_from_env.
         This way the options that are set with environment variables get a higher priority.
 
+        If value of mpiexec_global_options is a list, the 2nd item of that list is the template to use (instead of
+        MPIEXEC_TEMPLATE_GLOBAL_OPTION).
+
         @return: the final list of options, including the correct command line argument for the mpi flavor
         """
         opts = CmdList()
@@ -855,7 +864,14 @@ class MPI(MpiBase):
             else:
                 # insert the keyvalue pair into the correct command line argument
                 # the command for setting the environment variable depends on the mpi flavor
-                opts.add(self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, tmpl_vals={'name': key, "value": val})
+                if isinstance(val, (list, tuple)):
+                    if len(val) != 2:
+                        raise Exception("Invalid template list/tuple passed %s" % (val,))
+                    val, template = val
+                else:
+                    template = self.MPIEXEC_TEMPLATE_GLOBAL_OPTION
+
+                opts.add(template, tmpl_vals={'name': key, "value": val})
 
         logging.debug("get_mpiexec_global_options: template %s return options %s",
                        self.MPIEXEC_TEMPLATE_GLOBAL_OPTION, opts)

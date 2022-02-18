@@ -1,5 +1,5 @@
 #
-# Copyright 2012-2021 Ghent University
+# Copyright 2012-2022 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -31,6 +31,7 @@ End-to-end tests for mympirun (with mocking of real 'mpirun' command).
 """
 import copy
 import glob
+import logging
 import os
 import re
 import stat
@@ -289,8 +290,11 @@ class TestEnd2End(TestCase):
     def test_option_hybrid_openmpi(self):
         """Test --hybrid command line option with OpenMPI"""
         install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '3.1')
-        ec, out = run([sys.executable, self.mympiscript, '--hybrid', '5', 'hostname'])
-        self.assertTrue(" --map-by ppr:5:node " in out)
+        ec, out = run([sys.executable, self.mympiscript, '--debug', '--hybrid', '5', 'hostname'])
+        val = " --map-by ppr:5:node:PE=1:SPAN:NOOVERSUBSCRIBE " in out
+        if not val:
+            logging.error("test_option_hybrid_openmpi failed output %s", out)
+        self.assertTrue(val)
 
     def test_option_universe(self):
         """Test --universe command line option"""
@@ -508,12 +512,19 @@ class TestEnd2End(TestCase):
         self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
 
         # mapping/binding to core is done by default
-        regex = re.compile(r"^fake mpirun called with args:.*--map-by core --bind-to core")
+        regex = re.compile(r"^fake mpirun called with args:.*--map-by ppr:2:node:PE=1:SPAN:NOOVERSUBSCRIBE")
         self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
 
         # BTL self should not be specified when UCX is used as PML (but 'btl ^uct' is specified)
         regex = re.compile("--mca btl .*self")
         self.assertFalse(regex.search(out), "Pattern '%s' should not be found in: %s" % (regex.pattern, out))
+
+        # test oversubscribe
+        ec, out = run([sys.executable, self.mympiscript, '--multi=5', 'mpi_hello'])
+        self.assertEqual(ec, 0, "Command with multi exited normally: exit code %s; output: %s" % (ec, out))
+
+        regex = re.compile(r"^fake mpirun called with args:.*--map-by ppr:10:node:PE=1:SPAN:OVERSUBSCRIBE")
+        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
 
         # if ompi_info doesn't report UCX as a supported PML, then openib btl is still used
         ompi_info_lines.pop()

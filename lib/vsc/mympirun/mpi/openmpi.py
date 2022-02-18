@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2021 Ghent University
+# Copyright 2009-2022 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -27,6 +27,7 @@ OpenMPI specific classes
 Documentation can be found at https://www.open-mpi.org/doc/
 """
 import logging
+import math
 import os
 import re
 import sys
@@ -71,9 +72,23 @@ class OpenMPI(MPI):
             self.mpiexec_global_options['pml'] = 'ucx'
             # disable uct btl, see http://openucx.github.io/ucx/running.html
             self.mpiexec_global_options['btl'] = '^uct'
+            if self.options.debuglvl > 3:
+                os.environ['UCX_LOG_LEVEL'] = 'debug'
+                self.mpiexec_global_options['pml_ucx_verbose'] = self.options.debuglvl
+
+            if self.options.stats:
+                # report UCX stats at the end to stdout
+                os.environ['UCX_STATS_TRIGGER'] = 'exit'
+                os.environ['UCX_STATS_DEST'] = 'stdout'
         else:
             # default PML (ob1) uses Byte Transport Layer (BTL)
             self.mpiexec_global_options['btl'] = self.device
+
+        if self.options.debuglvl > 3:
+            # need to add toggle switches like --abc (i.e. without value)
+            value = (None, "--%(name)s")
+            for key in ['report-bindings', 'display-map', 'display-allocation', 'tag-output']:
+                self.mpiexec_global_options[key] = value
 
         # make sure Open Run-Time Environment (ORTE) uses FQDN hostnames
         # using short hostnames may cause problems (e.g. if SLURM is configured to use FQDN hostnames)
@@ -85,16 +100,28 @@ class OpenMPI(MPI):
         """Set mpiexec options"""
         super(OpenMPI, self).set_mpiexec_options()
 
-        if self.options.hybrid:
-            # specify number of processes to start per node if --hybrid is used
-            procs_per_node = self.multiplier * self.options.hybrid
-            self.mpiexec_options.add(['--map-by', 'ppr:%s:node' % procs_per_node])
+        if self.is_oversubscribed():
+            logging.debug("Allow oversubscription")
+            over = ''
         else:
-            # map MPI processes by core (default is --map-by numa),
-            # and bind to core (default is --bind-to numa' when # ranks > 2),
-            # to match default behaviour of Intel MPI;
-            # this is important for performance for OpenFOAM for example, especially on AMD Rome CPUs
-            self.mpiexec_options.add(['--map-by', 'core', '--bind-to', 'core'])
+            over = 'NO'
+
+        # make sure we start enough per node so it can fill the total_number_of_processes
+        tot_processes = self.total_number_of_processes()
+        unique_nodes = len(self.nodes_uniq)
+        processes_per_node = int(math.ceil(tot_processes / unique_nodes))
+        logging.debug("Setting up map for %s (%s total number of processes on %s unique nodes)",
+                      processes_per_node, tot_processes, unique_nodes)
+
+        # See https://www.open-mpi.org/doc/v4.1/man1/mpirun.1.php "Mapping, Ranking, and Binding: Oh My!"
+        mapby = [
+            'ppr', str(processes_per_node), 'node',
+            "PE=%s" % os.environ['OMP_NUM_THREADS'],
+            "SPAN",
+            "%sOVERSUBSCRIBE" % over,
+        ]
+
+        self.mpiexec_options.add(['--map-by', ':'.join(mapby)])
 
     def _make_final_mpirun_cmd(self):
         """
@@ -189,7 +216,7 @@ class OpenMPI(MPI):
                     nodetxt += "%s slots=%s\n" % (node, universe_ppn[node])
 
             # in case of oversubscription or multinode, also use 'slots='
-            elif self.multiplier > 1 or self.ppn < len(self.mpinodes):
+            elif self.is_oversubscribed():
                 for node in nub(self.mpinodes):
                     nodetxt += '%s slots=%s\n' % (node, self.ppn)
             else:
@@ -225,7 +252,7 @@ class OpenMpiOversubscribe(OpenMPI):
 
         super(OpenMpiOversubscribe, self).set_mpiexec_options()
 
-        if self.multiplier > 1 or len(self.mpinodes) > self.ppn:
+        if self.is_oversubscribed():
             self.mpiexec_options.add("--oversubscribe")
 
 
