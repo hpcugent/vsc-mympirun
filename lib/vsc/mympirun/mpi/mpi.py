@@ -317,6 +317,17 @@ class MPI(MpiBase):
             # non-fatal
             logging.error("Stack size %s%s too low? Increase with ulimit -s unlimited", soft, 'kB')
 
+    def get_threads(self):
+        """Return number of threads that can be started"""
+        if self.options.hybrid:
+            threads = max(self.ppn // self.options.hybrid, 1)
+            logging.debug("Hybrid %s, number of threads is %s", self.options.hybrid, threads)
+        else:
+            threads = 1
+            logging.debug("No hybrid, number of threads is %s", threads)
+
+        return threads
+
     def set_omp_threads(self):
         """
         Sets ompthreads to the amount of threads every MPI process should use.
@@ -327,10 +338,7 @@ class MPI(MpiBase):
         if 'OMP_NUM_THREADS' in os.environ:
             threads = os.environ['OMP_NUM_THREADS']
         else:
-            if not self.options.hybrid:
-                threads = 1
-            else:
-                threads = max(self.ppn // self.options.hybrid, 1)
+            threads = self.get_threads()
 
         logging.debug("Set OMP_NUM_THREADS to %s", threads)
 

@@ -291,7 +291,7 @@ class TestEnd2End(TestCase):
         """Test --hybrid command line option with OpenMPI"""
         install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '3.1')
         ec, out = run([sys.executable, self.mympiscript, '--debug', '--hybrid', '5', 'hostname'])
-        val = " --map-by ppr:5:node:PE=1:SPAN:NOOVERSUBSCRIBE " in out
+        val = " --map-by ppr:5:node:PE=2469:SPAN:NOOVERSUBSCRIBE " in out
         if not val:
             logging.error("test_option_hybrid_openmpi failed output %s", out)
         self.assertTrue(val)

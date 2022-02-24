@@ -116,7 +116,7 @@ class OpenMPI(MPI):
         # See https://www.open-mpi.org/doc/v4.1/man1/mpirun.1.php "Mapping, Ranking, and Binding: Oh My!"
         mapby = [
             'ppr', str(processes_per_node), 'node',
-            "PE=%s" % os.environ['OMP_NUM_THREADS'],
+            "PE=%s" % self.get_threads(),
             "SPAN",
             "%sOVERSUBSCRIBE" % over,
         ]
