@@ -241,6 +241,11 @@ class MPI(MpiBase):
             logging.debug("Setting hybrid %s number of ranks", hybrid)
             mpi_info.ranks = hybrid
             self.set_env('OMP_NUM_THREADS', max(1, mpi_info.cores // hybrid))
+            self.set_env('OMP_PROC_BIND', 'true')
+
+        if self.options.debuglvl > 3:
+            self.set_env('OMP_DISPLAY_ENV', 'TRUE')
+            self.set_env('OMP_DISPLAY_AFFINITY', 'TRUE')
 
         return mpi_info
 

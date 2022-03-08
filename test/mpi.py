@@ -164,11 +164,29 @@ class TestMPI(TestCase):
 
     def test_set_omp_threads(self):
         """test if OMP_NUM_THREAD gets set correctly"""
+        if 'OMP_NUM_THREADS' in os.environ:
+            del os.environ['OMP_NUM_THREADS']
+        if 'OMP_PROC_BIND' in os.environ:
+            del os.environ['OMP_PROC_BIND']
         mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
         mpi_instance.set_omp_threads()
-        self.assertTrue(getattr(mpi_instance.options, 'ompthreads') is not None, msg="ompthreads was not set")
-        self.assertEqual(os.environ["OMP_NUM_THREADS"], getattr(mpi_instance.options, 'ompthreads', None),
+        self.assertTrue(getattr(mpi_instance.options, 'ompthreads', None) is not None, msg="ompthreads was not set")
+        self.assertEqual(int(os.environ["OMP_NUM_THREADS"]), mpi_instance.options.ompthreads,
                          msg="ompthreads has not been set in the environment variable OMP_NUM_THREADS")
+        self.assertEqual(os.environ["OMP_NUM_THREADS"], "1")
+        self.assertEqual(os.environ["OMP_PROC_BIND"], 'true')
+
+    def test_set_omp_threads_exist(self):
+        """test if OMP_NUM_THREAD gets set correctly"""
+        os.environ['OMP_NUM_THREADS'] = '987'
+        os.environ['OMP_PROC_BIND'] = 'false'
+        mpi_instance = getinstance(mpim.MPI, Local, MympirunOption())
+        mpi_instance.set_omp_threads()
+        self.assertTrue(getattr(mpi_instance.options, 'ompthreads', None) is not None, msg="ompthreads was not set")
+        self.assertEqual(int(os.environ["OMP_NUM_THREADS"]), mpi_instance.options.ompthreads,
+                         msg="ompthreads has not been set in the environment variable OMP_NUM_THREADS")
+        self.assertEqual(os.environ["OMP_NUM_THREADS"], "987")
+        self.assertEqual(os.environ["OMP_PROC_BIND"], 'false')
 
     def test_pinning_override_intel(self):
         """Test if pinning is set correctly when asked"""
