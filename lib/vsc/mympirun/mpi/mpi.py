@@ -63,6 +63,10 @@ you can increase the timeout threshold via --output-check-timeout (current setti
 
 TIMEOUT_FATAL_MSG = "This is considered fatal (unless --disable-output-check-fatal is used)"
 
+OMP_NUM_THREADS = 'OMP_NUM_THREADS'
+OMP_PROC_BIND = 'OMP_PROC_BIND'
+OMP_DISPLAY_ENV = 'OMP_DISPLAY_ENV'
+OMP_DISPLAY_AFFINITY = 'OMP_DISPLAY_AFFINITY'
 
 class RunMPI(RunNoShell):
     """
@@ -335,16 +339,25 @@ class MPI(MpiBase):
         For example, with hybrid 2 every MPI process should have a total 2 threads (each on a seperate processor).
         This way each node will have 8 MPI processes (assuming ppn is 16). Will default to 1 if hybrid is disabled.
         """
-        if 'OMP_NUM_THREADS' in os.environ:
-            threads = os.environ['OMP_NUM_THREADS']
+        if OMP_NUM_THREADS in os.environ:
+            threads = int(os.environ[OMP_NUM_THREADS])
         else:
             threads = self.get_threads()
 
-        logging.debug("Set OMP_NUM_THREADS to %s", threads)
+        logging.debug("Set %s to %s", OMP_NUM_THREADS, threads)
 
-        os.environ['OMP_NUM_THREADS'] = str(threads)
-
+        os.environ[OMP_NUM_THREADS] = str(threads)
         setattr(self.options, 'ompthreads', threads)
+
+        if OMP_PROC_BIND not in os.environ:
+            logging.debug("Set %s to true", OMP_PROC_BIND)
+            os.environ[OMP_PROC_BIND] = 'true'
+
+        if self.options.debuglvl > 3:
+            if OMP_DISPLAY_ENV not in os.environ:
+                os.environ[OMP_DISPLAY_ENV] = 'TRUE'
+            if OMP_DISPLAY_AFFINITY not in os.environ:
+                os.environ[OMP_DISPLAY_AFFINITY] = 'TRUE'
 
     def set_netmask(self):
         """
