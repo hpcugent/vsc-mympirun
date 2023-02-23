@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2022 Ghent University
+# Copyright 2019-2023 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -27,7 +27,6 @@ Base PMI MPI class, all actual classes should inherit from this one
 
 The role of the MPI class is very limited, mainly to provide supported PMI flavour/version
 """
-from __future__ import print_function
 import logging
 import os
 import re

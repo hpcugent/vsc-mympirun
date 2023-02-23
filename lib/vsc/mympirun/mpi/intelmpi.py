@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2022 Ghent University
+# Copyright 2011-2023 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -154,7 +154,8 @@ class IntelMPI(MPI):
                 # make the psm tmi config
                 tmicfg = os.path.join(self.mympirundir, '..', 'intelmpi.tmi.conf')
                 if not os.path.exists(tmicfg):
-                    open(tmicfg, 'w').write('psm 1.0 libtmip_psm.so " "\n')
+                    with open(tmicfg, 'w') as fih:
+                        fih.write('psm 1.0 libtmip_psm.so " "\n')
                 self.mpiexec_global_options['TMI_CONFIG'] = tmicfg
             self.mpiexec_global_options['I_MPI_FABRICS'] = 'shm:tmi'
             self.mpiexec_global_options['I_MPI_TMI_PROVIDER'] = 'psm'

@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2022 Ghent University
+# Copyright 2009-2023 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -114,7 +114,8 @@ class Sched(SchedBase):
         filename = '/proc/cpuinfo'
         regcores = re.compile(r"^processor\s*:\s*\d+\s*$", re.M)
 
-        self.cores_per_node = len(regcores.findall(open(filename).read()))
+        with open(filename) as fih:
+            self.cores_per_node = len(regcores.findall(fih.read()))
 
         logging.debug("set_cores_per_node: found %s", self.cores_per_node)
 

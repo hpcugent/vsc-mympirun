@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2022 Ghent University
+# Copyright 2019-2023 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -32,7 +32,6 @@ import sys
 import re
 
 from vsc.install.testing import TestCase
-from vsc.utils.py2vs3 import is_string
 from vsc.utils.run import run
 
 from sched import reset_env
@@ -120,7 +119,7 @@ class PMITest(TestCase):
         return mpirun
 
     def set_env(self, env):
-        if is_string(env):
+        if isinstance(env, str):
             for line in env.split("\n"):
                 if '=' in line:
                     os.environ.update(dict([line.strip().split("=", 1)]))
