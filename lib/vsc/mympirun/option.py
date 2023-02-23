@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2022 Ghent University
+# Copyright 2009-2023 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -25,8 +25,6 @@
 """
 Optionparser for mympirun
 """
-from __future__ import print_function
-
 import copy
 import os
 

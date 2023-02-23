@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2022 Ghent University
+# Copyright 2009-2023 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -72,7 +72,8 @@ class PBS(Sched):
             raise Exception("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
 
         try:
-            self.nodes = [x.strip() for x in open(filename).read().split("\n") if len(x.strip()) > 0]
+            with open(filename) as fih:
+                self.nodes = [x.strip() for x in fih.read().split("\n") if len(x.strip()) > 0]
             logging.debug("set_nodes: from %s: %s", filename, self.nodes)
         except IOError:
             raise Exception("set_nodes: failed to get nodes from nodefile %s" % filename)

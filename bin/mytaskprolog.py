@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2009-2022 Ghent University
+# Copyright 2009-2023 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -28,8 +28,6 @@ Generate preferred CUDA_VISIBLE_DEVICES as part of srun task prolog
 
 Work around some slurm issues
 """
-
-from __future__ import print_function
 
 from vsc.utils.affinity import sched_getaffinity
 

@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2022 Ghent University
+# Copyright 2009-2023 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -137,7 +137,8 @@ class OpenMPI(MPI):
         sockets_per_node = self.options.sockets_per_node
         if sockets_per_node == 0:
             try:
-                proc_cpuinfo = open('/proc/cpuinfo').read()
+                with open('/proc/cpuinfo') as fih:
+                    proc_cpuinfo = fih.read()
             except IOError as err:
                 error_msg = "Failed to read /proc/cpuinfo to determine number of sockets per node: %s" % err
                 error_msg += "; use --sockets-per-node to override"
