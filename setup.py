@@ -40,14 +40,14 @@ MYMPIRUN_ALIASES = ['ihmpirun', 'impirun', 'm2hmpirun', 'm2mpirun', 'mhmpirun', 
 
 PACKAGE = {
     'install_requires': [
-        'vsc-base >= 3.0.1',
+        'vsc-base >= 3.5.3',
         'vsc-install >= 0.15.1',
         'IPy',
     ],
     'tests_require': [
         'mock',
     ],
-    'version': '5.3.0',
+    'version': '5.3.1',
     'author': [sdw, kh],
     'maintainer': [sdw, kh],
     'zip_safe': False,
