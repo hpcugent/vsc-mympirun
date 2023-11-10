@@ -51,14 +51,14 @@ class SLURM(Sched):
 
         nodelist = os.environ.get(self.SCHED_ENVIRON_NODE_INFO)
         if nodelist is None:
-            raise Exception("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
+            raise Exception(f"set_nodes: failed to get ${self.SCHED_ENVIRON_NODE_INFO} from environment")
         else:
             logging.debug("set_nodes: obtained $%s value: %s", self.SCHED_ENVIRON_NODE_INFO, nodelist)
 
-        cmd = "scontrol show hostname %s" % nodelist
+        cmd = f"scontrol show hostname {nodelist}"
         ec, out = run(cmd)
         if ec:
-            raise Exception("set_nodes: failed to get list of unique hostnames using '%s': %s" % (cmd, out))
+            raise Exception(f"set_nodes: failed to get list of unique hostnames using '{cmd}': {out}")
         else:
             res = out.strip().split('\n')
 
@@ -74,7 +74,7 @@ class SLURM(Sched):
         tpn_key = 'SLURM_TASKS_PER_NODE'
         tpn_spec = os.environ.get(tpn_key)
         if tpn_spec is None:
-            raise Exception("set_nodes: failed to get $%s from environment" % tpn_key)
+            raise Exception(f"set_nodes: failed to get ${tpn_key} from environment")
         else:
             logging.debug("set_nodes: obtained $%s value: %s", tpn_key, tpn_spec)
             # duplicate counts are compacted into something like '2(x3)', so we unroll those
@@ -97,7 +97,7 @@ class SLURM(Sched):
         tpn = self._get_tasks_per_node()
 
         if len(self.nodes_uniq) != len(tpn):
-            raise Exception("nodes_uniq vs tpn (tasks per node) mismatch: %s vs %s" % (self.nodes_uniq, tpn))
+            raise Exception(f"nodes_uniq vs tpn (tasks per node) mismatch: {self.nodes_uniq} vs {tpn}")
 
         self.nodes_tot_cnt = sum(tpn)
 

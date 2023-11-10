@@ -90,7 +90,7 @@ class Sched(SchedBase):
         self.mpinodes = None
         self.set_mpinodes()
 
-        super(Sched, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     # other methods
     def set_sched_id(self):
@@ -106,7 +106,7 @@ class Sched(SchedBase):
                                                     random.randint(0, 10 ** 5 - 1))
                 logging.debug("set_sched_id: using generated id %s", self.sched_id)
             else:
-                raise Exception("set_sched_id: failed to get id from environment variable %s" % self.SCHED_ENVIRON_ID)
+                raise Exception(f"set_sched_id: failed to get id from environment variable {self.SCHED_ENVIRON_ID}")
 
     def set_cores_per_node(self):
         """Determine the number of available cores on this node, based on /proc/cpuinfo"""
@@ -222,7 +222,7 @@ class Sched(SchedBase):
             res.sort()
             logging.debug("set_mpinodes sort nodes (mode %s)", ordermode)
         else:
-            raise Exception("set_mpinodes unknown ordermode %s" % ordermode)
+            raise Exception(f"set_mpinodes unknown ordermode {ordermode}")
 
         self.mpinodes = res
 

@@ -64,7 +64,7 @@ class TasksOption(MypmirunOption):
 
     def _modify_base_options(self, base_opts):
         """Remove some mympirun specific options"""
-        base_opts = super(TasksOption, self)._modify_base_options(base_opts)
+        base_opts = super()._modify_base_options(base_opts)
         for longopt in ['showsched', 'setsched', 'showmpi', 'setmpi']:
             del base_opts[longopt]
 

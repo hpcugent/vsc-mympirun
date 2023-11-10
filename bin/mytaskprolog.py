@@ -34,7 +34,7 @@ from vsc.utils.affinity import sched_getaffinity
 
 def export(key, value):
     """print export key=value, which is picked up by the task prolog"""
-    print("export %s=%s" % (key, value))
+    print(f"export {key}={value}")
 
 
 def get_preferred_gpu_map():
@@ -49,7 +49,7 @@ def preferred_cvd():
     """Generate the CUDA_VISIBLE_DEVICES value"""
     gpu_map = get_preferred_gpu_map()
     current_idx = [idx for idx, bit in enumerate(sched_getaffinity().get_cpus()) if bit and idx < len(gpu_map)]
-    gpus = set([gpu_map[idx] for idx in current_idx])
+    gpus = {gpu_map[idx] for idx in current_idx}
     export('CUDA_VISIBLE_DEVICES', ','.join([str(x) for x in sorted(gpus)]))
 
 

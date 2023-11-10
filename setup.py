@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: latin-1 -*-
 #
 # Copyright 2009-2021 Ghent University
 #
@@ -47,7 +46,7 @@ PACKAGE = {
     'tests_require': [
         'mock',
     ],
-    'version': '5.3.1',
+    'version': '5.3.2',
     'author': [sdw, kh],
     'maintainer': [sdw, kh],
     'zip_safe': False,
@@ -108,7 +107,7 @@ class mympirun_vsc_install_scripts(vsc_setup.vsc_install_scripts):
                     os.remove(fake_mpirun)
 
                 # create another symlink that links mpirun to mympirun
-                mympirun_src = '../%s' % rel_script
+                mympirun_src = f'../{rel_script}'
                 os.symlink(mympirun_src, 'mpirun')
                 self.outfiles.append(fake_mpirun)
                 log.info("symlink %s to %s newoutfile %s", mympirun_src, 'mpirun', fake_mpirun)
@@ -141,14 +140,14 @@ try:
                 if FAKE_SUBDIRECTORY_NAME in res:
                     idx = res.index(FAKE_SUBDIRECTORY_NAME)
                     if idx >= 0:
-                        res[idx] = '%s/mpirun' % FAKE_SUBDIRECTORY_NAME
+                        res[idx] = f'{FAKE_SUBDIRECTORY_NAME}/mpirun'
             return res
         dist.metadata_listdir = new_func
         _orig_install_egg_scripts(self, dist)
 
     sys.modules['setuptools.command.easy_install'].easy_install.install_egg_scripts = _new_install_egg_scripts
 except Exception as e:
-    raise Exception("mympirun requires setuptools: %s" % e)
+    raise Exception(f"mympirun requires setuptools: {e}")
 
 # next monstrocity: inject header in script to filter out PYTHONPATH in mixed EB py3/py2 envs
 # mympirun modules rely on the system python and dependencies, so this is fine

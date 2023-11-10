@@ -50,7 +50,7 @@ class PBS(Sched):
 
     def __init__(self, *args, **kwargs):
         """PBS constructor"""
-        super(PBS, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
         # pbsssh is only used if native support for pbsdsh is not supported in the MPI library;
         # e.g. Intel MPI v5.x and newer supports using pbsdsh as launcher natively, no need for pbsssh wrapper
@@ -69,14 +69,14 @@ class PBS(Sched):
 
         filename = os.environ.get(self.SCHED_ENVIRON_NODE_INFO)
         if filename is None:
-            raise Exception("set_nodes: failed to get $%s from environment" % self.SCHED_ENVIRON_NODE_INFO)
+            raise Exception(f"set_nodes: failed to get ${self.SCHED_ENVIRON_NODE_INFO} from environment")
 
         try:
             with open(filename) as fih:
                 self.nodes = [x.strip() for x in fih.read().split("\n") if len(x.strip()) > 0]
             logging.debug("set_nodes: from %s: %s", filename, self.nodes)
-        except IOError:
-            raise Exception("set_nodes: failed to get nodes from nodefile %s" % filename)
+        except OSError:
+            raise Exception(f"set_nodes: failed to get nodes from nodefile {filename}")
 
         self.nodes_uniq = nub(self.nodes)
         self.nodes_tot_cnt = len(self.nodes)

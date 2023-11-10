@@ -34,7 +34,7 @@ from vsc.mympirun.common import SchedBase
 from vsc.utils.run import run_file, async_to_stdout
 
 
-class Info(object):
+class Info:
     def __init__(self, nodes=None, cores=None, ranks=None, mem=None, gpus=None):
         """Initialise with
         Total:
@@ -53,7 +53,7 @@ class Info(object):
 
     def __str__(self):
         """Human readable"""
-        return "%s nodes; with per node %s cores, %s ranks, %s mem, %s gpus" % (
+        return "{} nodes; with per node {} cores, {} ranks, {} mem, {} gpus".format(
             self.nodes, self.cores, self.ranks, self.mem, self.gpus)
 
     def deepcopy(self):
@@ -70,7 +70,7 @@ class Sched(SchedBase):
 
         self.envs = []  # list of enviroment variable names that are modified
 
-        super(Sched, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
     def set_env(self, key, value, keep=False):
         """
@@ -132,14 +132,14 @@ class Sched(SchedBase):
         """
         Fill in/complete/edit job_info dict and return it
         """
-        logging.warn("Nothing done with job_info %s", job_info)
+        logging.warning("Nothing done with job_info %s", job_info)
         return job_info
 
     def pmicmd_size_args(self, mpi_info):
         """
         Convert mpi_info into launcher list of args
         """
-        logging.warn("Nothing done with mpi_info %s, no args generated", mpi_info)
+        logging.warning("Nothing done with mpi_info %s, no args generated", mpi_info)
         return []
 
     def pmicmd_sizing(self):

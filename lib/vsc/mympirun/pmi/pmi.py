@@ -29,12 +29,12 @@ PMI instances to track version and flavours etc etc
 PMIX = 'pmix'
 PMI = 'pmi'
 
-class PMI(object):
+class PMI:
     FLAVOUR = None
     VERSION = None
 
     def __str__(self):
-        return "PMI %s version %s" % (self.FLAVOUR, self.VERSION)
+        return f"PMI {self.FLAVOUR} version {self.VERSION}"
 
 class PMIv2(PMI):
     FLAVOUR = PMI

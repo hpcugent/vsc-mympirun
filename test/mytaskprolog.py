@@ -38,7 +38,7 @@ from vsc.utils.affinity import sched_getaffinity, sched_setaffinity
 class TaskPrologEnd2End(PMITest):
     def setUp(self):
         """Prepare to run test."""
-        super(TaskPrologEnd2End, self).setUp()
+        super().setUp()
         self.script = os.path.join(os.path.dirname(self.script), 'mytaskprolog.py')
 
     def test_simple(self):

@@ -48,7 +48,7 @@ def getinstance(mpi, sched, options):
 
     if base_classes not in _coupler_class_cache:
         coupler_class = type(
-            "Coupler_%s_%s" % (mpi.__name__, sched.__name__),
+            f"Coupler_{mpi.__name__}_{sched.__name__}",
             base_classes,
             {
                 'HIDDEN': True,

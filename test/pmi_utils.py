@@ -66,7 +66,7 @@ SLURM_JOB_GPUS=0,1,2,3
 class PMITest(TestCase):
     def setUp(self):
         """Prepare to run test."""
-        super(PMITest, self).setUp()
+        super().setUp()
 
         self.orig_environ = copy.deepcopy(os.environ)
 
@@ -76,13 +76,13 @@ class PMITest(TestCase):
         lib = os.path.join(self.topdir, 'lib')
         # make sure subshell finds .egg files by adding them to the pythonpath
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
-        os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
+        os.environ['PYTHONPATH'] = f"{eggs}:{lib}:{os.getenv('PYTHONPATH', '')}"
 
         # make sure we're using the right mympirun installation...
         ec, out = run([sys.executable, '-c', "import vsc.mympirun; print(vsc.mympirun.__file__)"])
         out = out.strip()
         expected_path = os.path.join(self.topdir, 'lib', 'vsc', 'mympirun')
-        self.assertTrue(os.path.samefile(os.path.dirname(out), expected_path), "%s not in %s" % (out, expected_path))
+        self.assertTrue(os.path.samefile(os.path.dirname(out), expected_path), f"{out} not in {expected_path}")
 
         self.which_patcher = patch('vsc.mympirun.common.which')
         self.mock_which = self.which_patcher.start()
@@ -92,7 +92,7 @@ class PMITest(TestCase):
         self.which_patcher.stop()
         reset_env(self.orig_environ)
 
-        super(PMITest, self).tearDown()
+        super().tearDown()
 
     def eb(self, name, version):
         """setup EB for name/version"""
@@ -110,7 +110,7 @@ class PMITest(TestCase):
         if 'End2End' in self.__class__.__name__:
             # can't mock which in end2end
             path = os.path.dirname(mpirun)
-            os.environ['PATH'] = "%s:%s" % (path, os.environ['PATH'])
+            os.environ['PATH'] = f"{path}:{os.environ['PATH']}"
             if not os.path.exists(path):
                 os.makedirs(path)
 
@@ -130,8 +130,8 @@ class PMITest(TestCase):
         # add dummy ompi_info command (required by OpenMPI31xOr4x.has_ucx method)
         ompi_info_lines = [
             "#!/bin/bash",
-            "echo '                 MCA btl: openib (MCA v2.1.0, API v3.0.0, Component v%s)'" % ompi_ver,
-            "echo '                 MCA pml: ucx (MCA v2.1.0, API v2.0.0, Component v%s)'" % ompi_ver,
+            f"echo '                 MCA btl: openib (MCA v2.1.0, API v3.0.0, Component v{ompi_ver})'",
+            f"echo '                 MCA pml: ucx (MCA v2.1.0, API v2.0.0, Component v{ompi_ver})'",
         ]
         install_fake_cmd('ompi_info', self.tmpdir, '\n'.join(ompi_info_lines))
 
@@ -165,13 +165,13 @@ class PMITest(TestCase):
             test = self.assertEqual
         else:
             test = self.assertNotEqual
-        test(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+        test(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
 
         if pattern is not None:
             regex = re.compile(pattern)
-            self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
+            self.assertTrue(regex.search(out.strip()), f"Pattern '{regex.pattern}' found in: {out}")
 
     def _check_vars(self, envs, missing=False):
         """Check the environment variables are present (or missing)"""
         for env in envs:
-            self.assertEqual(env in os.environ, not missing, "variable %s missing %s %s" % (env, missing, os.environ))
+            self.assertEqual(env in os.environ, not missing, f"variable {env} missing {missing} {os.environ}")
