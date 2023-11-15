@@ -86,7 +86,7 @@ def install_fake_cmd(cmdname, path, cmdtxt):
 
     # set read/exec permissions + add location to $PATH
     os.chmod(fake_cmd, stat.S_IRUSR | stat.S_IXUSR)
-    os.environ['PATH'] = '%s:%s' % (path, os.getenv('PATH', ''))
+    os.environ['PATH'] = f"{path}:{os.getenv('PATH', '')}"
 
 
 def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
@@ -95,8 +95,8 @@ def install_fake_mpirun(cmdname, path, mpi_name, mpi_version, txt=None):
         txt = FAKE_MPIRUN
     install_fake_cmd(cmdname, path, txt)
 
-    os.environ['EBROOT%s' % mpi_name.upper()] = path
-    os.environ['EBVERSION%s' % mpi_name.upper()] = mpi_version
+    os.environ[f'EBROOT{mpi_name.upper()}'] = path
+    os.environ[f'EBVERSION{mpi_name.upper()}'] = mpi_version
 
 
 class TestEnd2End(TestCase):
@@ -104,7 +104,7 @@ class TestEnd2End(TestCase):
 
     def setUp(self):
         """Prepare to run test."""
-        super(TestEnd2End, self).setUp()
+        super().setUp()
 
         self.orig_environ = copy.deepcopy(os.environ)
 
@@ -114,7 +114,7 @@ class TestEnd2End(TestCase):
         lib = os.path.join(self.topdir, 'lib')
         # make sure subshell finds .egg files by adding them to the pythonpath
         eggs = ':'.join(glob.glob(os.path.join(self.topdir, '.eggs', '*.egg')))
-        os.environ['PYTHONPATH'] = '%s:%s:%s' % (eggs, lib, os.getenv('PYTHONPATH', ''))
+        os.environ['PYTHONPATH'] = f"{eggs}:{lib}:{os.getenv('PYTHONPATH', '')}"
 
         os.environ['HOME'] = self.tmpdir
         mpdconf = open(os.path.join(self.tmpdir, '.mpd.conf'), 'w')
@@ -124,13 +124,13 @@ class TestEnd2End(TestCase):
         # add location of symlink 'pbsssh' to actual pbsssh.sh script to $PATH too
         os.mkdir(os.path.join(self.tmpdir, 'bin'))
         os.symlink(os.path.join(self.topdir, 'bin', 'pbsssh.sh'), os.path.join(self.tmpdir, 'bin', 'pbsssh'))
-        os.environ['PATH'] = '%s:%s' % (os.path.join(self.tmpdir, 'bin'), os.getenv('PATH', ''))
+        os.environ['PATH'] = f"{os.path.join(self.tmpdir, 'bin')}:{os.getenv('PATH', '')}"
 
         # make sure we're using the right mympirun installation...
         ec, out = run([sys.executable, '-c', "import vsc.mympirun; print(vsc.mympirun.__file__)"])
         out = out.strip()
         expected_path = os.path.join(self.topdir, 'lib', 'vsc', 'mympirun')
-        self.assertTrue(os.path.samefile(os.path.dirname(out), expected_path), "%s not in %s" % (out, expected_path))
+        self.assertTrue(os.path.samefile(os.path.dirname(out), expected_path), f"{out} not in {expected_path}")
 
         # set variables that exist within jobs, but not locally, for testing
         pbs_tmpdir = os.path.join(self.tmpdir, 'pbs')
@@ -143,17 +143,17 @@ class TestEnd2End(TestCase):
         os.chmod(self.tmpdir, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         reset_env(self.orig_environ)
 
-        super(TestEnd2End, self).tearDown()
+        super().tearDown()
 
     def test_serial(self):
         """Test running of a serial command via mympirun."""
 
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2')
         ec, out = run([sys.executable, self.mympiscript, 'hostname'])
-        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
         regex = re.compile("^fake mpirun called with args: .*hostname$")
 
-        self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
+        self.assertTrue(regex.match(out.strip()), f"Pattern '{regex.pattern}' found in: {out}")
 
     def test_sched(self):
         """Test --sched(type) option."""
@@ -162,13 +162,13 @@ class TestEnd2End(TestCase):
 
         def run_test(mpi_name, mpi_ver, mpirun, pattern):
             """Utilitiy function to run test for a specific case."""
-            tmpdir = os.path.join(self.tmpdir, '%s-%s' % (mpi_name, mpi_ver))
+            tmpdir = os.path.join(self.tmpdir, f'{mpi_name}-{mpi_ver}')
             install_fake_mpirun('mpirun', tmpdir, mpi_name, mpi_ver)
 
             ec, out = run([sys.executable, self.mympiscript, '--setmpi', mpirun, '--sched', 'local', 'hostname'])
-            self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+            self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
             regex = re.compile(regex_tmpl % pattern)
-            self.assertTrue(regex.match(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
+            self.assertTrue(regex.match(out.strip()), f"Pattern '{regex.pattern}' found in: {out}")
 
         run_test('impi', '4.0.0', 'impirun', "-genv I_MPI_DEVICE shm")
         run_test('impi', '5.1.2', 'impirun', "-genv I_MPI_FABRICS shm")
@@ -183,15 +183,15 @@ class TestEnd2End(TestCase):
 
         ec, out = run([sys.executable, self.mympiscript, '--output', f_out, 'hostname'])
 
-        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
-        self.assertFalse(out, "Found output in stdout/stderr: %s" % out)
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
+        self.assertFalse(out, f"Found output in stdout/stderr: {out}")
         self.assertTrue(os.path.isfile(f_out))
 
         regex = re.compile("^fake mpirun called with args: .* hostname\nfake mpirun error$")
 
-        with open(f_out, 'r') as output:
+        with open(f_out) as output:
             text = output.read()
-            self.assertTrue(regex.match(text), "Pattern '%s' found in: %s" % (regex.pattern, text))
+            self.assertTrue(regex.match(text), f"Pattern '{regex.pattern}' found in: {text}")
 
     def test_hanging(self):
         """ Test --output-check-timeout option when program has no output"""
@@ -210,13 +210,13 @@ class TestEnd2End(TestCase):
             'hostname',
         ]
         ec, out = run(cmd)
-        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
 
-        regex = re.compile(("mympirun has been running for .* seconds without seeing any output.\n"
+        regex = re.compile("mympirun has been running for .* seconds without seeing any output.\n"
                             "This may mean that your program is hanging, please check and make sure "
-                            "that is not the case!"))
+                            "that is not the case!")
 
-        self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
+        self.assertTrue(len(regex.findall(out)) == 1, f"Pattern '{regex.pattern}' found in: {out}")
 
     def test_hanging_file(self):
         """ Test --output-check-timeout option when program has no output writing to file"""
@@ -238,10 +238,10 @@ class TestEnd2End(TestCase):
             'hostname',
         ]
         ec, out = run(cmd)
-        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
 
         regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
-        self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
+        self.assertTrue(len(regex.findall(out)) == 1, f"Pattern '{regex.pattern}' found in: {out}")
 
     def test_hanging_fatal(self):
         """Test fatal hanging check when program has no output"""
@@ -262,7 +262,7 @@ class TestEnd2End(TestCase):
         self.assertEqual(ec, 124)
 
         regex = re.compile("mympirun has been running for .* seconds without seeing any output.")
-        self.assertTrue(len(regex.findall(out)) == 1, "Pattern '%s' found in: %s" % (regex.pattern, out))
+        self.assertTrue(len(regex.findall(out)) == 1, f"Pattern '{regex.pattern}' found in: {out}")
 
     def test_option_double(self):
         """Test --double command line option"""
@@ -333,8 +333,8 @@ class TestEnd2End(TestCase):
 
         np_regex = re.compile('-np 1')
         ncpus_regex = re.compile('--ncpus=1')
-        self.assertTrue(np_regex.search(out), "Pattern %s found in %s" % (np_regex, out))
-        self.assertFalse(ncpus_regex.search(out), "Pattern %s found in %s" % (ncpus_regex, out))
+        self.assertTrue(np_regex.search(out), f"Pattern {np_regex} found in {out}")
+        self.assertFalse(ncpus_regex.search(out), f"Pattern {ncpus_regex} found in {out}")
 
     def test_env_variables(self):
         """ Test the passing of (extra) variables """
@@ -344,7 +344,7 @@ class TestEnd2End(TestCase):
         """
         install_fake_mpirun('mpirun', self.tmpdir, 'impi', '5.1.2', txt=fake_mpirun_env)
 
-        os.environ['PYTHONPATH'] = '/just/an/example:%s' % os.getenv('PYTHONPATH', '')
+        os.environ['PYTHONPATH'] = f"/just/an/example:{os.getenv('PYTHONPATH', '')}"
 
         command = [
             sys.executable,
@@ -355,13 +355,13 @@ class TestEnd2End(TestCase):
         ec, out = run(command)
 
         for key in nub(filter(lambda key: key in os.environ, MPI.OPTS_FROM_ENV_BASE)):
-            self.assertTrue(key in out, "%s is not in out" % key)
+            self.assertTrue(key in out, f"{key} is not in out")
 
         regex = r'.*-envlist [^ ]*USER.*'
         self.assertTrue(re.search(regex, out), "Variablesprefix USER isn't passed to mympirun script env")
 
         regex = r'PYTHONPATH=/just/an/example:.*'
-        self.assertTrue(re.search(regex, out), "PYTHONPATH isn't passed to mympirun script env correctly: %s" % out)
+        self.assertTrue(re.search(regex, out), f"PYTHONPATH isn't passed to mympirun script env correctly: {out}")
 
     def change_env(self, cores):
         """Helper method for changing the number of cores in the machinefile"""
@@ -411,7 +411,7 @@ class TestEnd2End(TestCase):
             regexes.append((r'-bootstrap-exec pbsssh', "pbsssh is used when launcher is ssh and pbsdsh is there"))
         else:
             # withtout pbsdsh, no -bootstrap-exec
-            fail_msg = "No -bootstrap-exec option when launcher is ssh and no pbsdsh: %s" % out
+            fail_msg = f"No -bootstrap-exec option when launcher is ssh and no pbsdsh: {out}"
             self.assertFalse(re.search(r'-bootstrap-exec', out), fail_msg)
 
         for regex in regexes:
@@ -432,7 +432,7 @@ class TestEnd2End(TestCase):
         ec, out = run([sys.executable, self.mympiscript, 'hostname'])
         self.assertEqual(ec, 1)
         regex = r"OpenMPI 2\.0\.x uses a different naming protocol for nodes"
-        self.assertTrue(re.search(regex, out), "mympirun should produce an error with ompi 2.0: %s" % out)
+        self.assertTrue(re.search(regex, out), f"mympirun should produce an error with ompi 2.0: {out}")
 
     def test_dry_run(self):
         """Test use of --dry-run/-D option."""
@@ -443,14 +443,14 @@ class TestEnd2End(TestCase):
             self.assertEqual(ec, 0)
 
             regex = re.compile('^mpirun .* hostname$')
-            self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
+            self.assertTrue(regex.search(out.strip()), f"Pattern '{regex.pattern}' found in: {out}")
 
             extra_opts = ['--hybrid', '9']
             ec, out = run([sys.executable, self.mympiscript, dry_run_opt] + extra_opts + ['hostname'])
             self.assertEqual(ec, 0)
 
             regex = re.compile('^mpirun .* -np 9 .* hostname$')
-            self.assertTrue(regex.search(out.strip()), "Pattern '%s' found in: %s" % (regex.pattern, out))
+            self.assertTrue(regex.search(out.strip()), f"Pattern '{regex.pattern}' found in: {out}")
 
     def test_openmpi_slurm(self):
         """Test running mympirun with OpenMPI in a SLURM environment."""
@@ -467,28 +467,28 @@ class TestEnd2End(TestCase):
         install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '2.1', txt=FAKE_MPIRUN + "\nenv | sort")
         ec, out = run([sys.executable, self.mympiscript, 'hostname'])
 
-        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
 
         # make sure output includes defined environment variables
         # and "--mca orte_keep_fqdn_hostnames 1"
         mca_keep_fqdn = "^fake mpirun called with args:.*--mca orte_keep_fqdn_hostnames 1 .*hostname$"
         for pattern in ['^HOME=', '^USER=', '^SLURM_JOBID=', mca_keep_fqdn]:
             regex = re.compile(pattern, re.M)
-            self.assertTrue(regex.search(out), "Pattern '%s' found in: %s" % (regex.pattern, out))
+            self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' found in: {out}")
 
         # $SLURM_EXPORT_ENV should no longer be defined in environment
         regex = re.compile('SLURM_EXPORT_ENV', re.M)
-        self.assertFalse(regex.search(out), "Pattern '%s' *not* found in: %s" % (regex.pattern, out))
+        self.assertFalse(regex.search(out), f"Pattern '{regex.pattern}' *not* found in: {out}")
 
     def test_openmpi3(self):
         """Test dry run with OpenMPI 3."""
         install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '3.1.4')
         ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
 
-        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
 
         regex = re.compile("^fake mpirun called with args:.*--mca btl vader[a-z,]+self")
-        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
 
     def test_openmpi4(self):
         """Test dry run with OpenMPI 4."""
@@ -503,35 +503,35 @@ class TestEnd2End(TestCase):
         install_fake_cmd('ompi_info', self.tmpdir, '\n'.join(ompi_info_lines))
 
         ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
-        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
 
         regex = re.compile(r"^fake mpirun called with args:.*--mca pml ucx")
-        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
 
         regex = re.compile(r"^fake mpirun called with args:.*--mca btl \^uct")
-        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
 
         # mapping/binding to core is done by default
         regex = re.compile(r"^fake mpirun called with args:.*--map-by ppr:2:node:PE=1:SPAN:NOOVERSUBSCRIBE")
-        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
 
         # BTL self should not be specified when UCX is used as PML (but 'btl ^uct' is specified)
         regex = re.compile("--mca btl .*self")
-        self.assertFalse(regex.search(out), "Pattern '%s' should not be found in: %s" % (regex.pattern, out))
+        self.assertFalse(regex.search(out), f"Pattern '{regex.pattern}' should not be found in: {out}")
 
         # test oversubscribe
         ec, out = run([sys.executable, self.mympiscript, '--multi=5', 'mpi_hello'])
-        self.assertEqual(ec, 0, "Command with multi exited normally: exit code %s; output: %s" % (ec, out))
+        self.assertEqual(ec, 0, f"Command with multi exited normally: exit code {ec}; output: {out}")
 
         regex = re.compile(r"^fake mpirun called with args:.*--map-by ppr:10:node:PE=1:SPAN:OVERSUBSCRIBE")
-        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
 
         # if ompi_info doesn't report UCX as a supported PML, then openib btl is still used
         ompi_info_lines.pop()
         install_fake_cmd('ompi_info', self.tmpdir, '\n'.join(ompi_info_lines))
 
         ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
-        self.assertEqual(ec, 0, "Command exited normally: exit code %s; output: %s" % (ec, out))
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
 
         regex = re.compile("^fake mpirun called with args:.*--mca btl vader[a-z,]+self")
-        self.assertTrue(regex.search(out), "Pattern '%s' should be found in: %s" % (regex.pattern, out))
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")

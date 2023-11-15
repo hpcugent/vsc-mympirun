@@ -57,7 +57,7 @@ class TestMPI(TestCase):
     """tests for vsc.mympirun.mpi.mpi functions"""
 
     def setUp(self):
-        super(TestMPI, self).setUp()
+        super().setUp()
 
         self.orig_environ = os.environ
         os.environ['HOME'] = self.tmpdir
@@ -66,7 +66,7 @@ class TestMPI(TestCase):
         """Clean up after running test."""
         reset_env(self.orig_environ)
 
-        super(TestMPI, self).tearDown()
+        super().tearDown()
 
     #######################
     ## General functions ##
@@ -79,11 +79,11 @@ class TestMPI(TestCase):
             # if the scriptname is an executable located on this machine
             if which(scriptname):
                 (returned_scriptname, mpi, found) = what_mpi(scriptname, mpim.MPI)
-                print("what mpi returns: %s, %s, %s" % (returned_scriptname, mpi, found))
+                print(f"what mpi returns: {returned_scriptname}, {mpi}, {found}")
                 # if an mpi implementation was found
                 if mpi:
                     self.assertTrue(mpi in found,
-                                    msg="returned mpi (%s) is not an element of found_mpi (%s)" % (mpi, found))
+                                    msg=f"returned mpi ({mpi}) is not an element of found_mpi ({found})")
                     self.assertTrue(returned_scriptname == scriptname,
                                     msg="returned scriptname (%s) doesn't match actual scriptname (%s)" %
                                     (returned_scriptname, scriptname))
@@ -94,10 +94,10 @@ class TestMPI(TestCase):
 
     def test_stripfake(self):
         """Test if stripfake actually removes the /bin/fake path in $PATH"""
-        print("old path: %s" % os.environ["PATH"])
+        print(f"old path: {os.environ['PATH']}")
         stripfake()
         newpath = os.environ["PATH"]
-        self.assertFalse(("bin/%s/mpirun" % FAKE_SUBDIRECTORY_NAME) in newpath, msg="the faked dir is still in $PATH")
+        self.assertFalse(f"bin/{FAKE_SUBDIRECTORY_NAME}/mpirun" in newpath, msg="the faked dir is still in $PATH")
 
     def test_which(self):
         """test if which returns a path that corresponds to unix which"""
@@ -108,9 +108,9 @@ class TestMPI(TestCase):
             mpiwhich = which(scriptname)
             exitcode, unixwhich = run("which " + scriptname)
             if exitcode > 0:
-                raise Exception("Something went wrong while trying to run `which`: %s" % unixwhich)
+                raise Exception(f"Something went wrong while trying to run `which`: {unixwhich}")
 
-            self.assertTrue(mpiwhich, msg="mpi which did not return anything, (unix which: %s" % unixwhich)
+            self.assertTrue(mpiwhich, msg=f"mpi which did not return anything, (unix which: {unixwhich}")
             self.assertEqual(mpiwhich, unixwhich.strip(),
                              msg="the return values of unix which and which() aren't the same: %s != %s" %
                              (mpiwhich, unixwhich.strip()))
@@ -132,7 +132,7 @@ class TestMPI(TestCase):
 
         optdict = mpi_instance.options.__dict__
 
-        print("args given to mympirunoption: %s, instance options: %s, " % (optionparser.args, optdict))
+        print(f"args given to mympirunoption: {optionparser.args}, instance options: {optdict}, ")
 
         for opt in optionparser.args:
             self.assertFalse(opt in optdict)
@@ -217,7 +217,7 @@ class TestMPI(TestCase):
         mpi_instance.set_netmask()
         # matches "IP address / netmask"
         reg = re.compile(r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
-        print("netmask: %s" % mpi_instance.netmask)
+        print(f"netmask: {mpi_instance.netmask}")
         for substr in mpi_instance.netmask.split(':'):
             try:
                 IP(substr)
@@ -262,9 +262,9 @@ class TestMPI(TestCase):
 
         with open(mpi_instance.mpiexec_node_filename) as file:
             n_slots = mpi_instance.ppn
-            regex = re.compile("slots=%s" % n_slots)
+            regex = re.compile(f"slots={n_slots}")
             machinefile = file.read()
-            self.assertTrue(regex.search(machinefile), "Regex %s not found in %s" % (regex.pattern, machinefile))
+            self.assertTrue(regex.search(machinefile), f"Regex {regex.pattern} not found in {machinefile}")
 
             self.assertEqual(len(nub(mpi_instance.mpinodes)), len(machinefile.strip().split('\n')),
                              msg="mpinodes doesn't match the amount of nodes in the nodefile")
@@ -283,7 +283,7 @@ class TestMPI(TestCase):
         mpdconffn = os.path.expanduser('~/.mpd.conf')
         self.assertTrue(os.path.isfile(mpdconffn), msg="mpd.conf has not been created")
         perms = stat.S_IMODE(os.stat(mpdconffn).st_mode)
-        self.assertEqual(perms, stat.S_IREAD, msg='permissions %0o for mpd.conf %s' % (perms, mpdconffn))
+        self.assertEqual(perms, stat.S_IREAD, msg=f'permissions {perms:0o} for mpd.conf {mpdconffn}')
 
     def test_set_mpdboot_localhost_interface(self):
         """test if mpdboot_localhost_interface is set correctly"""
@@ -301,11 +301,11 @@ class TestMPI(TestCase):
         res = mpi_instance.get_localhosts()
         _, out = run("/sbin/ip -4 -o addr show")
 
-        print("localhosts: %s" % res)
+        print(f"localhosts: {res}")
 
         for (nodename, interface) in res:
             self.assertTrue(nodename in mpi_instance.nodes,
-                            msg="%s is not a node from the nodes list" % nodename)
+                            msg=f"{nodename} is not a node from the nodes list")
             self.assertTrue(interface in out,
                             msg="%s can not be found in the output of `/sbin/ip -4 -o addr show`, output: %s" %
                             (interface, out))
@@ -317,7 +317,7 @@ class TestMPI(TestCase):
         self.assertEqual(mpi_instance.mpiexec_global_options['MKL_NUM_THREADS'], "1",
                          msg="MKL_NUM_THREADS is not equal to 1")
 
-        print("MODULE_ENVIRONMENT_VARIABLES: %s" % mpi_instance.MODULE_ENVIRONMENT_VARIABLES)
+        print(f"MODULE_ENVIRONMENT_VARIABLES: {mpi_instance.MODULE_ENVIRONMENT_VARIABLES}")
 
         if not mpi_instance.options.noenvmodules:
             for env_var in mpi_instance.MODULE_ENVIRONMENT_VARIABLES:
@@ -339,11 +339,11 @@ class TestMPI(TestCase):
         prefixes += mpi_instance.OPTS_FROM_ENV_BASE_PREFIX
         prefixes += mpi_instance.options.variablesprefix
 
-        print("opts_from_env: %s" % mpi_instance.mpiexec_opts_from_env)
+        print(f"opts_from_env: {mpi_instance.mpiexec_opts_from_env}")
         for env_var in mpi_instance.mpiexec_opts_from_env:
             self.assertTrue(env_var.startswith(tuple(prefixes)) or env_var in mpi_instance.OPTS_FROM_ENV_BASE,
-                            msg="%s does not start with a correct prefix, prefixes %s" % (env_var, prefixes))
-            self.assertTrue(env_var in os.environ, msg="%s is not in os.environ, while it should be" % env_var)
+                            msg=f"{env_var} does not start with a correct prefix, prefixes {prefixes}")
+            self.assertTrue(env_var in os.environ, msg=f"{env_var} is not in os.environ, while it should be")
 
         self.assertTrue('PYTHONPATH' in mpi_instance.mpiexec_opts_from_env)
         self.assertTrue('UCX_TLS' in mpi_instance.mpiexec_opts_from_env)
@@ -355,15 +355,15 @@ class TestMPI(TestCase):
 
         argspool = ['mpirun']
         argspool += inst.options.mpirunoptions if inst.options.mpirunoptions else []
-        print("mpirunoptions: %s" % inst.options.mpirunoptions)
+        print(f"mpirunoptions: {inst.options.mpirunoptions}")
         argspool += inst.mpdboot_options
-        print("mpdboot_options: %s" % inst.mpdboot_options)
+        print(f"mpdboot_options: {inst.mpdboot_options}")
         argspool += inst.mpiexec_options
-        print("mpiexec_options: %s" % inst.mpiexec_options)
+        print(f"mpiexec_options: {inst.mpiexec_options}")
         argspool += inst.cmdargs
-        print("cmdargs: %s" % inst.cmdargs)
+        print(f"cmdargs: {inst.cmdargs}")
         for arg in inst.mpirun_cmd:
-            self.assertTrue(arg in argspool, msg="arg: %s, pool: %s" % (arg, argspool))
+            self.assertTrue(arg in argspool, msg=f"arg: {arg}, pool: {argspool}")
 
     def test_mympirun_aliases_setup(self):
         """Make sure that list of mympirun aliases included in setup.py is synced"""

@@ -133,11 +133,11 @@ class CommonOption(GeneralOption):
                 '-machinefile': 1
             }
 
-            for opt in opts_to_remove.keys():
+            for opt, value in opts_to_remove.items():
                 try:
                     pos = newopts.index(opt)
                     # remove 1 + args
-                    del newopts[pos:pos + 1 + opts_to_remove[opt]]
+                    del newopts[pos:pos + 1 + value]
                 except ValueError:
                     continue
 
@@ -145,7 +145,7 @@ class CommonOption(GeneralOption):
 
         # set error logging to file as soon as possible
         if self.options.logtofile:
-            print("logtofile %s" % self.options.logtofile)
+            print(f"logtofile {self.options.logtofile}")
             if os.path.exists(self.options.logtofile):
                 os.remove(self.options.logtofile)
             fancylogger.logToFile(self.options.logtofile)

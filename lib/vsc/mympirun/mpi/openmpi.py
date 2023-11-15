@@ -94,11 +94,11 @@ class OpenMPI(MPI):
         # using short hostnames may cause problems (e.g. if SLURM is configured to use FQDN hostnames)
         self.mpiexec_global_options['orte_keep_fqdn_hostnames'] = '1'
 
-        super(OpenMPI, self).set_mpiexec_global_options()
+        super().set_mpiexec_global_options()
 
     def set_mpiexec_options(self):
         """Set mpiexec options"""
-        super(OpenMPI, self).set_mpiexec_options()
+        super().set_mpiexec_options()
 
         if self.is_oversubscribed():
             logging.debug("Allow oversubscription")
@@ -116,9 +116,9 @@ class OpenMPI(MPI):
         # See https://www.open-mpi.org/doc/v4.1/man1/mpirun.1.php "Mapping, Ranking, and Binding: Oh My!"
         mapby = [
             'ppr', str(processes_per_node), 'node',
-            "PE=%s" % self.get_threads(),
+            f"PE={self.get_threads()}",
             "SPAN",
-            "%sOVERSUBSCRIBE" % over,
+            f"{over}OVERSUBSCRIBE",
         ]
 
         self.mpiexec_options.add(['--map-by', ':'.join(mapby)])
@@ -139,8 +139,8 @@ class OpenMPI(MPI):
             try:
                 with open('/proc/cpuinfo') as fih:
                     proc_cpuinfo = fih.read()
-            except IOError as err:
-                error_msg = "Failed to read /proc/cpuinfo to determine number of sockets per node: %s" % err
+            except OSError as err:
+                error_msg = f"Failed to read /proc/cpuinfo to determine number of sockets per node: {err}"
                 error_msg += "; use --sockets-per-node to override"
                 logging.error(error_msg)
                 sys.exit(1)
@@ -177,7 +177,7 @@ class OpenMPI(MPI):
                     node = rank / self.ppn
                     socket = rank / (self.ppn / sockets_per_node)
                     slot = rank % (self.ppn / sockets_per_node)
-                    ranktxt += "rank %i=+n%i slot=%i:%i\n" % (rank, node, socket, slot)
+                    ranktxt += f"rank {int(rank)}=+n{int(node)} slot={int(socket)}:{int(slot)}\n"
 
             elif override_type in ('spread', 'scatter'):
                 # spread ranks evenly across nodes, but also spread them across sockets
@@ -185,18 +185,18 @@ class OpenMPI(MPI):
                     node = rank % self.nodes_tot_cnt
                     socket = (rank % self.ppn) % sockets_per_node
                     slot = (rank % self.ppn) / sockets_per_node
-                    ranktxt += "rank %i=+n%i slot=%i:%i\n" % (rank, node, socket, slot)
+                    ranktxt += f"rank {int(rank)}=+n{int(node)} slot={int(socket)}:{int(slot)}\n"
 
             else:
-                raise Exception("pinning_override: unsupported pinning_override_type  %s" % self.pinning_override_type)
+                raise Exception(f"pinning_override: unsupported pinning_override_type  {self.pinning_override_type}")
 
             with open(rankfn, 'w') as fp:
                 fp.write(ranktxt)
             logging.debug("pinning_override: wrote rankfile %s:\n%s", rankfn, ranktxt)
             cmd = CmdList('-rf', rankfn)
 
-        except IOError as err:
-            raise Exception('pinning_override: failed to write rankfile %s: %s' % (rankfn, err))
+        except OSError as err:
+            raise Exception(f'pinning_override: failed to write rankfile {rankfn}: {err}')
 
         return cmd
 
@@ -214,16 +214,16 @@ class OpenMPI(MPI):
             if universe is not None and universe > 0:
                 universe_ppn = self.get_universe_ncpus()
                 for node in nub(self.mpinodes):
-                    nodetxt += "%s slots=%s\n" % (node, universe_ppn[node])
+                    nodetxt += f"{node} slots={universe_ppn[node]}\n"
 
             # in case of oversubscription or multinode, also use 'slots='
             elif self.is_oversubscribed():
                 for node in nub(self.mpinodes):
-                    nodetxt += '%s slots=%s\n' % (node, self.ppn)
+                    nodetxt += f'{node} slots={self.ppn}\n'
             else:
                 nodetxt = '\n'.join(self.mpinodes)
 
-        super(OpenMPI, self).make_machine_file(nodetxt=nodetxt, universe=universe)
+        super().make_machine_file(nodetxt=nodetxt, universe=universe)
 
     def prepare(self):
         """Prepare environment"""
@@ -237,7 +237,7 @@ class OpenMPI(MPI):
             logging.info("Undefining $%s (was '%s')", SLURM_EXPORT_ENV, os.getenv(SLURM_EXPORT_ENV))
             del os.environ[SLURM_EXPORT_ENV]
 
-        super(OpenMPI, self).prepare()
+        super().prepare()
 
 
 class OpenMpiOversubscribe(OpenMPI):
@@ -251,7 +251,7 @@ class OpenMpiOversubscribe(OpenMPI):
 
     def set_mpiexec_options(self):
 
-        super(OpenMpiOversubscribe, self).set_mpiexec_options()
+        super().set_mpiexec_options()
 
         if self.is_oversubscribed():
             self.mpiexec_options.add("--oversubscribe")
@@ -294,7 +294,7 @@ class OpenMpi4(OpenMpi3):
         cmd = "ompi_info"
         ec, out = run(cmd)
         if ec:
-            raise Exception("use_ucx_pml: failed to run cmd '%s', ec: %s, out: %s" % (cmd, ec, out))
+            raise Exception(f"use_ucx_pml: failed to run cmd '{cmd}', ec: {ec}, out: {out}")
 
         pml_ucx_pattern = ' pml: ucx '
         return bool(re.search(pml_ucx_pattern, out))

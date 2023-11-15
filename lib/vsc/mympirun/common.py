@@ -49,7 +49,7 @@ def eb_root_version(name):
 
     res = []
     for var in ['root', 'version']:
-        var_name = 'EB%s%s' % (var.upper(), name.upper())
+        var_name = f'EB{var.upper()}{name.upper()}'
         if var_name in os.environ:
             res.append(os.environ.get(var_name))
         else:
@@ -90,7 +90,7 @@ def what_sched(requested, schedm):
         for sched in found_sched:
             if sched._is_sched_for(requested):
                 return sched, found_sched
-        logging.warn("%s scheduler was requested, but mympirun failed to find an implementation", requested)
+        logging.warning("%s scheduler was requested, but mympirun failed to find an implementation", requested)
 
     # next, try to use the scheduler defined by environment variables
     for sched in found_sched:
@@ -147,7 +147,7 @@ def what_mpi(name, mpi_klass):
     mpirun_path = which('mpirun')
     if mpirun_path is None:
         # no MPI implementation installed
-        logging.warn("no mpirun command found")
+        logging.warning("no mpirun command found")
         return None, None, supp_mpi_impl
 
     scriptname = os.path.basename(os.path.abspath(name))
@@ -166,7 +166,7 @@ def what_mpi(name, mpi_klass):
             return scriptname, mpi, supp_mpi_impl
 
     # no specific flavor found, default to mpirun_path
-    logging.warn("The executable that called mympirun (%s) isn't supported, defaulting to %s", name, mpirun_path)
+    logging.warning("The executable that called mympirun (%s) isn't supported, defaulting to %s", name, mpirun_path)
     return mpirun_path, None, supp_mpi_impl
 
 
@@ -183,11 +183,7 @@ def stripfake():
         r"" + os.sep.join(['.*?',
                            INSTALLATION_SUBDIRECTORY_NAME + '.*?',
                            'bin',
-                           '%(fake_subdir)s(%(sep)s[^%(sep)s]*)?$' %
-                           {
-                               'fake_subdir': FAKE_SUBDIRECTORY_NAME,
-                               'sep': os.sep
-                           }
+                           f'{FAKE_SUBDIRECTORY_NAME}({os.sep}[^{os.sep}]*)?$'
                           ]))
 
     oldpath = os.environ.get('PATH', '').split(os.pathsep)
@@ -230,7 +226,7 @@ def version_in_range(version, lower_limit, upper_limit):
     return in_range
 
 
-class SchedBase(object):
+class SchedBase:
 
     _sched_for = []  # classname is default added
     _sched_environ_test = []
@@ -262,7 +258,7 @@ class SchedBase(object):
         return False
 
 
-class MpiBase(object):
+class MpiBase:
 
     _mpirun_for = None
     _mpiscriptname_for = []
@@ -294,7 +290,7 @@ class MpiBase(object):
                 try:
                     mpirun_path_real = os.path.realpath(mpirun_path)
                     mpiroot = os.path.realpath(mpiroot)
-                except (IOError, OSError) as err:
+                except OSError as err:
                     logging.debug("Failed to resolve paths %s and %s, ignoring it: %s", mpirun_path, mpiroot, err)
 
                 # only if mpirun location is in $EBROOT* location, we should check the version too

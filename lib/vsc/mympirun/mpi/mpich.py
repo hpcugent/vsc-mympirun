@@ -49,7 +49,7 @@ class MVAPICH2Hydra(MPI):
     OPTS_FROM_ENV_TEMPLATE = ['-envlist', '%(commaseparated)s']
 
     def prepare(self):
-        super(MVAPICH2Hydra, self).prepare()
+        super().prepare()
 
         if self.options.pinmpi:
             os.environ['MV2_ENABLE_AFFINITY'] = "1"
@@ -62,7 +62,7 @@ class MVAPICH2Hydra(MPI):
         if self.options.debuglvl > 0 and self.options.use_psm:
             self.mpiexec_global_options['MV2_PSM_DEBUG'] = 1
 
-        super(MVAPICH2Hydra, self).set_mpiexec_global_options()
+        super().set_mpiexec_global_options()
 
     def _make_final_mpirun_cmd(self):
         """
@@ -89,22 +89,22 @@ class MVAPICH2(MVAPICH2Hydra):
     def make_mpdboot_options(self):
         """Small fix"""
 
-        self.mpdboot_options.add("--totalnum=%s" % len(self.nodes_uniq))
+        self.mpdboot_options.add(f"--totalnum={len(self.nodes_uniq)}")
 
-        super(MVAPICH2, self).make_mpdboot_options()
+        super().make_mpdboot_options()
 
     def mpirun_prepare_execution(self):
         """Manual start/stop of mpdboot"""
 
         res = []
 
-        cmd = "%s %s" % ('mpdboot', ' '.join(self.mpdboot_options))
+        cmd = f"mpdboot {' '.join(self.mpdboot_options)}"
         res.append((run, cmd))
 
         if self.options.debug:
             res.append((run, 'mpdtrace -l'))
 
-        res += super(MVAPICH2, self).mpirun_prepare_execution
+        res += super().mpirun_prepare_execution
 
         res.append((run, 'mpdallexit'))
 
@@ -121,7 +121,7 @@ class MPICH2Hydra(MVAPICH2Hydra):
 
     def get_mpiexec_global_options(self):
         # add pinning
-        options = super(MPICH2Hydra, self).get_mpiexec_global_options()
+        options = super().get_mpiexec_global_options()
         if self.options.pinmpi:
             options.add(['-binding', 'rr', '-topolib', 'hwloc'])
         return options
@@ -139,7 +139,7 @@ class MPICH2(MVAPICH2):
 
     def get_mpiexec_global_options(self):
         # add pinning
-        options = super(MPICH2, self).get_mpiexec_global_options()
+        options = super().get_mpiexec_global_options()
         if self.options.pinmpi:
             options.add(['-binding', 'rr', '-topolib', 'hwloc'])
         return options

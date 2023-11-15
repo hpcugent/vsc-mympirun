@@ -44,7 +44,7 @@ except ImportError as MPI4PY_EXCEPTION:
 
 class Report(dict):
     def __init__(self, *args, **kwargs):
-        super(Report, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.update({
                      'rank': comm.rank,
                      'size':comm.size
@@ -64,7 +64,7 @@ class Report(dict):
 
     def _add_environment(self, name):
         self.update({
-                     name:dict([('%s' % k, '%s' % v) for k, v in os.environ.items() if k.startswith(name)])
+                     name:{f'{k}': f'{v}' for k, v in os.environ.items() if k.startswith(name)}
                      })
 
     def add_environment(self):
@@ -95,8 +95,8 @@ def check():
             log.error("Not all ranks report identical property %s (%s)", prop, set(props))
 
     # make nodes/rank structure
-    hostnames = set([y['hostname'] for y in recvbuf])
-    anodes = dict([(x, []) for x in hostnames])
+    hostnames = {y['hostname'] for y in recvbuf}
+    anodes = {x: [] for x in hostnames}
     for r in recvbuf:
         anodes[r['hostname']].append(r['affinity'])
 

@@ -63,7 +63,7 @@ class MPI(MpiBase):
         self.options = options
         self.cmdargs = cmdargs
 
-        super(MPI, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         self.ucx = self.has_ucx()
         self.hcoll = self.has_hcoll()
@@ -92,7 +92,7 @@ class MPI(MpiBase):
             exitcode, _ = run_function(cmd)
 
         if exitcode > 0:
-            raise Exception("main: exitcode %s > 0; cmd %s" % (exitcode, cmd))
+            raise Exception(f"main: exitcode {exitcode} > 0; cmd {cmd}")
 
     def _eb_has(self, name, txt=None):
         """Determine is the is a EB module loaded for name"""
@@ -267,7 +267,7 @@ class OpenMPI31xOr4x(MPI):
         cmd = "ompi_info"
         ec, out = run(cmd)
         if ec:
-            raise Exception("has_ucx: failed to run cmd '%s', ec: %s, out: %s" % (cmd, ec, out))
+            raise Exception(f"has_ucx: failed to run cmd '{cmd}', ec: {ec}, out: {out}")
 
         ompi_info_pml_ucx = bool(re.search(' pml: ucx ', out))
 
@@ -275,7 +275,7 @@ class OpenMPI31xOr4x(MPI):
 
     def ompi_env(self, what, key, value):
         """Set environment variables for OpenMPI"""
-        self.set_env('OMPI_%s_%s' % (what.upper(), key), value)
+        self.set_env(f'OMPI_{what.upper()}_{key}', value)
 
     def mpi_tune_hcoll_mpi(self):
         """hcoll enabling/tuning"""
@@ -295,7 +295,7 @@ class OpenMPI31xOr4x(MPI):
         # set debug level for plm (Process Lifecycle Management), pml (Point-to-point Messaging Layer),
         #  btl (Byte Transfer Layer) and mtl (Matching Transport Layer)
         for mca in ['plm', 'pml', 'btl', 'mtl']:
-            self.ompi_env('mca', '%s_base_verbose' % mca, self.options.debuglvl)
+            self.ompi_env('mca', f'{mca}_base_verbose', self.options.debuglvl)
 
     def mpi_debug_ucx_mpi(self):
         """MPI specific UCX debugging"""
@@ -326,7 +326,7 @@ class IntelMPI(MPI):
         """MPI specific debugging"""
         if self.options.debuglvl > 0:
             # use '+' for rank#pid@hostname prefix in the messages
-            self.set_env('I_MPI_DEBUG', "+%s" % self.options.debuglvl)
+            self.set_env('I_MPI_DEBUG', f"+{self.options.debuglvl}")
         if self.options.stats > 0:
             self.set_env('I_MPI_STATS', self.options.stats)
 

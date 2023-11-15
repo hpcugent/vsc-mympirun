@@ -84,19 +84,19 @@ class IntelMPI(MPI):
             logging.debug("No hydra, I_MPI_PROCESS_MANAGER set to %s", mgr)
             return False
         else:
-            return super(IntelMPI, self)._has_hydra()
+            return super()._has_hydra()
 
     def make_mpdboot_options(self):
         """
         Make the mpdboot options.
           - bulletproof customisation
         """
-        super(IntelMPI, self).make_mpdboot_options()
+        super().make_mpdboot_options()
 
         if self.options.impi_mpdbulletproof:
             # Start the mpd with the --bulletproof option
             mpd = which(['mpd.py'])
-            self.mpdboot_options.append('-m "\\\"%s --bulletproof\\\""' % mpd)
+            self.mpdboot_options.append(f'-m "\\"{mpd} --bulletproof\\""')
 
     def set_impi_tmpdir(self):
         """Set location of temporary directory that Intel MPI should use."""
@@ -108,12 +108,12 @@ class IntelMPI(MPI):
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
-        super(IntelMPI, self).set_mpiexec_global_options()
+        super().set_mpiexec_global_options()
 
         self.set_impi_tmpdir()
 
         if self.options.debuglvl > 0:
-            self.mpiexec_global_options['I_MPI_DEBUG'] = "+%s" % self.options.debuglvl
+            self.mpiexec_global_options['I_MPI_DEBUG'] = f"+{self.options.debuglvl}"
         if self.options.stats > 0:
             self.mpiexec_global_options['I_MPI_STATS'] = self.options.stats
 
@@ -172,7 +172,7 @@ class IntelMPI(MPI):
         # - we don't want that
         os.environ['PBS_ENVIRONMENT'] = 'PBS_BATCH_MPI'
 
-        return super(IntelMPI, self).mpirun_prepare_execution()
+        return super().mpirun_prepare_execution()
 
     def pinning_override(self):
         """ pinning """
@@ -183,9 +183,9 @@ class IntelMPI(MPI):
         if self.pinning_override_type in ('packed', 'compact', 'bunch'):
             cmd.add(['-env', 'I_MPI_PIN_PROCESSOR_LIST=allcores:map=bunch'])
         elif self.pinning_override_type in ('spread', 'scatter'):
-            cmd.add(['-env', 'I_MPI_PIN_PROCESSOR_LIST=allcores:map=%s' % self.pinning_override_type])
+            cmd.add(['-env', f'I_MPI_PIN_PROCESSOR_LIST=allcores:map={self.pinning_override_type}'])
         else:
-            raise Exception("pinning_override: unsupported pinning_override_type  %s" % self.pinning_override_type)
+            raise Exception(f"pinning_override: unsupported pinning_override_type  {self.pinning_override_type}")
 
         return cmd
 
@@ -202,14 +202,14 @@ class IntelMPI(MPI):
             if universe is not None and universe > 0:
                 universe_ppn = self.get_universe_ncpus()
                 for node in nub(self.mpinodes):
-                    nodetxt += "%s:%s" % (node, universe_ppn[node])
+                    nodetxt += f"{node}:{universe_ppn[node]}"
                     if not self.has_hydra:
-                        nodetxt += " ifhn=%s" % node
+                        nodetxt += f" ifhn={node}"
                     nodetxt += '\n'
             else:
                 nodetxt = '\n'.join(self.mpinodes)
 
-        super(IntelMPI, self).make_machine_file(nodetxt=nodetxt, universe=universe)
+        super().make_machine_file(nodetxt=nodetxt, universe=universe)
 
 
 class IntelHydraMPI(IntelMPI):
@@ -234,7 +234,7 @@ class IntelHydraMPI(IntelMPI):
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
-        super(IntelHydraMPI, self).set_mpiexec_global_options()
+        super().set_mpiexec_global_options()
         self.mpiexec_global_options['I_MPI_FALLBACK'] = _enable_disable(self.options.impi_fallback)
 
         if 'I_MPI_DEVICE' in self.mpiexec_global_options:
@@ -281,7 +281,7 @@ class IntelMPI2019(IntelHydraMPIPbsdsh):
 
     def set_mpiexec_global_options(self):
         """Set mpiexec global options"""
-        super(IntelMPI2019, self).set_mpiexec_global_options()
+        super().set_mpiexec_global_options()
 
         # $I_MPI_CPUINFO is no longer valid for recent Intel MPI 2019 versions, so don't set it
         # (setting it anyway triggers a warning "I_MPI_CPUINFO environment variable is not supported")

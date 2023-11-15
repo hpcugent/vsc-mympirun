@@ -38,7 +38,7 @@ from pmi_utils import SLURM_2NODES, PMITest
 class TasksEnd2End(PMITest):
     def setUp(self):
         """Prepare to run test."""
-        super(TasksEnd2End, self).setUp()
+        super().setUp()
         self.script = os.path.join(os.path.dirname(self.script), 'mytasks.py')
 
     def test_ompi4_slurm(self):

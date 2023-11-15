@@ -54,7 +54,7 @@ class Slurm(Sched):
         """
         args = []
         if self.options.output:
-            args = ['--output=%s' % self.options.output]
+            args = [f'--output={self.options.output}']
 
         return async_to_stdout, args
 
@@ -67,7 +67,7 @@ class Slurm(Sched):
         args.append("--chdir=" + os.getcwd())
 
         if self.options.distribute:
-            args.append("--distribution=%s" % DISTRIBUTE_MAP[self.options.distribute])
+            args.append(f"--distribution={DISTRIBUTE_MAP[self.options.distribute]}")
 
         return args
 
@@ -84,19 +84,19 @@ class Slurm(Sched):
                 if pmi.VERSION == 3:
                     flavour += '_v3'
                 else:
-                    logging.warn("Unsupported PMIx version %s, trying with generic %s", pmi, flavour)
+                    logging.warning("Unsupported PMIx version %s, trying with generic %s", pmi, flavour)
             elif pmi.FLAVOUR == PMI:
                 if pmi.VERSION == 2:
                     flavour = 'pmi2'
                 else:
-                    raise Exception("Unsupported PMI version %s" % pmi)
+                    raise Exception(f"Unsupported PMI version {pmi}")
             else:
-                raise Exception("Unsupported PMI %s" % pmi)
+                raise Exception(f"Unsupported PMI {pmi}")
 
             if flavour is not None:
                 # first one wins
                 logging.debug("Mapped PMI %s to flavour %s", pmi, flavour)
-                return ["--mpi=%s" % flavour]
+                return [f"--mpi={flavour}"]
 
         raise Exception("No supported PMIs")
 
@@ -114,10 +114,10 @@ class Slurm(Sched):
             SLURM_NPROCS=64
             SLURM_NTASKS=64
         """
-        dbgtxt = ', '.join(['%s=%s' % (k, v) for k, v in sorted(os.environ.items()) if k.startswith('SLURM_')])
+        dbgtxt = ', '.join([f'{k}={v}' for k, v in sorted(os.environ.items()) if k.startswith('SLURM_')])
 
         if 'SLURM_PACK_SIZE' in os.environ:
-            raise Exception("This is an inhomogenous job (PACK_SIZE set): %s" % dbgtxt)
+            raise Exception(f"This is an inhomogenous job (PACK_SIZE set): {dbgtxt}")
 
         nodes = int(os.environ['SLURM_NNODES'])
         cores = int(os.environ['SLURM_CPUS_ON_NODE'])
@@ -126,7 +126,7 @@ class Slurm(Sched):
 
         # add sanity checks
         if nodes * cores != int(os.environ['SLURM_NPROCS']):
-            raise Exception("This is an inhomogenous job: nodes*cores!=nprocs: %s" % dbgtxt)
+            raise Exception(f"This is an inhomogenous job: nodes*cores!=nprocs: {dbgtxt}")
         else:
             logging.debug("SLURM env variables %s", dbgtxt)
 
@@ -148,7 +148,7 @@ class Slurm(Sched):
                 # this should fail when slurm switched to compressed repr (eg 0-3 instead of current 0,1,2,3)
                 ngpus = len(list(map(int, os.environ['SLURM_JOB_GPUS'].split(','))))
             except Exception as e:
-                raise Exception("Failed to get the number of gpus per node from %s: %s" % (dbgtxt, e))
+                raise Exception(f"Failed to get the number of gpus per node from {dbgtxt}: {e}")
 
             job_info.gpus = ngpus
 
@@ -171,7 +171,7 @@ class Slurm(Sched):
             if keepre.search(key):
                 continue
             elif cleanupre.search(key):
-                removed.append("%s=%s" % (key, value))
+                removed.append(f"{key}={value}")
                 del os.environ[key]
 
         if removed:
@@ -182,24 +182,24 @@ class Slurm(Sched):
         args = []
 
         # all available nodes
-        args.append("--nodes=%s" % mpi_info.nodes)
+        args.append(f"--nodes={mpi_info.nodes}")
 
         # 1 rank per task
-        args.append("--ntasks=%s" % (mpi_info.nodes * mpi_info.ranks))
+        args.append(f"--ntasks={mpi_info.nodes * mpi_info.ranks}")
 
         # sanity check
         if mpi_info.cores % mpi_info.ranks:
-            raise Exception("Imbalanced cores and ranks per node %s" % mpi_info)
+            raise Exception(f"Imbalanced cores and ranks per node {mpi_info}")
         else:
             # cores per task == cores per rank
-            args.append("--cpus-per-task=%s" % (mpi_info.cores // mpi_info.ranks))
+            args.append(f"--cpus-per-task={mpi_info.cores // mpi_info.ranks}")
 
 
         # redistribute all the memory to the tasks/cores
         if mpi_info.mem is None:
             logging.debug("No memory specified (assuming slurm.conf defaults)")
         else:
-            args.append("--mem-per-cpu=%s" % (mpi_info.mem // mpi_info.cores))
+            args.append(f"--mem-per-cpu={mpi_info.mem // mpi_info.cores}")
 
         if mpi_info.gpus is not None:
             if self.options.all_gpus:
@@ -208,11 +208,11 @@ class Slurm(Sched):
             elif mpi_info.gpus < mpi_info.ranks:
                 # enable MPS
                 #   probably also needs to check for imbalance
-                raise Exception("MPS not supported yet: %s" % mpi_info)
+                raise Exception(f"MPS not supported yet: {mpi_info}")
             elif mpi_info.gpus % mpi_info.ranks:
-                raise Exception("Imbalanced tasks and gpus per node (ranks < gpus): %s" % mpi_info)
+                raise Exception(f"Imbalanced tasks and gpus per node (ranks < gpus): {mpi_info}")
             else:
-                args.append("--gpus-per-task=%s" % (mpi_info.gpus // mpi_info.ranks))
+                args.append(f"--gpus-per-task={mpi_info.gpus // mpi_info.ranks}")
 
         return args
 
@@ -229,7 +229,7 @@ class Slurm(Sched):
                 dbg = 'verbose'
             else:
                 dbg = 'info'
-            args.append('--slurmd-debug=%s' % dbg)
+            args.append(f'--slurmd-debug={dbg}')
 
         return args
 

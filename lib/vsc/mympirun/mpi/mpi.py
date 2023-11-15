@@ -80,7 +80,7 @@ class RunMPI(RunNoShell):
             msg = TIMEOUT_WARNING % (time_passed, self.output_timeout)
             # avoid getting warning multiple times by setting seen_output to True if a warning was produced
             self.seen_output = True
-            logging.warn(msg)
+            logging.warning(msg)
             if self.fatal_no_output:
                 self.stop_tasks()
                 logging.error(TIMEOUT_FATAL_MSG)
@@ -99,7 +99,7 @@ class RunFileLoopMPI(RunFile, RunLoop, RunMPI):
         self.output_timeout = kwargs.pop('output_timeout', None)
         self.fatal_no_output = kwargs.pop('fatal_no_output', None)
 
-        super(RunFileLoopMPI, self).__init__(cmd, **kwargs)
+        super().__init__(cmd, **kwargs)
 
         self.seen_output = self.output_timeout < 0 #no check when output_timeout is negative
 
@@ -108,14 +108,14 @@ class RunFileLoopMPI(RunFile, RunLoop, RunMPI):
         check if process is generating any output at all; if not, warn the user after a set amount of time
         """
         if output:
-            raise ValueError("Output was found using RunFile:\n%s\n This means something went horribly wrong." % output)
+            raise ValueError(f"Output was found using RunFile:\n{output}\n This means something went horribly wrong.")
 
         if self.seen_output:
             return
         try:
             self.seen_output = self.filehandle.tell() > 0
-        except IOError as err:
-            raise IOError("Couldn't check file size; %s" % err)
+        except OSError as err:
+            raise OSError(f"Couldn't check file size; {err}")
 
         self.loop_process_output_common()
 
@@ -130,7 +130,7 @@ class RunAsyncMPI(RunAsyncLoopStdout, RunMPI):
         self.output_timeout = kwargs.pop('output_timeout', None)
         self.fatal_no_output = kwargs.pop('fatal_no_output', None)
 
-        super(RunAsyncMPI, self).__init__(cmd, **kwargs)
+        super().__init__(cmd, **kwargs)
         # no check when output_timeout is negative
         self.seen_output = self.output_timeout < 0
 
@@ -141,7 +141,7 @@ class RunAsyncMPI(RunAsyncLoopStdout, RunMPI):
 
         self.loop_process_output_common()
 
-        super(RunAsyncMPI, self)._loop_process_output(output)
+        super()._loop_process_output(output)
 
 
 class MPI(MpiBase):
@@ -234,7 +234,7 @@ class MPI(MpiBase):
 
         self.pinning_override_type = getattr(self.options, 'overridepin', None)
 
-        super(MPI, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # sanity checks
         if getattr(self, 'sched_id', None) is None:
@@ -288,7 +288,7 @@ class MPI(MpiBase):
         self.cleanup()
 
         if exitcode > 0:
-            msg = "main: exitcode %s > 0; cmd %s" % (exitcode, self.mpirun_cmd)
+            msg = f"main: exitcode {exitcode} > 0; cmd {self.mpirun_cmd}"
             raise Exception(msg)
 
     ### BEGIN prepare ###
@@ -379,7 +379,7 @@ class MPI(MpiBase):
         cmd = "/sbin/ip addr show"
         exitcode, out = run(cmd)
         if exitcode > 0:
-            msg = "set_netmask: failed to run cmd '%s', ec: %s, out: %s" % (cmd, exitcode, out)
+            msg = f"set_netmask: failed to run cmd '{cmd}', ec: {exitcode}, out: {out}"
             raise Exception(msg)
 
         reg = re.compile(device_ip_reg_map[self.netmasktype])
@@ -391,7 +391,7 @@ class MPI(MpiBase):
         res = []
         for ipaddr_mask in reg.finditer(out):
             ip_info = IP(ipaddr_mask.group(1), make_net=True)
-            network_netmask = "%s/%s" % (ip_info.net(), ip_info.netmask())
+            network_netmask = f"{ip_info.net()}/{ip_info.netmask()}"
             res.append(network_netmask)
             logging.debug("set_netmask: convert ipaddr_mask %s into network_netmask %s",
                           ipaddr_mask.group(1), network_netmask)
@@ -466,8 +466,8 @@ class MPI(MpiBase):
         try:
             with open(mpdfn, 'w') as fp:
                 fp.write(mpdboottxt)
-        except IOError as err:
-            msg = 'make_mpdboot_file: failed to write mpbboot file %s: %s' % (mpdfn, err)
+        except OSError as err:
+            msg = f'make_mpdboot_file: failed to write mpbboot file {mpdfn}: {err}'
             raise Exception(msg)
 
         self.mpdboot_node_filename = mpdfn
@@ -500,8 +500,8 @@ class MPI(MpiBase):
         try:
             with open(nodefn, 'w') as fp:
                 fp.write(nodetxt)
-        except IOError as err:
-            msg = 'make_machine_file: failed to write nodefile %s: %s' % (nodefn, err)
+        except OSError as err:
+            msg = f'make_machine_file: failed to write nodefile {nodefn}: {err}'
             raise Exception(msg)
 
         self.mpiexec_node_filename = nodefn
@@ -515,7 +515,7 @@ class MPI(MpiBase):
             raise Exception(msg)
 
         nodes = self.nodes_uniq[:]
-        universe_ppn = dict((node, 0) for node in nodes)
+        universe_ppn = {node: 0 for node in nodes}
         proc_cnt = 0
         node = nodes.pop(0)
         while proc_cnt < self.options.universe:
@@ -539,12 +539,12 @@ class MPI(MpiBase):
         if basepath is None:
             basepath = os.environ['HOME']
         if not os.path.exists(basepath):
-            msg = "make_mympirun_dir: basepath %s should exist." % basepath
+            msg = f"make_mympirun_dir: basepath {basepath} should exist."
             raise Exception(msg)
 
         # add random 6-char salt to basepath
         randstr = ''.join(random.SystemRandom().choice(string.ascii_lowercase + string.digits) for _ in range(6))
-        self.mympirunbasedir = os.path.join(basepath, '.mympirun_%s' % randstr)
+        self.mympirunbasedir = os.path.join(basepath, f'.mympirun_{randstr}')
 
         total_size = 0
         for dirpath, _, filenames in os.walk(self.mympirunbasedir):
@@ -552,18 +552,18 @@ class MPI(MpiBase):
                 total_size += os.path.getsize(os.path.join(dirpath, filename))
 
         if total_size >= TEMPDIR_ERROR_SIZE:
-            msg = "the size of %s is currently %s, please clean it." % (self.mympirunbasedir, total_size)
+            msg = f"the size of {self.mympirunbasedir} is currently {total_size}, please clean it."
             raise Exception(msg)
 
         elif total_size >= TEMPDIR_WARN_SIZE:
-            logging.warn("the size of %s is currently %s ", self.mympirunbasedir, total_size)
+            logging.warning("the size of %s is currently %s ", self.mympirunbasedir, total_size)
 
-        destdir = os.path.join(self.mympirunbasedir, "%s_%s" % (self.sched_id, time.strftime("%Y%m%d_%H%M%S")))
+        destdir = os.path.join(self.mympirunbasedir, f"{self.sched_id}_{time.strftime('%Y%m%d_%H%M%S')}")
         if not os.path.exists(destdir):
             try:
                 os.makedirs(destdir)
             except os.error:
-                msg = 'make_mympirun_dir: failed to make job dir %s' % destdir
+                msg = f'make_mympirun_dir: failed to make job dir {destdir}'
                 raise Exception(msg)
 
         logging.debug("make_mympirun_dir: tmp mympirundir %s", destdir)
@@ -631,14 +631,14 @@ class MPI(MpiBase):
         @return: the list of interfaces that correspond to the list of unique nodes
         """
         iface_prefix = ['eth', 'em', 'ib', 'wlan']
-        reg_iface = re.compile(r'((?:%s)\d+(?:\.\d+)?(?::\d+)?|lo)' % '|'.join(iface_prefix))
+        reg_iface = re.compile(rf'((?:{"|".join(iface_prefix)})\d+(?:\.\d+)?(?::\d+)?|lo)')
 
         # iterate over unique nodes and get their interfaces
         # add the found interface to res if it matches reg_iface
         res = []
         for idx, nodename in enumerate(self.nodes_uniq):
             ip = socket.gethostbyname(nodename)
-            cmd = "/sbin/ip -4 -o addr show to %s/32" % ip
+            cmd = f"/sbin/ip -4 -o addr show to {ip}/32"
             exitcode, out = run(cmd)
             if exitcode == 0:
                 regex = reg_iface.search(out)
@@ -652,11 +652,11 @@ class MPI(MpiBase):
                     logging.debug("get_localhost idx %s: no interface match for prefixes %s out %s",
                                   idx, iface_prefix, out)
             else:
-                msg = "get_localhost idx %s: cmd %s failed with output %s" % (idx, cmd, out)
+                msg = f"get_localhost idx {idx}: cmd {cmd} failed with output {out}"
                 raise Exception(msg)
 
         if not res:
-            msg = "get_localhost: can't find localhost from nodes %s" % self.nodes_uniq
+            msg = f"get_localhost: can't find localhost from nodes {self.nodes_uniq}"
             raise Exception(msg)
         return res
 
@@ -666,7 +666,7 @@ class MPI(MpiBase):
         self.mpdboot_options = CmdList(*self.MPDBOOT_OPTIONS)
 
         # add the mpd nodefile to mpdboot options
-        self.mpdboot_options.add("--file=%s" % self.mpdboot_node_filename)
+        self.mpdboot_options.add(f"--file={self.mpdboot_node_filename}")
 
         # add the interface to mpdboot options
         if self.MPDBOOT_SET_INTERFACE:
@@ -675,7 +675,7 @@ class MPI(MpiBase):
                 iface = ['-iface', localmachine]
             else:
                 localmachine = self.mpdboot_localhost_interface[0]
-                iface = ['--ifhn=%s' % localmachine]
+                iface = [f'--ifhn={localmachine}']
             logging.debug('Set mpdboot interface option "%s"', iface)
             self.mpdboot_options.add(iface)
         else:
@@ -684,7 +684,7 @@ class MPI(MpiBase):
         # add the number of mpi processes (aka mpi universe) to mpdboot options
         if self.options.universe is not None and self.options.universe > 0 and not self.has_hydra:
             local_nodename = self.mpdboot_localhost_interface[0]
-            self.mpdboot_options.add("--ncpus=%s" % self.get_universe_ncpus()[local_nodename])
+            self.mpdboot_options.add(f"--ncpus={self.get_universe_ncpus()[local_nodename]}")
 
         # set verbosity
         if self.options.mpdbootverbose:
@@ -722,10 +722,10 @@ class MPI(MpiBase):
 
         prefixes = self.OPTS_FROM_ENV_FLAVOR_PREFIX + self.OPTS_FROM_ENV_BASE_PREFIX + self.options.variablesprefix
         for env_prefix in prefixes:
-            for env_var in os.environ.keys():
+            for env_var in os.environ:
                 # add all environment variable keys that are equal to <prefix> or start with <prefix>_
                 # to mpiexec_opts_from_env, but only if they aren't already in vars_to_pass
-                if (env_prefix == env_var or env_var.startswith("%s_" % env_prefix)) and env_var not in vars_to_pass:
+                if (env_prefix == env_var or env_var.startswith(f"{env_prefix}_")) and env_var not in vars_to_pass:
                     self.mpiexec_opts_from_env.append(env_var)
 
         logging.debug("Vars passed: %s", str(self.mpiexec_opts_from_env))
@@ -800,7 +800,7 @@ class MPI(MpiBase):
             launcher = self.RM_HYDRA_LAUNCHER
 
         if not self.is_local():
-            self.mpiexec_options.add(['-%s' % self.HYDRA_LAUNCHER_NAME, launcher])
+            self.mpiexec_options.add([f'-{self.HYDRA_LAUNCHER_NAME}', launcher])
 
         # when using ssh launcher, use custom pbsssh wrapper as exec
         if launcher == 'ssh':
@@ -811,7 +811,7 @@ class MPI(MpiBase):
 
             if launcher_exec:
                 logging.debug("make_mpiexec_hydra_options: HYDRA using launcher exec %s", launcher_exec)
-                self.mpiexec_options.add(['-%s-exec' % self.HYDRA_LAUNCHER_NAME, launcher_exec])
+                self.mpiexec_options.add([f'-{self.HYDRA_LAUNCHER_NAME}-exec', launcher_exec])
             else:
                 logging.debug("make_mpiexec_hydra_options: no launcher exec")
 
@@ -821,7 +821,7 @@ class MPI(MpiBase):
         cmd = "mpirun -info"
         exitcode, out = run(cmd)
         if exitcode > 0:
-            msg = "get_hydra_info: failed to run cmd %s: %s" % (cmd, out)
+            msg = f"get_hydra_info: failed to run cmd {cmd}: {out}"
             raise Exception(msg)
 
         hydra_info = {}
@@ -844,7 +844,7 @@ class MPI(MpiBase):
 
         keymap = {
             "rmk": r'^resource\s+management\s+kernel.*available',
-            "launcher": r'^%s.*available' % self.HYDRA_LAUNCHER_NAME,
+            "launcher": rf'^{self.HYDRA_LAUNCHER_NAME}.*available',
             "chkpt": r'^checkpointing.*available',
             }
 
@@ -885,7 +885,7 @@ class MPI(MpiBase):
                 # the command for setting the environment variable depends on the mpi flavor
                 if isinstance(val, (list, tuple)):
                     if len(val) != 2:
-                        raise Exception("Invalid template list/tuple passed %s" % (val,))
+                        raise Exception(f"Invalid template list/tuple passed {val}")
                     val, template = val
                 else:
                     template = self.MPIEXEC_TEMPLATE_GLOBAL_OPTION
@@ -956,5 +956,5 @@ class MPI(MpiBase):
             shutil.rmtree(self.mympirunbasedir)
             logging.debug("cleanup: removed mympirundir %s", self.mympirunbasedir)
         except OSError as err:
-            msg = "cleanup: cleaning up mympirundir %s failed: %s" % (self.mympirunbasedir, err)
+            msg = f"cleanup: cleaning up mympirundir {self.mympirunbasedir} failed: {err}"
             raise Exception(msg)

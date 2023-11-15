@@ -99,7 +99,7 @@ def set_SLURM_env(tmpdir):
     fh.close()
 
     os.chmod(scontrol, stat.S_IRUSR | stat.S_IXUSR)
-    os.environ['PATH'] = '%s:%s' % (tmpdir, os.environ.get('PATH', ''))
+    os.environ['PATH'] = f"{tmpdir}:{os.environ.get('PATH', '')}"
 
 
 def reset_env(orig_env):
@@ -118,7 +118,7 @@ class TestSched(TestCase):
 
     def setUp(self):
         """Set up test"""
-        super(TestSched, self).setUp()
+        super().setUp()
 
         self.orig_environ = copy.deepcopy(os.environ)
 
@@ -127,7 +127,7 @@ class TestSched(TestCase):
         cleanup_PBS_env()
         reset_env(self.orig_environ)
 
-        super(TestSched, self).setUp()
+        super().setUp()
 
     def test_what_sched(self):
         """Test what_sched function."""
@@ -191,7 +191,7 @@ class TestSched(TestCase):
                 expected = os.environ.get(inst.SCHED_ENVIRON_ID)
 
             self.assertTrue(inst.sched_id == expected or
-                            inst.sched_id.startswith("SCHED_%s" % inst.__class__.__name__))
+                            inst.sched_id.startswith(f"SCHED_{inst.__class__.__name__}"))
 
     def test_core_on_this_node(self):
         """
@@ -230,7 +230,7 @@ class TestSched(TestCase):
         get_node_list() gets called by the __init__ of getinstance()
         """
         inst = getinstance(mpim.MPI, Local, MympirunOption())
-        self.assertEqual(set(inst.nodes), set(['localhost']))
+        self.assertEqual(set(inst.nodes), {'localhost'})
         self.assertEqual(len(inst.cpus), len(inst.nodes))
 
     def test_set_node_list_pbs(self):
