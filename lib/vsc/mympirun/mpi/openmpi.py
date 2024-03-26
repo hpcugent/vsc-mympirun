@@ -70,8 +70,15 @@ class OpenMPI(MPI):
 
         if self.use_ucx_pml():
             self.mpiexec_global_options['pml'] = 'ucx'
-            # disable uct btl, see http://openucx.github.io/ucx/running.html
-            self.mpiexec_global_options['btl'] = '^uct'
+            # always disable uct btl when using UCX, see https://openucx.readthedocs.io/en/master/running.html#runtime-tunings
+            if self.options.libfabric:
+                self.mpiexec_global_options['btl'] = '^uct'
+            else:
+                # also disable libfabric (OFI) btl, since it can cause trouble on Infiniband systems
+                self.mpiexec_global_options['btl'] = '^uct,ofi'
+                # disable libfabric (OFI) mtl as well
+                self.mpiexec_global_options['mtl'] = '^ofi'
+
             if self.options.debuglvl > 3:
                 os.environ['UCX_LOG_LEVEL'] = 'debug'
                 self.mpiexec_global_options['pml_ucx_verbose'] = self.options.debuglvl
