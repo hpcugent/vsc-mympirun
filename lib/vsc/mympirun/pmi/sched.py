@@ -53,8 +53,9 @@ class Info:
 
     def __str__(self):
         """Human readable"""
-        return "{} nodes; with per node {} cores, {} ranks, {} mem, {} gpus".format(
-            self.nodes, self.cores, self.ranks, self.mem, self.gpus)
+        res = f"{self.nodes} nodes; with per node {self.cores} cores, {self.ranks} ranks, "
+        res += "{self.mem} mem, {self.gpus} gpus"
+        return res
 
     def deepcopy(self):
         """Return a (deep)copy"""

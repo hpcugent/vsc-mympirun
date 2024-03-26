@@ -45,7 +45,7 @@ class MypmirunOption(CommonOption):
                  "strlist", "store", []),
         'print-launcher': ("Generate and print the launcher command", None, "store_true", None),
         'distribute': (("Start ranks in a certain distribution on nodes/sockets/cores: "
-                        "%s groups them, %s spreads them") % (DISTRIBUTE_PACK, DISTRIBUTE_CYCLE),
+                        f"{DISTRIBUTE_PACK} groups them, {DISTRIBUTE_CYCLE} spreads them"),
                        None, "store", None, [DISTRIBUTE_PACK, DISTRIBUTE_CYCLE]),
         'all-gpus': ("Each rank sees all (requested) gpus", None, "store_true", None),
     }

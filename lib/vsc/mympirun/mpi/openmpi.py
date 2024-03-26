@@ -70,7 +70,8 @@ class OpenMPI(MPI):
 
         if self.use_ucx_pml():
             self.mpiexec_global_options['pml'] = 'ucx'
-            # always disable uct btl when using UCX, see https://openucx.readthedocs.io/en/master/running.html#runtime-tunings
+            # always disable uct btl when using UCX,
+            # see https://openucx.readthedocs.io/en/master/running.html#runtime-tunings
             if self.options.libfabric:
                 self.mpiexec_global_options['btl'] = '^uct'
             else:
