@@ -601,8 +601,7 @@ class MPI(MpiBase):
                              "(text file with minimal entry 'password=<somesecretpassword>')"), mpdconffn)
 
             with open(mpdconffn, 'w') as mpdconff:
-                mpdconff.write("password=" + ''.join(random.choice(string.ascii_uppercase + string.digits)
-                                                     for x in range(10)))
+                mpdconff.write("password=" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))
             # set correct permissions on this file.
             os.chmod(mpdconffn, stat.S_IREAD)
 
