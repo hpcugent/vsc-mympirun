@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2023 Ghent University
+# Copyright 2009-2024 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -102,8 +102,9 @@ class Sched(SchedBase):
             if self.AUTOGENERATE_JOBID:
                 logging.info("set_sched_id: failed to get id from environment variable %s, will generate one.",
                              self.SCHED_ENVIRON_ID)
-                self.sched_id = "SCHED_%s%s%05d" % (self.__class__.__name__, time.strftime("%Y%m%d%H%M%S"),
-                                                    random.randint(0, 10 ** 5 - 1))
+                timestamp = time.strftime("%Y%m%d%H%M%S")
+                random_int_val = random.randint(0, 10 ** 5 - 1)
+                self.sched_id = f"SCHED_{self.__class__.__name__}{timestamp}{random_int_val:05d}"
                 logging.debug("set_sched_id: using generated id %s", self.sched_id)
             else:
                 raise Exception(f"set_sched_id: failed to get id from environment variable {self.SCHED_ENVIRON_ID}")

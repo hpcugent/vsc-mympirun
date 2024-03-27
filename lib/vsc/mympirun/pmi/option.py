@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2023 Ghent University
+# Copyright 2019-2024 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -45,7 +45,7 @@ class MypmirunOption(CommonOption):
                  "strlist", "store", []),
         'print-launcher': ("Generate and print the launcher command", None, "store_true", None),
         'distribute': (("Start ranks in a certain distribution on nodes/sockets/cores: "
-                        "%s groups them, %s spreads them") % (DISTRIBUTE_PACK, DISTRIBUTE_CYCLE),
+                        f"{DISTRIBUTE_PACK} groups them, {DISTRIBUTE_CYCLE} spreads them"),
                        None, "store", None, [DISTRIBUTE_PACK, DISTRIBUTE_CYCLE]),
         'all-gpus': ("Each rank sees all (requested) gpus", None, "store_true", None),
     }

@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2023 Ghent University
+# Copyright 2009-2024 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -45,6 +45,8 @@ class MympirunOption(CommonOption):
 
         "launcher": ("The launcher to be used by Hydra (used in recent Intel MPI versions (> 4.1))"
                      "for example: ssh, pbsdsh, ..", "str", "store", None),
+
+        "libfabric": ("Allow use of libfabric", None, "store_true", False),
 
         "mpdbootverbose": ("Run verbose mpdboot", None, "store_true", False),
 

@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2023 Ghent University
+# Copyright 2011-2024 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -601,8 +601,7 @@ class MPI(MpiBase):
                              "(text file with minimal entry 'password=<somesecretpassword>')"), mpdconffn)
 
             with open(mpdconffn, 'w') as mpdconff:
-                mpdconff.write("password=%s" % ''.join(random.choice(string.ascii_uppercase + string.digits)
-                                                       for x in range(10)))
+                mpdconff.write("password=" + ''.join(random.choices(string.ascii_uppercase + string.digits, k=10)))
             # set correct permissions on this file.
             os.chmod(mpdconffn, stat.S_IREAD)
 

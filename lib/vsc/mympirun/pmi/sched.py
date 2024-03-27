@@ -1,5 +1,5 @@
 #
-# Copyright 2019-2023 Ghent University
+# Copyright 2019-2024 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -53,8 +53,8 @@ class Info:
 
     def __str__(self):
         """Human readable"""
-        return "{} nodes; with per node {} cores, {} ranks, {} mem, {} gpus".format(
-            self.nodes, self.cores, self.ranks, self.mem, self.gpus)
+        return (f"{self.nodes} nodes; with per node {self.cores} cores, "
+            f"{self.ranks} ranks, {self.mem} mem, {self.gpus} gpus")
 
     def deepcopy(self):
         """Return a (deep)copy"""
