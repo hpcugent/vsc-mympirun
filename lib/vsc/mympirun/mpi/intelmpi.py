@@ -174,6 +174,30 @@ class IntelMPI(MPI):
 
         return super().mpirun_prepare_execution()
 
+    def prepare(self):
+        super().prepare()
+        self.prepare_container_environment()
+
+    def prepare_container_environment(self):
+        slurm_container = os.environ.get('SLURM_CONTAINER', None)
+        if slurm_container is not None:
+            logging.debug(f"Found SLURM_CONTAINER {slurm_container}")
+
+            # intel mpi has some support for running with singularity, but not for slurm container mode
+            for key in [k for k in os.environ.keys() if k.startswith('APPTAINER') or k.startswith('SINGULARITY')]:
+                logging.debug(f"Removing environment variable {key} (={os.environ[key]}) in slurm container mode")
+                del os.environ[key]
+
+            hydrmk = getattr(self, 'HYDRA_RMK', None)
+            if self.has_hydra and hydrmk and hydrmk[0] == 'slurm':
+                # need to pass full environment to tasks with slurm container wrapper
+                if slurm_container.startswith('HPCWN'):
+                    slurm_container += ':fullenv'
+                # pass the container option to srun in slurm bootstrap
+                envname = 'I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS'
+                os.environ[envname] = f"--container {slurm_container}"
+                logging.debug(f"set extra {envname} to {os.environ[envname]}")
+
     def pinning_override(self):
         """ pinning """
 
