@@ -206,6 +206,9 @@ class MPI(MpiBase):
     ]
     OPTS_FROM_ENV_FLAVOR_PREFIX = []  # to be set per flavor
 
+    CONTAINER_CLEANUP_ENVVARS = ()  # must be tuple
+    CONTAINER_HYDRA_ENVVAR = None
+
     def __init__(self, options, cmdargs, **kwargs):
         self.options = options
         self.cmdargs = cmdargs
@@ -291,7 +294,6 @@ class MPI(MpiBase):
             msg = f"main: exitcode {exitcode} > 0; cmd {self.mpirun_cmd}"
             raise Exception(msg)
 
-    ### BEGIN prepare ###
     def prepare(self):
         """Collect information to create the commands."""
         self.check_usable_cpus()
@@ -305,6 +307,8 @@ class MPI(MpiBase):
         self.make_machine_file(universe=self.options.universe)
 
         self.set_pinning()
+
+        self.container_environment()
 
     def check_usable_cpus(self):
         """Check and log if non-standard cpus (eg due to cpusets)."""
@@ -569,7 +573,6 @@ class MPI(MpiBase):
         logging.debug("make_mympirun_dir: tmp mympirundir %s", destdir)
         self.mympirundir = destdir
 
-    ### BEGIN pinning ###
     def set_pinning(self):
         """
         set pinmpi to True or False depending on the command line options 'pinmpi' and 'overridepin'
@@ -587,7 +590,29 @@ class MPI(MpiBase):
         else:
             logging.debug("set_pinning: pinmpi %s", self.options.pinmpi)
 
-    ### BEGIN mpdboot ###
+    def container_environment(self):
+        slurm_container = os.environ.get('SLURM_CONTAINER', None)
+        if slurm_container is not None:
+            logging.debug(f"Found SLURM_CONTAINER {slurm_container}")
+
+            if self.CONTAINER_CLEANUP_ENVVARS:
+                # e.g. intel mpi has some support for running with singularity, but not for slurm container mode
+                for key in [k for k in os.environ.keys() if k.startswith(self.CONTAINER_CLEANUP_ENVVARS)]:
+                    logging.debug(f"Removing environment variable {key} (={os.environ[key]}) in slurm container mode")
+                    del os.environ[key]
+
+            hydrmk = getattr(self, 'HYDRA_RMK', None)
+            if self.has_hydra and hydrmk and hydrmk[0] == 'slurm' and self.CONTAINER_HYDRA_ENVVAR:
+                # assumes the hydra slurm support uses srun
+
+                # need to pass full environment to tasks with slurm container wrapper
+                if slurm_container.startswith('HPCWN'):
+                    slurm_container += ':fullenv'
+
+                # pass the container option to srun in slurm bootstrap
+                os.environ[self.CONTAINER_HYDRA_ENVVAR] = f"--container={slurm_container}"
+                logging.debug(f"set extra {self.CONTAINER_HYDRA_ENVVAR} to {os.environ[self.CONTAINER_HYDRA_ENVVAR]}")
+
     def make_mpdboot(self):
         """
         Make the mpdboot configuration.
@@ -693,7 +718,6 @@ class MPI(MpiBase):
         if not self.has_hydra:
             self.mpdboot_options.add(self.REMOTE_OPTION_TEMPLATE, tmpl_vals={'rsh': self.get_rsh()})
 
-    ### BEGIN mpiexec ###
     def set_mpiexec_global_options(self):
         """
         Set mpiexec_global_options.

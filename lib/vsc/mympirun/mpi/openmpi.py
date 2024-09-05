@@ -62,6 +62,8 @@ class OpenMPI(MPI):
 
     REMOTE_OPTION_TEMPLATE = ['--mca', 'pls_rsh_agent', '%(rsh)s']
 
+    CONTAINER_HYDRA_ENVVAR = 'OMPI_MCA_plm_slurm_args'
+
     def use_ucx_pml(self):
         """Determine whether or not to use the UCX Point-to-Point Messaging Layer (PML)."""
         # don't use UCX by default (mostly because of backwards-compatibility)
