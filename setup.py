@@ -46,7 +46,7 @@ PACKAGE = {
     'tests_require': [
         'mock',
     ],
-    'version': '5.4.0',
+    'version': '5.4.1',
     'author': [sdw, kh],
     'maintainer': [sdw, kh],
     'zip_safe': False,

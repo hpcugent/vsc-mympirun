@@ -77,6 +77,9 @@ class IntelMPI(MPI):
 
     OPTS_FROM_ENV_TEMPLATE = ['-envlist', '%(commaseparated)s']
 
+    CONTAINER_CLEANUP_ENVVARS = ('SINGULARITY', 'APPTAINER')  # must be tuple
+    CONTAINER_HYDRA_ENVVAR = 'I_MPI_HYDRA_BOOTSTRAP_EXEC_EXTRA_ARGS'
+
     def _has_hydra(self):
         """Has HYDRA or not"""
         mgr = os.environ.get('I_MPI_PROCESS_MANAGER', None)
