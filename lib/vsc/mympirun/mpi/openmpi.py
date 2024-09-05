@@ -58,6 +58,8 @@ class OpenMPI(MPI):
 
     MPIEXEC_TEMPLATE_GLOBAL_OPTION = ['--mca', '%(name)s', "%(value)s"]
 
+    OPTS_FROM_ENV_FLAVOR_PREFIX = ['OMPI']
+
     REMOTE_OPTION_TEMPLATE = ['--mca', 'pls_rsh_agent', '%(rsh)s']
 
     def use_ucx_pml(self):
