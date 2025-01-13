@@ -306,3 +306,20 @@ class OpenMpi4(OpenMpi3):
 
         pml_ucx_pattern = ' pml: ucx '
         return bool(re.search(pml_ucx_pattern, out))
+
+
+class OpenMpi5(OpenMpi4):
+
+    """
+    An implementation of the MPI class for OpenMPI 5.x & more recent.
+    """
+
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5', None))
+
+    def set_mpiexec_global_options(self):
+        """Set mpiexec global options"""
+        super().set_mpiexec_global_options()
+
+        # don't set orte_keep_fqdn_hostnames, since ORTE is no longer used starting OpenMPI 5.0,
+        # see also https://docs.open-mpi.org/en/v5.0.x/launching-apps/pmix-and-prrte.html
+        del self.mpiexec_global_options['orte_keep_fqdn_hostnames']
