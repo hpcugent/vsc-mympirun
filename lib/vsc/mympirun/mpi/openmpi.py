@@ -289,7 +289,7 @@ class OpenMpi4(OpenMpi3):
     An implementation of the MPI class for OpenMPI 4.x & more recent.
     """
 
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '4', None))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '4', '5'))
 
     def use_ucx_pml(self):
         """Determine whether or not to use the UCX Point-to-Point Messaging Layer (PML)."""
