@@ -316,10 +316,14 @@ class OpenMpi5(OpenMpi4):
 
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5', None))
 
-    def set_mpiexec_global_options(self):
-        """Set mpiexec global options"""
-        super().set_mpiexec_global_options()
-
+    def set_mpiexec_options(self):
+        """Set mpiexec options"""
         # don't set orte_keep_fqdn_hostnames, since ORTE is no longer used starting OpenMPI 5.0,
-        # see also https://docs.open-mpi.org/en/v5.0.x/launching-apps/pmix-and-prrte.html
+        # see also https://docs.open-mpi.org/en/v5.0.x/launching-apps/pmix-and-prrte.html,
         del self.mpiexec_global_options['orte_keep_fqdn_hostnames']
+
+        super().set_mpiexec_options()
+
+        # use keep_fqdn_hostname PRRTE MCA parameter instead: --prtemca keep_fqdn_hostnames 1;
+        # see also https://docs.open-mpi.org/en/v5.0.x/mca.html#label-running-setting-mca-param-values
+        self.mpiexec_options.add(['--prtemca', 'keep_fqdn_hostnames', '1'])
