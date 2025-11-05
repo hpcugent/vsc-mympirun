@@ -326,4 +326,4 @@ class OpenMpi5(OpenMpi4):
 
         # use keep_fqdn_hostname PRRTE MCA parameter instead: --prtemca keep_fqdn_hostnames 1;
         # see also https://docs.open-mpi.org/en/v5.0.x/mca.html#label-running-setting-mca-param-values
-        self.mpiexec_options.add(['--prtemca', 'keep_fqdn_hostnames', '1'])
+        self.mpiexec_options.add(['--prtemca', 'prte_keep_fqdn_hostnames', '1'])
