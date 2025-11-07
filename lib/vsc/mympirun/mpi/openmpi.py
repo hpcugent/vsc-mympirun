@@ -325,6 +325,15 @@ class OpenMpi5(OpenMpi4):
 
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5', None))
 
+    # 'vader' BTL (Byte Transfer Layer) was renamed back to 'sm' in OpenMPI 5.x,
+    # see https://docs.open-mpi.org/en/v5.0.x/tuning-apps/networking/shared-memory.html#the-sm-btl
+    DEVICE_MPIDEVICE_MAP = {
+        'det': 'sm,tcp,self',
+        'ib': 'sm,openib,self',
+        'shm': 'sm,self',
+        'socket': 'sm,tcp,self',
+    }
+
     def set_mpiexec_options(self):
         """Set mpiexec options"""
         # don't set orte_keep_fqdn_hostnames, since ORTE is no longer used starting OpenMPI 5.0,
