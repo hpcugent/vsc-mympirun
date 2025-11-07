@@ -108,20 +108,12 @@ class OpenMPI(MPI):
         """
         Return value for --map-by option
         """
-
         # make sure we start enough per node so it can fill the total_number_of_processes
         tot_processes = self.total_number_of_processes()
         unique_nodes = len(self.nodes_uniq)
         processes_per_node = int(math.ceil(tot_processes / unique_nodes))
         logging.debug("Setting up map for %s (%s total number of processes on %s unique nodes)",
                       processes_per_node, tot_processes, unique_nodes)
-
-        # determine whether we should oversubscribe or not
-        if self.is_oversubscribed():
-            logging.debug("Allow oversubscription")
-            over = ''
-        else:
-            over = 'NO'
 
         # See https://www.open-mpi.org/doc/v4.1/man1/mpirun.1.php "Mapping, Ranking, and Binding: Oh My!"
         mapby = [
@@ -136,6 +128,12 @@ class OpenMPI(MPI):
     def set_mpiexec_options(self):
         """Set mpiexec options"""
         super().set_mpiexec_options()
+
+        if self.is_oversubscribed():
+            logging.debug("Allow oversubscription")
+            over = ''
+        else:
+            over = 'NO'
 
         mapby = self._map_by_option_value()
         self.mpiexec_options.add(['--map-by', ':'.join(mapby)])
@@ -324,6 +322,15 @@ class OpenMpi5(OpenMpi4):
     """
 
     _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5', None))
+
+    # 'vader' BTL (Byte Transfer Layer) was renamed back to 'sm' in OpenMPI 5.x,
+    # see https://docs.open-mpi.org/en/v5.0.x/tuning-apps/networking/shared-memory.html#the-sm-btl
+    DEVICE_MPIDEVICE_MAP = {
+        'det': 'sm,tcp,self',
+        'ib': 'sm,openib,self',
+        'shm': 'sm,self',
+        'socket': 'sm,tcp,self',
+    }
 
     def set_mpiexec_options(self):
         """Set mpiexec options"""
