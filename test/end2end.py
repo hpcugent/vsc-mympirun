@@ -511,6 +511,9 @@ class TestEnd2End(TestCase):
         regex = re.compile(r"^fake mpirun called with args:.*--mca btl \^uct")
         self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
 
+        regex = re.compile(r"^fake mpirun called with args:.*--mca orte_keep_fqdn_hostnames 1")
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
+
         # mapping/binding to core is done by default
         regex = re.compile(r"^fake mpirun called with args:.*--map-by ppr:2:node:PE=1:SPAN:NOOVERSUBSCRIBE")
         self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
@@ -534,4 +537,56 @@ class TestEnd2End(TestCase):
         self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
 
         regex = re.compile("^fake mpirun called with args:.*--mca btl vader[a-z,]+self")
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
+
+    def test_openmpi5(self):
+        """Test dry run with OpenMPI 5."""
+        install_fake_mpirun('mpirun', self.tmpdir, 'openmpi', '5.0.7')
+
+        # with OpenMPI 4.x we also need a working ompi_info command
+        ompi_info_lines = [
+            "#!/bin/bash",
+            "echo '                 MCA btl: self (MCA v2.1.0, API v3.3.0, Component v5.0.7)'",
+            "echo '                 MCA pml: ucx (MCA v2.1.0, API v2.1.0, Component v5.0.7)'",
+        ]
+        install_fake_cmd('ompi_info', self.tmpdir, '\n'.join(ompi_info_lines))
+
+        ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
+
+        regex = re.compile(r"^fake mpirun called with args:.*--mca pml ucx")
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
+
+        regex = re.compile(r"^fake mpirun called with args:.*--mca btl \^uct")
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
+
+        regex = re.compile(r"^fake mpirun called with args:.*--mca orte_keep_fqdn_hostnames 1")
+        self.assertFalse(regex.search(out), f"Pattern '{regex.pattern}' should *not* be found in: {out}")
+
+        regex = re.compile(r"^fake mpirun called with args:.*--prtemca prte_keep_fqdn_hostnames 1")
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
+
+        # mapping/binding to core is done by default
+        regex = re.compile(r"^fake mpirun called with args:.*--map-by ppr:2:node:PE=1:NOOVERSUBSCRIBE")
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
+
+        # BTL self should not be specified when UCX is used as PML (but 'btl ^uct' is specified)
+        regex = re.compile("--mca btl .*self")
+        self.assertFalse(regex.search(out), f"Pattern '{regex.pattern}' should not be found in: {out}")
+
+        # test oversubscribe
+        ec, out = run([sys.executable, self.mympiscript, '--multi=5', 'mpi_hello'])
+        self.assertEqual(ec, 0, f"Command with multi exited normally: exit code {ec}; output: {out}")
+
+        regex = re.compile(r"^fake mpirun called with args:.*--map-by ppr:10:node:PE=1:OVERSUBSCRIBE")
+        self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
+
+        # if ompi_info doesn't report UCX as a supported PML, then openib btl is still used
+        ompi_info_lines.pop()
+        install_fake_cmd('ompi_info', self.tmpdir, '\n'.join(ompi_info_lines))
+
+        ec, out = run([sys.executable, self.mympiscript, 'mpi_hello'])
+        self.assertEqual(ec, 0, f"Command exited normally: exit code {ec}; output: {out}")
+
+        regex = re.compile("^fake mpirun called with args:.*--mca btl sm[a-z,]+self")
         self.assertTrue(regex.search(out), f"Pattern '{regex.pattern}' should be found in: {out}")
