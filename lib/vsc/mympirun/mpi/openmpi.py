@@ -1,5 +1,5 @@
 #
-# Copyright 2009-2024 Ghent University
+# Copyright 2009-2025 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -104,15 +104,10 @@ class OpenMPI(MPI):
 
         super().set_mpiexec_global_options()
 
-    def set_mpiexec_options(self):
-        """Set mpiexec options"""
-        super().set_mpiexec_options()
-
-        if self.is_oversubscribed():
-            logging.debug("Allow oversubscription")
-            over = ''
-        else:
-            over = 'NO'
+    def _map_by_option_value(self):
+        """
+        Return value for --map-by option
+        """
 
         # make sure we start enough per node so it can fill the total_number_of_processes
         tot_processes = self.total_number_of_processes()
@@ -120,6 +115,13 @@ class OpenMPI(MPI):
         processes_per_node = int(math.ceil(tot_processes / unique_nodes))
         logging.debug("Setting up map for %s (%s total number of processes on %s unique nodes)",
                       processes_per_node, tot_processes, unique_nodes)
+
+        # determine whether we should oversubscribe or not
+        if self.is_oversubscribed():
+            logging.debug("Allow oversubscription")
+            over = ''
+        else:
+            over = 'NO'
 
         # See https://www.open-mpi.org/doc/v4.1/man1/mpirun.1.php "Mapping, Ranking, and Binding: Oh My!"
         mapby = [
@@ -129,6 +131,13 @@ class OpenMPI(MPI):
             f"{over}OVERSUBSCRIBE",
         ]
 
+        return mapby
+
+    def set_mpiexec_options(self):
+        """Set mpiexec options"""
+        super().set_mpiexec_options()
+
+        mapby = self._map_by_option_value()
         self.mpiexec_options.add(['--map-by', ':'.join(mapby)])
 
     def _make_final_mpirun_cmd(self):
@@ -289,7 +298,7 @@ class OpenMpi4(OpenMpi3):
     An implementation of the MPI class for OpenMPI 4.x & more recent.
     """
 
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '4', None))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '4', '5'))
 
     def use_ucx_pml(self):
         """Determine whether or not to use the UCX Point-to-Point Messaging Layer (PML)."""
@@ -306,3 +315,45 @@ class OpenMpi4(OpenMpi3):
 
         pml_ucx_pattern = ' pml: ucx '
         return bool(re.search(pml_ucx_pattern, out))
+
+
+class OpenMpi5(OpenMpi4):
+
+    """
+    An implementation of the MPI class for OpenMPI 5.x & more recent.
+    """
+
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '5', None))
+
+    # 'vader' BTL (Byte Transfer Layer) was renamed back to 'sm' in OpenMPI 5.x,
+    # see https://docs.open-mpi.org/en/v5.0.x/tuning-apps/networking/shared-memory.html#the-sm-btl
+    DEVICE_MPIDEVICE_MAP = {
+        'det': 'sm,tcp,self',
+        'ib': 'sm,openib,self',
+        'shm': 'sm,self',
+        'socket': 'sm,tcp,self',
+    }
+
+    def set_mpiexec_options(self):
+        """Set mpiexec options"""
+        # don't set orte_keep_fqdn_hostnames, since ORTE is no longer used starting OpenMPI 5.0,
+        # see also https://docs.open-mpi.org/en/v5.0.x/launching-apps/pmix-and-prrte.html,
+        del self.mpiexec_global_options['orte_keep_fqdn_hostnames']
+
+        super().set_mpiexec_options()
+
+        # use keep_fqdn_hostname PRRTE MCA parameter instead: --prtemca keep_fqdn_hostnames 1;
+        # see also https://docs.open-mpi.org/en/v5.0.x/mca.html#label-running-setting-mca-param-values
+        self.mpiexec_options.add(['--prtemca', 'prte_keep_fqdn_hostnames', '1'])
+
+    def _map_by_option_value(self):
+        """
+        Return value for --map-by option
+        """
+        mapby = super()._map_by_option_value()
+
+        # filter out use of 'SPAN' qualifiers, which can't be combined with 'ppr' and 'node' in OpenMPI 5.x;
+        # see https://docs.open-mpi.org/en/v5.0.x/man-openmpi/man1/mpirun.1.html#the-map-by-option
+        mapby = [x for x in mapby if x != 'SPAN']
+
+        return mapby

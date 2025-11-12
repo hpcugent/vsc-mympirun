@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2024 Ghent University
+# Copyright 2011-2025 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -281,14 +281,14 @@ class MPI(MpiBase):
         if self.options.dry_run:
             logging.info("Dry run, only printing generated mpirun command...")
             print(' '.join(self.mpirun_cmd))
-            exitcode = 0
+            exitcode, output = 0, ''
         else:
-            exitcode, _ = run_mpirun_cmd(self.mpirun_cmd, **run_kwargs)
+            exitcode, output = run_mpirun_cmd(self.mpirun_cmd, **run_kwargs)
 
         self.cleanup()
 
         if exitcode > 0:
-            msg = f"main: exitcode {exitcode} > 0; cmd {self.mpirun_cmd}"
+            msg = f"main: exitcode {exitcode} > 0; cmd {self.mpirun_cmd}, output: {output}"
             raise Exception(msg)
 
     ### BEGIN prepare ###
