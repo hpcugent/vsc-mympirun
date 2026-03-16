@@ -1,5 +1,5 @@
 #
-# Copyright 2011-2025 Ghent University
+# Copyright 2011-2026 Ghent University
 #
 # This file is part of vsc-mympirun,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -38,6 +38,7 @@ from vsc.mympirun.common import version_in_range, which
 from vsc.mympirun.mpi.mpi import MPI, RM_HYDRA_LAUNCHER
 
 SCALABLE_PROGRESS_LOWER_THRESHOLD = 64
+SLURM_EXPORT_ENV = 'SLURM_EXPORT_ENV'
 
 
 def _enable_disable(boolvalue):
@@ -226,7 +227,7 @@ class IntelHydraMPI(IntelMPI):
     MPDBOOT_SET_INTERFACE = False
 
     DEVICE_MPIDEVICE_MAP = {
-        'ib': 'shm:dapl',
+        'ib': 'shm:ofi',
         'det': 'det',
         'shm': 'shm',
         'socket': 'shm:tcp',
@@ -267,9 +268,9 @@ class IntelHydraMPIPbsdsh(IntelHydraMPI):
 
 
 class IntelMPI2019(IntelHydraMPIPbsdsh):
-    """MPI class for Intel MPI version 2019 and more recent."""
+    """MPI class for Intel MPI version 2019 and more recent (until 2021.9)"""
 
-    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '2019.0', None))
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '2019.0', '2021.9'))
 
     def set_impi_tmpdir(self):
         """Set location of temporary directory that Intel MPI should use."""
@@ -287,3 +288,42 @@ class IntelMPI2019(IntelHydraMPIPbsdsh):
         # (setting it anyway triggers a warning "I_MPI_CPUINFO environment variable is not supported")
         if 'I_MPI_CPUINFO' in self.mpiexec_global_options:
             del self.mpiexec_global_options['I_MPI_CPUINFO']
+
+
+class IntelMPI20219(IntelMPI2019):
+    """MPI class for Intel MPI version 2021.9 and more recent."""
+
+    _mpirun_version = staticmethod(lambda ver: version_in_range(ver, '2021.9', None))
+
+    def prepare(self):
+        """Prepare environment"""
+        # undefine $SLURM_EXPORT_ENV if it is set;
+        # $SLURM_EXPORT_ENV is defined as 'NONE' by qsub wrappers for SLURM,
+        # and then gets passed down to srun via mpirun,
+        # this may cause problems because $PATH and $LD_LIBRARY_PATH are no longer set
+        if SLURM_EXPORT_ENV in os.environ:
+            logging.info("Undefining $%s (was '%s')", SLURM_EXPORT_ENV, os.getenv(SLURM_EXPORT_ENV))
+            del os.environ[SLURM_EXPORT_ENV]
+
+        super().prepare()
+
+    def set_mpiexec_global_options(self):
+        """Set mpiexec global options"""
+        super().set_mpiexec_global_options()
+
+        # disable the external collective operations functionality,
+        # required because external hcoll library may be incompatible with UCX being used
+        self.mpiexec_global_options['I_MPI_COLL_EXTERNAL'] = '0'
+
+        # unset environment variables for which support has been removed,
+        # since having them set trigger warnings about being ignored
+        removed_env_vars = [
+            'I_MPI_DAT_LIBRARY',
+            'I_MPI_DAPL_SCALABLE_PROGRESS',
+            'I_MPI_FALLBACK_DEVICE',
+            'I_MPI_FALLBACK',
+            'I_MPI_NETMASK',
+        ]
+        for env_var in removed_env_vars:
+            if env_var in self.mpiexec_global_options:
+                del self.mpiexec_global_options[env_var]

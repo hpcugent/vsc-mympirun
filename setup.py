@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright 2009-2025 Ghent University
+# Copyright 2009-2026 Ghent University
 #
 # This file is part of VSC-tools,
 # originally created by the HPC team of Ghent University (http://ugent.be/hpc/en),
@@ -46,7 +46,7 @@ PACKAGE = {
     'tests_require': [
         'mock',
     ],
-    'version': '5.5.0',
+    'version': '5.5.1',
     'author': [sdw, kh],
     'maintainer': [sdw, kh],
     'zip_safe': False,
